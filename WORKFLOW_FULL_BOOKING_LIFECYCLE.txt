@@ -1,0 +1,123 @@
+VIP LOUNGE BOOKING SYSTEM: COMPLETE WORKFLOW
+=================================================
+
+This document describes the full workflow from the moment a booking is made by a minister until the booking is completed and the minister has left, including all key notification and status update steps.
+
+MARKETING FEED FEATURE
+----------------------
+- Role: Marketing Agent can upload promotional feeds (e.g., offers, events, VIP services).
+- These promotions are visible on the Minister's Dashboard in the app.
+- Feeds may include images, text, and links to more information.
+- Firestore: Each feed item is stored in a dedicated collection (e.g., 'marketingFeeds') with all relevant details.
+- Ministers see a dynamic, updated list of current promotions whenever they view their dashboard.
+- Types of feeds include:
+  * Service Promotions (discounts, special offers)
+  * Upcoming Events (VIP events, seminars, launches)
+  * New Services (new lounge features, amenities)
+  * Announcements (important info, updates)
+  * Partner Offers (exclusive deals from partner organizations)
+  * General Notices (reminders, tips, seasonal greetings)
+
+---
+
+1. BOOKING CREATION (MINISTER)
+--------------------------------
+- Minister creates a new booking via the app.
+- Firestore: New appointment document is created with all details (minister info, service, time, etc.).
+- Notification (type: booking_made) is sent to all floor managers (appears in notification list and as FCM push notification).
+
+2. ASSIGNMENT PHASE (FLOOR MANAGER)
+-------------------------------------
+- Floor manager receives the booking notification.
+- Floor manager assigns consultant, concierge, and cleaner to the booking.
+- Firestore: Appointment document updated with assigned staff IDs and names.
+- Notifications (type: booking_assigned) are sent to each assigned staff member (consultant, concierge, cleaner) with booking details.
+- Minister receives a confirmation notification of assignment.
+
+3. ACCEPTANCE PHASE (STAFF)
+----------------------------
+- Each staff member (consultant, concierge, cleaner) receives assignment notification.
+- When a staff member views/accepts the assignment, a notification is sent back to the floor manager acknowledging acceptance.
+
+4. ARRIVAL & SESSION START (CONCIERGE)
+----------------------------------------
+- Minister arrives at the lounge and is received by the concierge.
+- Concierge marks minister as arrived in the app.
+- Firestore: Appointment document updated with 'ministerArrivedTime'.
+- Notification (type: minister_arrived) sent to consultant and floor manager.
+- Consultant's "Start Session" button is enabled.
+
+5. CONSULTANT SESSION
+----------------------
+- Consultant starts session with the minister (button enabled after arrival notification).
+- Firestore: Appointment document updated with 'startTime', status set to 'in-progress'.
+- Consultant may add notes during the session.
+
+6. CONSULTANT SESSION END
+--------------------------
+- Consultant ends the session.
+- Firestore: Appointment document updated with 'endTime' (consultant session end), status remains 'in-progress'.
+- Notification sent to concierge to proceed with closing the appointment.
+
+7. CONCIERGE SESSION END / MINISTER LEAVES
+-------------------------------------------
+- Concierge completes the session (marks minister as left).
+- Firestore: Appointment document updated with 'ministerLeftTime', 'status' set to 'completed'.
+- Notification (type: thank_you) automatically sent to minister from floor manager, thanking them and instructing them to log any queries using the booking ID.
+
+8. CLEANER SESSION (IF APPLICABLE)
+------------------------------------
+- Cleaner may be notified to clean after the session (optional, based on assignment).
+- Firestore: Cleaner activity and completion can be logged if implemented.
+
+9. FINAL STATE
+---------------
+- Appointment status is 'completed'.
+- All relevant times (booking, arrival, session start, session end, minister left) are recorded in Firestore.
+- All parties have received appropriate notifications at each stage.
+
+10. APPOINTMENT CANCELLATION (MINISTER OR FLOOR MANAGER)
+--------------------------------------------------------
+- Minister or floor manager cancels the booking in the app.
+- Firestore: Appointment document status is set to 'cancelled', 'cancelledAt' timestamp is recorded, and any reserved timeslots are freed (the system checks for fields like 'timeslots', 'reservedSlots', or 'slotIds' and sets the corresponding timeslot documents to 'available').
+- The cancelled status is immediately reflected in the minister dashboard and all other relevant UI.
+- Notifications (type: appointment_cancelled) are sent to:
+    * All assigned staff (consultant, concierge, cleaner, if assigned)
+    * All floor managers
+    * (Optionally) the minister (confirmation)
+- Notification message: "The [service] appointment with [ministerName] on [date/time] has been cancelled."
+- All notifications appear in the app and as FCM push notifications.
+
+---
+
+NOTIFICATION TYPES AND RECIPIENTS SUMMARY
+-----------------------------------------
+- booking_made: Floor Manager
+- booking_assigned: Consultant, Concierge, Cleaner
+- minister_arrived: Consultant, Floor Manager
+- thank_you: Minister (from Floor Manager)
+- appointment_cancelled: Consultant, Concierge, Cleaner, Floor Manager, Minister (confirmation)
+- (others: e.g., message, cancellation, cleaning required, etc.)
+
+---
+
+AUTOMATIC CLOCK-OUT AT MIDNIGHT
+-------------------------------
+- Any user who forgets to clock out will be automatically clocked out at 23:59:59 each night (Africa/Johannesburg time).
+- The attendance record is updated with `clockOutTime: 23:59:59`, `isClockedIn: false`, and `autoClockedOut: true`.
+- The user receives a notification (in-app and push):
+  "You were automatically clocked out at midnight because you forgot to clock out."
+- Notification type: `auto_clock_out`
+
+---
+
+NOTES
+-----
+- All notifications appear in the app notification list and as FCM push notifications.
+- Notification objects in Firestore include type, sender, recipient, appointmentId, and timestamp.
+- All status changes and key timestamps are recorded in the appointment document for audit and workflow tracking.
+- Roles: Minister, Floor Manager, Consultant, Concierge, Cleaner.
+- Workflow can be extended with additional notifications or steps as needed.
+
+=================================================
+END OF WORKFLOW

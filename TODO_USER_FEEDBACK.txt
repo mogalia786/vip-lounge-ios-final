@@ -1,0 +1,30 @@
+USER FEEDBACK & TODO (2025-04-26)
+
+1. Floor manager does not receive a comprehensive notification in notification list. When he assigns appointment to consultant and concierge, the minister and the concierge don't get notifications at all.
+2. The minister notification is not detailed enough, so is the consultant notification which is still non-clickable.
+3. The minister user assigned to appointment shows in same color as when pending, the status should reflect as assigned and be in a different color and be at top of list.
+4. The details of consultant telephone number does not exist, so does the concierge.
+5. Minister, consultant, and concierge must be able to communicate with each other. None of this works.
+6. At midnight, the function to clockout a user did not run and user is still clocked in and cannot clockout because it is past the buffer he has.
+7. All this was clearly mentioned in the text flow you created.
+
+-- End of user feedback from 2025-04-26 session --
+
+Additional Problems (2025-04-28):
+
+8. Consultant Home Screen Clock-In State Lost on Logout/Login
+   - When a consultant is clocked in, logging out and back in asks for clock-in again. This should NOT happen. The clock-in state must persist via Firebase, and a scheduled function should clock out any users who forgot to clock out at midnight.
+
+9. Concierge Start Session Should Enable Consultant Start Session
+   - When the concierge clicks "start session," the consultant’s "start session" button for that appointment should become enabled.
+
+10. Incorrect Appointment Time Overwrite on Start Session
+    - When cleaner or concierge clicks "start session," it currently sets the "appointment time" for all users to the time the concierge clicked start session. This is incorrect. Each user should have their own start/end session timestamps, and the main appointment time should NOT be overwritten.
+
+11. Minister Cancels Booking: Status and Slot Release
+    - When a minister cancels a booking, only set the appointment status to "cancelled," send notifications to all assigned roles and floor manager (type "Cancelled"), free up the time slot, and release the assigned consultant for new bookings. No other actions should occur.
+
+12. Allow a buffer of at least 15 minutes before appointment for concierge to start session if minister arrives early and consultant is free.
+    - If minister arrives up to 15 minutes before appointment, concierge can start session and trigger consultant's start session enable.
+    - If minister arrives earlier than 15 minutes before, consultant's button should only be enabled at 15 minutes prior to appointment time.
+    - Cleaner start/end session should NOT affect the flow; only record cleaner notes for venue cleaning.

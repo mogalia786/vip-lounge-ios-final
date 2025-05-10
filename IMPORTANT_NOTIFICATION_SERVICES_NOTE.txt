@@ -1,0 +1,8 @@
+IMPORTANT: The active notification logic throughout the app uses VipNotificationService, not NotificationService.
+
+- All notification listeners, push logic, and role-based flows (consultant, concierge, floor manager, minister, cleaner) are implemented with VipNotificationService.
+- Any enhancements, bug fixes, or new notification features must be implemented in VipNotificationService (lib/core/services/vip_notification_service.dart).
+- Do NOT edit NotificationService for core notification flows unless specifically migrating legacy code.
+- Always refer to this note and confirm which service is used before making notification-related changes.
+
+This is critical to avoid confusion and ensure all notification changes are effective in the app.

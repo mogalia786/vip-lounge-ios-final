@@ -1,0 +1,25 @@
+# List of Home Screens Showing Attendance (as of 2025-04-25)
+
+# Consultant
+lib/features/consultant/presentation/screens/consultant_home_screen_attendance.dart
+
+# Concierge
+lib/features/concierge/presentation/screens/concierge_home_screen_attendance.dart
+
+# Cleaner
+lib/features/cleaner/presentation/screens/cleaner_home_screen_attendance.dart
+
+# Floor Manager
+lib/features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart
+
+# Marketing Agent
+lib/features/marketing_agent/presentation/screens/marketing_agent_home_screen.dart
+
+# Operational Manager
+lib/features/operational_manager/presentation/screens/operational_manager_home_screen.dart
+
+# Minister
+lib/features/minister/presentation/screens/minister_home_screen.dart
+
+# Staff (General)
+lib/features/staff/presentation/screens/staff_home_screen.dart

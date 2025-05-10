@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "320766440190",
+    "project_id": "vip-lounge-f3730",
+    "storage_bucket": "vip-lounge-f3730.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320766440190:android:9d8801c42a7d9cc0842baf",
+        "android_client_info": {
+          "package_name": "com.example.vip_lounge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGc13W0AXOVu6z8dB_dyyndZw_oxKSIxc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320766440190:android:dbe8c6aeca7204d8842baf",
+        "android_client_info": {
+          "package_name": "com.vip.lounge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGc13W0AXOVu6z8dB_dyyndZw_oxKSIxc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
