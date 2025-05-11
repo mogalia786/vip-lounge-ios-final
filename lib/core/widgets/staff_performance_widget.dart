@@ -13,6 +13,69 @@ class StaffPerformanceWidget extends StatefulWidget {
 }
 
 class _StaffPerformanceWidgetState extends State<StaffPerformanceWidget> {
+  Widget _buildStatusChip(String status) {
+    Color color;
+    String label;
+    switch (status.toLowerCase()) {
+      case 'pending':
+        color = Colors.orange;
+        label = 'Pending';
+        break;
+      case 'in-progress':
+        color = Colors.green;
+        label = 'In Progress';
+        break;
+      case 'completed':
+        color = Colors.blue;
+        label = 'Completed';
+        break;
+      case 'cancelled':
+        color = Colors.red;
+        label = 'Cancelled';
+        break;
+      default:
+        color = Colors.grey;
+        label = status.isNotEmpty ? status.substring(0, 1).toUpperCase() + status.substring(1) : 'Unknown';
+    }
+    return Container(
+      width: 90,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildMetricBlock(String label, int value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$value', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 20)),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
   late DateTime _selectedMonth;
   String? _userId;
   String? _role;
@@ -97,11 +160,11 @@ class _StaffPerformanceWidgetState extends State<StaffPerformanceWidget> {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('staff_activities')
-            .where('userId', isEqualTo: _userId)
-            .where('date', isGreaterThanOrEqualTo: startOfMonth)
-            .where('date', isLessThan: DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1))
-            .orderBy('date', descending: false)
+            .collection('appointments')
+            .where(_role == 'consultant' ? 'consultantId' : _role == 'concierge' ? 'conciergeId' : 'cleanerId', isEqualTo: _userId)
+            .where('appointmentTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+            .where('appointmentTime', isLessThan: Timestamp.fromDate(DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1)))
+            .orderBy('appointmentTime', descending: false)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -111,83 +174,82 @@ class _StaffPerformanceWidgetState extends State<StaffPerformanceWidget> {
             return const Center(child: Text('No performance data for this month.', style: TextStyle(color: Colors.white54)));
           }
           final docs = snapshot.data!.docs;
-          final Map<String, List<Map<String, dynamic>>> dailyMap = {};
+
+          // Aggregate metrics
+          int totalAppointments = docs.length;
+          int completedAppointments = 0;
+          int inProgressAppointments = 0;
           for (var doc in docs) {
             final data = doc.data() as Map<String, dynamic>;
-            final date = data['date'];
-            DateTime dt;
-            if (date is Timestamp) {
-              dt = date.toDate();
-            } else if (date is DateTime) {
-              dt = date;
-            } else {
-              continue;
+            if (data['endTime'] != null) {
+              completedAppointments++;
+            } else if (data['startTime'] != null) {
+              inProgressAppointments++;
             }
-            final key = DateFormat('yyyy-MM-dd').format(dt);
-            dailyMap.putIfAbsent(key, () => []).add(data);
           }
-          final sortedDays = dailyMap.keys.toList()..sort();
-          return ListView.builder(
-            itemCount: sortedDays.length,
-            itemBuilder: (context, i) {
-              final day = sortedDays[i];
-              final activities = dailyMap[day]!;
-              final totalRevenue = activities.fold<num>(0, (sum, d) => sum + (d['revenue'] is num ? d['revenue'] : 0));
-              final revenueActivities = activities.where((d) => d['revenue'] != null && (d['revenue'] is num ? d['revenue'] > 0 : false)).toList();
-              final nonRevenueActivities = activities.where((d) => d['revenue'] == null || (d['revenue'] is num && d['revenue'] == 0)).toList();
-              return Card(
-                color: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Colors.amber, width: 2)),
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: Colors.amber[700]),
-                          const SizedBox(width: 8),
-                          Text(DateFormat('EEEE, d MMM yyyy').format(DateTime.parse(day)), style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Revenue Activities: ${revenueActivities.length}', style: const TextStyle(color: Colors.greenAccent, fontSize: 14)),
-                      if (revenueActivities.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        ...revenueActivities.map<Widget>((d) {
-                          final desc = d['description'] ?? 'No description';
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('• ', style: TextStyle(color: Colors.white, fontSize: 14)),
-                              Expanded(child: Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 14))),
-                            ],
-                          );
-                        }).toList(),
-                      ],
-                      const SizedBox(height: 8),
-                      Text('Total Revenue: R ${totalRevenue.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 15)),
-                      const SizedBox(height: 8),
-                      Text('Non Revenue Activities: ${nonRevenueActivities.length}', style: const TextStyle(color: Colors.amberAccent, fontSize: 14)),
-                      if (nonRevenueActivities.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        ...nonRevenueActivities.map<Widget>((d) {
-                          final desc = d['description'] ?? 'No description';
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('• ', style: TextStyle(color: Colors.white, fontSize: 14)),
-                              Expanded(child: Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 14))),
-                            ],
-                          );
-                        }).toList(),
-                      ],
-                    ],
-                  ),
+          int completionRate = totalAppointments > 0 ? ((completedAppointments / totalAppointments) * 100).round() : 0;
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(child: _buildMetricBlock('Total', totalAppointments, Colors.amber)),
+                    Expanded(child: _buildMetricBlock('Completed', completedAppointments, Colors.greenAccent)),
+                    Expanded(child: _buildMetricBlock('In Progress', inProgressAppointments, Colors.blueAccent)),
+                    Expanded(child: _buildMetricBlock('Completion %', completionRate, Colors.deepPurpleAccent)),
+                  ],
                 ),
-              );
-            },
+              ),
+              const Divider(color: Colors.white12),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, i) {
+                    final data = docs[i].data() as Map<String, dynamic>;
+                    final apptTime = data['appointmentTime'] is Timestamp
+                        ? (data['appointmentTime'] as Timestamp).toDate()
+                        : data['appointmentTime'] is DateTime
+                            ? data['appointmentTime']
+                            : null;
+                    if (apptTime == null) return const SizedBox();
+                    final status = data['endTime'] != null
+                        ? 'Completed'
+                        : data['startTime'] != null
+                            ? 'In Progress'
+                            : 'Pending';
+                    return Card(
+                      color: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Colors.amber, width: 2)),
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today, color: Colors.amber[700]),
+                                const SizedBox(width: 8),
+                                Text(DateFormat('EEEE, d MMM yyyy – HH:mm').format(apptTime), style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Status: $status', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            if (data['description'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(data['description'], style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),

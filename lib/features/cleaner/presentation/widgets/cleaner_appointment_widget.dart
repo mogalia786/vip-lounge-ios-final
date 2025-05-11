@@ -116,33 +116,32 @@ class CleanerAppointmentWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: Icon(
-                      appointment['cleanerSessionStarted'] == true && appointment['cleanerSessionEnded'] != true
-                          ? Icons.stop
-                          : Icons.play_arrow,
-                      color: appointment['cleanerSessionStarted'] == true && appointment['cleanerSessionEnded'] != true
-                          ? Colors.red
-                          : (_canEnableStartSession(appointment) ? Colors.green : Colors.grey),
-                    ),
-                    label: Text(
-                      appointment['cleanerSessionStarted'] == true && appointment['cleanerSessionEnded'] != true
-                          ? 'End Session'
-                          : 'Start Session',
-                    ),
+                    icon: const Icon(Icons.play_arrow, color: Colors.green),
+                    label: const Text('Start Session', style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: appointment['cleanerSessionStarted'] == true && appointment['cleanerSessionEnded'] != true
-                          ? Colors.red[900]
-                          : (_canEnableStartSession(appointment) ? Colors.green[900] : Colors.grey[700]),
-                      side: BorderSide(
-                        color: appointment['cleanerSessionStarted'] == true && appointment['cleanerSessionEnded'] != true
-                            ? Colors.red
-                            : (_canEnableStartSession(appointment) ? Colors.green : Colors.grey),
-                      ),
+                      backgroundColor: Colors.green[900],
+                      side: const BorderSide(color: Colors.green),
                     ),
                     onPressed: disableStartSession ? null : onStartSession,
                   ),
                 ),
                 const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.stop, color: Colors.red),
+                    label: const Text('End Session', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[900],
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                    onPressed: onEndSession,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.note, color: AppColors.gold),

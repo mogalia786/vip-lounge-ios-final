@@ -176,7 +176,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                 typeCount['general'] = (typeCount['general'] ?? 0) + 1;
               }
               
-              // Add to notifications list
+              // Add to notifications list (always include isRead field)
               notificationsList.add({
                 'id': doc.id,
                 'title': data['title'] ?? '',
@@ -185,6 +185,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                 'notificationType': notificationType,
                 'appointmentId': appointmentId,
                 'createdAt': data['timestamp'] ?? data['createdAt'] ?? Timestamp.now(),
+                'isRead': data['isRead'] ?? false,
               });
             }
             
@@ -1128,9 +1129,9 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
         }
 
         final docs = snapshot.data!.docs;
-        final now = DateTime(2025, 4, 29, 13, 2, 7); // Use current local time as source of truth
-        // Check and update status for past pending bookings
-        for (final doc in docs) {
+        final now = DateTime.now(); // Use true current local time
+      // Check and update status for past pending bookings
+      for (final doc in docs) {
           final data = doc.data() as Map<String, dynamic>;
           final status = (data['status'] ?? '').toLowerCase();
           final appointmentTimestamp = data['appointmentTime'] as Timestamp?;
@@ -1142,12 +1143,25 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           }
         }
 
+        // --- SORT: Place all bookings with unread messages at the top ---
+        final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
+        sortedDocs.sort((a, b) {
+          final aId = a.id;
+          final bId = b.id;
+          final aUnread = _unreadMessageCounts[aId] ?? 0;
+          final bUnread = _unreadMessageCounts[bId] ?? 0;
+          if (aUnread > 0 && bUnread == 0) return -1;
+          if (bUnread > 0 && aUnread == 0) return 1;
+          // If both have unread or both have none, keep original order
+          return 0;
+        });
+
         return ListView.builder(
-          itemCount: docs.length,
+          itemCount: sortedDocs.length,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           itemBuilder: (context, index) {
-            final appointmentData = docs[index].data() as Map<String, dynamic>;
-            final appointmentId = docs[index].id;
+            final appointmentData = sortedDocs[index].data() as Map<String, dynamic>;
+            final appointmentId = sortedDocs[index].id;
             final appointmentTimestamp = appointmentData['appointmentTime'] as Timestamp;
             final appointmentTime = appointmentTimestamp.toDate();
             final status = appointmentData['status'] as String? ?? 'pending';
@@ -1174,11 +1188,18 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
               statusColor = Colors.orange;
             } else if (appointmentTime.isAfter(now)) {
               final difference = appointmentTime.difference(now).inDays;
-              bookingStatus = '$difference days to go';
+              bookingStatus = difference == 0
+                  ? 'Today'
+                  : '$difference days to go';
               statusColor = difference <= 3 ? Colors.orange : Colors.blue;
             } else {
-              bookingStatus = 'Pending';
-              statusColor = Colors.grey;
+              // If the appointment date has passed, set to 'Did Not Attend'
+              bookingStatus = 'Did Not Attend';
+              statusColor = Colors.redAccent;
+              // Optionally, update Firestore if not already updated above
+              if (status != 'Did Not Attend') {
+                FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'status': 'Did Not Attend'});
+              }
             }
 
             final hasUnreadMessages = _unreadMessageCounts.containsKey(appointmentId) &&
@@ -1854,16 +1875,22 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           .doc(notification['id'])
           .update({'isRead': true});
       
-      // Also update local state to reflect the notification is read
+      // Do NOT remove the notification from the local list; just mark as read in Firestore.
+      // This allows ministers to return to the chat/notification later.
+      // Optionally, you may want to update the UI to reflect its read status (e.g., fade or icon change),
+      // but do NOT remove it from _unreadNotificationsList here.
       setState(() {
-        _unreadNotificationsList.removeWhere((notif) => notif['id'] == notification['id']);
-        _unreadNotifications = _unreadNotificationsList.length;
-        
-        // Update the counter for this specific notification type
+        // Never remove the notification from the list, just mark as read
+        final notifIndex = _unreadNotificationsList.indexWhere((notif) => notif['id'] == notification['id']);
+        if (notifIndex != -1) {
+          _unreadNotificationsList[notifIndex]['isRead'] = true;
+        }
+        // Optionally update counters if you want to reflect "read" status in the UI
         final type = notification['notificationType'] as String? ?? 'general';
         if (_notificationTypeCount.containsKey(type) && _notificationTypeCount[type]! > 0) {
           _notificationTypeCount[type] = _notificationTypeCount[type]! - 1;
         }
+        _unreadNotifications = _unreadNotificationsList.where((notif) => notif['isRead'] != true).length;
       });
     }
     
@@ -1878,32 +1905,12 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             if (snapshot.exists) {
               final appointmentData = snapshot.data()!;
               appointmentData['id'] = appointmentId; // Ensure the ID is included
-              
               // Switch to the Bookings tab
               setState(() {
                 _selectedIndex = 1;
               });
-              
-              // Open the appointment card dialog
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return Dialog(
-                    backgroundColor: Colors.grey[900],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: AppColors.gold, width: 1),
-                    ),
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.9,
-                        maxHeight: MediaQuery.of(context).size.height * 0.8,
-                      ),
-                      child: _buildAppointmentCard(appointmentData),
-                    ),
-                  );
-                },
-              );
+              // Open the chat dialog directly for this appointment
+              _openChatDialog({...appointmentData, 'id': appointmentId});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Appointment not found')),
@@ -2143,11 +2150,18 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   }
 
   Widget _buildNotificationsView() {
+    // Sort so chat notifications are at the top
+    final sortedNotifications = List<Map<String, dynamic>>.from(_unreadNotificationsList);
+    sortedNotifications.sort((a, b) {
+      final aIsChat = (a['notificationType'] == 'message') ? 1 : 0;
+      final bIsChat = (b['notificationType'] == 'message') ? 1 : 0;
+      return bIsChat - aIsChat; // Chats first
+    });
     return ListView.builder(
-      itemCount: _unreadNotificationsList.length,
+      itemCount: sortedNotifications.length,
       padding: const EdgeInsets.all(16),
       itemBuilder: (context, index) {
-        final notification = _unreadNotificationsList[index];
+        final notification = sortedNotifications[index];
         final notificationType = notification['notificationType'] as String? ?? 'general';
         final appointmentId = notification['appointmentId'] as String? ?? '';
         
@@ -2165,9 +2179,11 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           notificationColor = Colors.blue;
         }
         
+        // Visually indicate read notifications (e.g., faded background or icon)
+        final isRead = notification['isRead'] == true;
         return Card(
           elevation: 4,
-          color: Colors.grey[900],
+          color: isRead ? Colors.grey[850] : Colors.grey[900],
           margin: const EdgeInsets.only(bottom: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -2178,6 +2194,14 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isRead)
+                  Row(
+                    children: [
+                      Icon(Icons.done_all, color: Colors.grey, size: 16),
+                      SizedBox(width: 4),
+                      Text('Read', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
                 // Notification title
                 Text(
                   notification['title'] ?? 'Unknown Notification',
@@ -2208,7 +2232,34 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                       constraints: const BoxConstraints(maxWidth: 100),
                       child: OutlinedButton(
                         onPressed: () {
+                          // If chat notification, open chat dialog directly
+                        if (notificationType == 'message' && appointmentId.isNotEmpty) {
+                          FirebaseFirestore.instance
+                              .collection('appointments')
+                              .doc(appointmentId)
+                              .get()
+                              .then((snapshot) {
+                                if (snapshot.exists) {
+                                  final appointmentData = snapshot.data()!;
+                                  appointmentData['id'] = appointmentId;
+                                  setState(() {
+                                    _selectedIndex = 1;
+                                  });
+                                  _openChatDialog({...appointmentData, 'id': appointmentId});
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Appointment not found')),
+                                  );
+                                }
+                              })
+                              .catchError((error) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error retrieving appointment: $error')),
+                                );
+                              });
+                        } else {
                           _handleNotificationTap(notification);
+                        }
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: notificationColor),

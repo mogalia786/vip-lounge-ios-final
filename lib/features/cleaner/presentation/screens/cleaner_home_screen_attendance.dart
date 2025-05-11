@@ -573,11 +573,12 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        // onTap removed as per user request
+        // onTap: (index) {
+        //   setState(() {
+        //     _currentIndex = index;
+        //   });
+        // },
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
@@ -593,10 +594,6 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
               child: const Icon(Icons.notifications),
             ),
             label: 'Notifications',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Performance',
           ),
         ],
       ),

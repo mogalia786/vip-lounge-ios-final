@@ -462,26 +462,45 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                       ),
                     ),
                     // Add chat icon for consultant/concierge if ministerId exists
-                    if ((widget.role == 'consultant' || widget.role == 'concierge') && (widget.ministerId != null && widget.ministerId!.isNotEmpty))
-                      IconButton(
-                        icon: Icon(Icons.chat_bubble_outline, color: Colors.amber[600], size: 26),
-                        tooltip: 'Chat with Minister',
-                        onPressed: () {
-                          // Navigate to consultant/concierge chat screen with all required parameters
-                          Navigator.of(context).pushNamed(
-                            widget.role == 'consultant' ? '/consultant/chat' : '/concierge/chat',
-                            arguments: {
-                              'appointmentId': widget.appointmentId,
-                              'ministerId': widget.ministerId,
-                              'ministerName': safeMinisterName,
-                              // Add additional parameters used elsewhere
-                              'consultantId': widget.role == 'consultant' ? (widget.appointmentInfo['consultantId'] ?? '') : null,
-                              'consultantName': widget.role == 'consultant' ? (widget.appointmentInfo['consultantName'] ?? '') : null,
-                              'consultantRole': widget.role == 'consultant' ? 'consultant' : null,
-                            },
-                          );
-                        },
-                      ),
+                    if ((widget.role == 'consultant' || widget.role == 'concierge' || widget.role == 'cleaner') && (widget.ministerId != null && widget.ministerId!.isNotEmpty))
+  IconButton(
+    icon: Icon(Icons.chat_bubble_outline, color: Colors.amber[600], size: 26),
+    tooltip: 'Chat with Minister',
+    onPressed: () {
+      // Navigate to chat screen with minister for all roles
+      String route;
+      Map<String, dynamic> args = {
+        'appointmentId': widget.appointmentId,
+        'ministerId': widget.ministerId,
+        'ministerName': safeMinisterName,
+      };
+      if (widget.role == 'consultant') {
+        route = '/consultant/chat';
+        args.addAll({
+          'consultantId': widget.appointmentInfo['consultantId'] ?? '',
+          'consultantName': widget.appointmentInfo['consultantName'] ?? '',
+          'consultantRole': 'consultant',
+        });
+      } else if (widget.role == 'concierge') {
+        route = '/concierge/chat';
+        args.addAll({
+          'conciergeId': widget.appointmentInfo['conciergeId'] ?? '',
+          'conciergeName': widget.appointmentInfo['conciergeName'] ?? '',
+          'conciergeRole': 'concierge',
+        });
+      } else if (widget.role == 'cleaner') {
+        route = '/cleaner/chat';
+        args.addAll({
+          'cleanerId': widget.appointmentInfo['cleanerId'] ?? '',
+          'cleanerName': widget.appointmentInfo['cleanerName'] ?? '',
+          'cleanerRole': 'cleaner',
+        });
+      } else {
+        route = '/chat';
+      }
+      Navigator.of(context).pushNamed(route, arguments: args);
+    },
+  ),
                   ],
                 ),
                 const SizedBox(height: 8),

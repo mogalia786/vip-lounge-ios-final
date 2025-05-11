@@ -17,6 +17,8 @@ class MarketingAgentHomeScreen extends StatefulWidget {
 }
 
 class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
+  final ScrollController _attendanceScrollController = ScrollController();
+  final ScrollController _visualBarScrollController = ScrollController();
   List<Map<String, dynamic>> _posts = [];
   bool _isClockedIn = false;
   bool _isOnBreak = false;
@@ -45,6 +47,9 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
 
   @override
   void initState() {
+    // Initialize ScrollControllers
+    _attendanceScrollController.addListener(() {});
+    _visualBarScrollController.addListener(() {});
     super.initState();
     FCMService().init(); 
     WidgetsBinding.instance.addPostFrameCallback((_) => _initUser());
@@ -181,6 +186,23 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
         backgroundColor: AppColors.black,
         foregroundColor: AppColors.gold,
         actions: [
+          if (!_isOnBreak)
+            IconButton(
+              icon: const Icon(Icons.add, color: AppColors.gold),
+              tooltip: 'Create Post',
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateSocialFeedPostScreen(
+                      agentId: _userId ?? '',
+                      agentName: _userName ?? 'Marketing Agent',
+                    ),
+                  ),
+                );
+                if (result == true) _fetchPosts();
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.gold),
             onPressed: () => _handleLogout(context),
@@ -198,18 +220,21 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                   children: [
                     Expanded(
                       child: Scrollbar(
+                        controller: _attendanceScrollController,
                         thumbVisibility: true,
                         thickness: 6,
                         radius: const Radius.circular(8),
                         child: SingleChildScrollView(
+                          controller: _attendanceScrollController,
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
-                              AttendanceActionsWidget(
-                                userId: _userId!,
-                                name: _userName!,
-                                role: 'marketing_agent',
-                              ),
+                              if (_userId != null && _userName != null)
+                                AttendanceActionsWidget(
+                                  userId: _userId!,
+                                  name: _userName!,
+                                  role: 'marketing_agent',
+                                ),
                             ],
                           ),
                         ),
@@ -222,10 +247,12 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                 SizedBox(
                   height: 8,
                   child: Scrollbar(
+                    controller: _visualBarScrollController,
                     thumbVisibility: true,
                     thickness: 6,
                     radius: const Radius.circular(8),
                     child: SingleChildScrollView(
+                      controller: _visualBarScrollController,
                       scrollDirection: Axis.horizontal,
                       child: SizedBox(width: 400), // Dummy width for visual bar
                     ),
@@ -374,25 +401,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: _isClockedIn && !_isOnBreak
-          ? FloatingActionButton(
-              backgroundColor: AppColors.gold,
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateSocialFeedPostScreen(
-                      agentId: _userId ?? '',
-                      agentName: _userName ?? 'Marketing Agent',
-                    ),
-                  ),
-                );
-                if (result == true) _fetchPosts();
-              },
-              child: const Icon(Icons.add, color: AppColors.black),
-              tooltip: 'Create Post',
-            )
-          : null,
+
     );
   }
 }

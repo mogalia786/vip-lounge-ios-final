@@ -135,14 +135,14 @@ class _AppState extends State<App> {
             } else {
               return MaterialPageRoute(builder: (_) => const MinisterHomeScreen());
             }
-          case '/consultant/chat':
+          case '/concierge/chat':
             // Extract appointmentId and other params from arguments
-            final args = settings.arguments as Map<String, dynamic>?;
-            final appointmentId = args?['appointmentId'] as String?;
-            final consultantId = args?['consultantId'] as String?;
-            final consultantName = args?['consultantName'] as String?;
-            final consultantRole = args?['consultantRole'] as String? ?? 'consultant';
-            if (appointmentId != null && consultantId != null && consultantName != null) {
+            final conciergeArgs = settings.arguments as Map<String, dynamic>?;
+            final conciergeAppointmentId = conciergeArgs?['appointmentId'] as String?;
+            final conciergeId = conciergeArgs?['conciergeId'] as String?;
+            final conciergeName = conciergeArgs?['conciergeName'] as String?;
+            final conciergeRole = conciergeArgs?['conciergeRole'] as String? ?? 'concierge';
+            if (conciergeAppointmentId != null && conciergeId != null && conciergeName != null) {
               return MaterialPageRoute(
                 builder: (_) => Scaffold(
                   backgroundColor: Colors.black,
@@ -152,7 +152,39 @@ class _AppState extends State<App> {
                   ),
                   body: VipMessagingService().buildChatInterface(
                     context: _,
-                    appointmentId: appointmentId,
+                    appointmentId: conciergeAppointmentId,
+                    currentUserId: conciergeId,
+                    currentUserName: conciergeName,
+                    currentUserRole: conciergeRole,
+                  ),
+                ),
+              );
+            } else {
+              return MaterialPageRoute(
+                builder: (_) => const Scaffold(
+                  backgroundColor: Colors.black,
+                  body: Center(child: Text('Missing chat parameters', style: TextStyle(color: Colors.red))),
+                ),
+              );
+            }
+          case '/consultant/chat':
+            // Extract appointmentId and other params from arguments
+            final consultantArgs = settings.arguments as Map<String, dynamic>?;
+            final consultantAppointmentId = consultantArgs?['appointmentId'] as String?;
+            final consultantId = consultantArgs?['consultantId'] as String?;
+            final consultantName = consultantArgs?['consultantName'] as String?;
+            final consultantRole = consultantArgs?['consultantRole'] as String? ?? 'consultant';
+            if (consultantAppointmentId != null && consultantId != null && consultantName != null) {
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  backgroundColor: Colors.black,
+                  appBar: AppBar(
+                    title: const Text('Chat'),
+                    backgroundColor: Colors.black,
+                  ),
+                  body: VipMessagingService().buildChatInterface(
+                    context: _,
+                    appointmentId: consultantAppointmentId,
                     currentUserId: consultantId,
                     currentUserName: consultantName,
                     currentUserRole: consultantRole,

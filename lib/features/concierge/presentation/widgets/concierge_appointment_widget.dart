@@ -111,28 +111,11 @@ class ConciergeAppointmentWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: Icon(
-                      appointment['conciergeSessionStarted'] == true && appointment['conciergeSessionEnded'] != true
-                          ? Icons.stop
-                          : Icons.play_arrow,
-                      color: appointment['conciergeSessionStarted'] == true && appointment['conciergeSessionEnded'] != true
-                          ? Colors.red
-                          : (appointment['conciergeSessionStarted'] != true && appointment['conciergeSessionEnded'] != true ? Colors.green : Colors.grey),
-                    ),
-                    label: Text(
-                      appointment['conciergeSessionStarted'] == true && appointment['conciergeSessionEnded'] != true
-                          ? 'End Session'
-                          : 'Start Session',
-                    ),
+                    icon: const Icon(Icons.play_arrow, color: Colors.green),
+                    label: const Text('Start Session', style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: appointment['conciergeSessionStarted'] == true && appointment['conciergeSessionEnded'] != true
-                          ? Colors.red[900]
-                          : (appointment['conciergeSessionStarted'] != true && appointment['conciergeSessionEnded'] != true ? Colors.green[900] : Colors.grey[700]),
-                      side: BorderSide(
-                        color: appointment['conciergeSessionStarted'] == true && appointment['conciergeSessionEnded'] != true
-                            ? Colors.red
-                            : (appointment['conciergeSessionStarted'] != true && appointment['conciergeSessionEnded'] != true ? Colors.green : Colors.grey),
-                      ),
+                      backgroundColor: Colors.green[900],
+                      side: const BorderSide(color: Colors.green),
                     ),
                     onPressed: disableStartSession ? null : onStartSession,
                   ),
@@ -140,13 +123,13 @@ class ConciergeAppointmentWidget extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.note, color: AppColors.gold),
-                    label: const Text('Add/View Notes', style: TextStyle(color: Colors.white)),
+                    icon: const Icon(Icons.stop, color: Colors.red),
+                    label: const Text('End Session', style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      side: const BorderSide(color: AppColors.gold),
+                      backgroundColor: Colors.red[900],
+                      side: const BorderSide(color: Colors.red),
                     ),
-                    onPressed: onAddNotes,
+                    onPressed: onEndSession,
                   ),
                 ),
               ],

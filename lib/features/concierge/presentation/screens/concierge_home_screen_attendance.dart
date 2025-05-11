@@ -12,7 +12,8 @@ import '../../../../core/constants/colors.dart';
 import '../../../../features/floor_manager/presentation/screens/notifications_screen.dart';
 import '../../../../core/services/vip_notification_service.dart';
 import '../../../../core/services/vip_messaging_service.dart';
-import '../widgets/performance_metrics_widget.dart';
+import 'package:vip_lounge/core/widgets/staff_performance_widget.dart';
+import 'package:vip_lounge/features/consultant/presentation/widgets/performance_metrics_widget.dart';
 import '../widgets/concierge_appointment_widget.dart';
 import '../../../../features/floor_manager/widgets/attendance_actions_widget.dart';
 import '../../../../core/services/device_location_service.dart';
@@ -321,11 +322,76 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     );
   }
 
+  String _performanceTimeframe = 'Month';
+
+  DateTime _getPerformanceDateForTimeframe(String timeframe) {
+    final now = DateTime.now();
+    switch (timeframe) {
+      case 'Year':
+        return DateTime(now.year, 1, 1);
+      case 'Month':
+        return DateTime(now.year, now.month, 1);
+      case 'Week':
+        final weekDay = now.weekday;
+        return now.subtract(Duration(days: weekDay - 1)); // Monday
+      case 'Future':
+        return now.add(const Duration(days: 30));
+      default:
+        return now;
+    }
+  }
+
   Widget _buildPerformanceTab() {
-    return PerformanceMetricsWidget(
-      conciergeId: _conciergeId,
-      metricsData: _metricsData,
-      selectedDate: _selectedDate,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              const Text('Show:', style: TextStyle(color: Colors.white70)),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: _performanceTimeframe,
+                dropdownColor: Colors.black,
+                iconEnabledColor: Colors.white,
+                style: const TextStyle(color: Colors.white),
+                items: ['Year', 'Month', 'Week', 'Future']
+                    .map((val) => DropdownMenuItem(
+                          value: val,
+                          child: Text(val),
+                        ))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _performanceTimeframe = val;
+                      _selectedDate = _getPerformanceDateForTimeframe(val);
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Flexible(
+                child: PerformanceMetricsWidget(
+                  consultantId: _conciergeId,
+                  role: 'concierge',
+                  selectedDate: _selectedDate,
+                ),
+              ),
+              StaffPerformanceWidget(
+                userId: _conciergeId,
+                role: 'concierge',
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -907,7 +973,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     } else if (_currentIndex == 1) {
       body = _buildNotificationsView();
     } else {
-      body = _buildPerformanceTab();
+      body = Center(child: Text('Profile', style: TextStyle(color: Colors.white)));
     }
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -921,11 +987,8 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
               style: TextStyle(
                 color: AppColors.gold,
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.verified, color: AppColors.gold, size: 22),
           ],
         ),
         actions: [
@@ -941,46 +1004,29 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
           ),
         ],
       ),
-      body: SafeArea(
-        child: _conciergeId.isNotEmpty
-            ? NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverToBoxAdapter(child: _buildAttendanceContainer()),
-                ],
-                body: body,
-              )
-            : const Center(child: CircularProgressIndicator(color: AppColors.gold)),
-      ),
+      body: body,
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
         backgroundColor: Colors.black,
         selectedItemColor: AppColors.gold,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
+        unselectedItemColor: Colors.white,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        items: [
-          const BottomNavigationBarItem(
+        items: const [
+          BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Badge(
-              isLabelVisible: _unreadNotifications > 0,
-              label: Text(
-                _unreadNotifications.toString(),
-                style: const TextStyle(color: Colors.white, fontSize: 10),
-              ),
-              child: const Icon(Icons.notifications),
-            ),
+            icon: Icon(Icons.notifications),
             label: 'Notifications',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Performance',
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),

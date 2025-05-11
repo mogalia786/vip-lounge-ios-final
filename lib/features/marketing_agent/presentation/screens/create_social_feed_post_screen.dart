@@ -180,8 +180,10 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
+                            Flexible(
+                              fit: FlexFit.loose,
                               child: GestureDetector(
                                 onTap: () async {
                                   final picked = await showDatePicker(
@@ -212,7 +214,8 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
+                            Flexible(
+                              fit: FlexFit.loose,
                               child: GestureDetector(
                                 onTap: () async {
                                   final picked = await showDatePicker(

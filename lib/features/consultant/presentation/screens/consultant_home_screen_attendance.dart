@@ -23,6 +23,7 @@ import 'package:vip_lounge/features/consultant/presentation/screens/appointment_
 import '../../../../core/widgets/role_notification_list.dart';
 import '../widgets/minister_search_dialog.dart';
 import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
+import '../widgets/performance_metrics_widget.dart';
 
 class LatLng {
   final double latitude;
@@ -40,6 +41,26 @@ class ConsultantHomeScreenAttendance extends StatefulWidget {
 
 class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAttendance>
     with TickerProviderStateMixin {
+  // --- Performance Metrics Dropdown State ---
+  String _performanceTimeframe = 'Month';
+
+  DateTime _getPerformanceDateForTimeframe(String timeframe) {
+    final now = DateTime.now();
+    switch (timeframe) {
+      case 'Year':
+        return DateTime(now.year, 1, 1);
+      case 'Month':
+        return DateTime(now.year, now.month, 1);
+      case 'Week':
+        final weekDay = now.weekday;
+        return now.subtract(Duration(days: weekDay - 1)); // Monday of this week
+      case 'Future':
+        return now.add(const Duration(days: 30));
+      default:
+        return now;
+    }
+  }
+
   final VipMessagingService _messagingService = VipMessagingService();
   final VipNotificationService _notificationService = VipNotificationService();
 
@@ -1393,7 +1414,50 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                     ),
                   ],
                 )
-              : Center(child: Text('Performance Tab', style: TextStyle(color: Colors.white))),
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Performance Metrics',
+                            style: TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          DropdownButton<String>(
+                            value: _performanceTimeframe,
+                            dropdownColor: Colors.black,
+                            style: const TextStyle(color: Colors.white),
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.amber),
+                            underline: Container(height: 2, color: Colors.amber),
+                            items: const [
+                              DropdownMenuItem(value: 'Year', child: Text('Year')),
+                              DropdownMenuItem(value: 'Month', child: Text('Month')),
+                              DropdownMenuItem(value: 'Week', child: Text('Week')),
+                              DropdownMenuItem(value: 'Future', child: Text('Future')),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _performanceTimeframe = value);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: PerformanceMetricsWidget(
+                        key: ValueKey(_performanceTimeframe + _getPerformanceDateForTimeframe(_performanceTimeframe).toIso8601String()),
+                        consultantId: _consultantId,
+                        role: _consultantName.isNotEmpty ? 'consultant' : null,
+                        selectedDate: _getPerformanceDateForTimeframe(_performanceTimeframe),
+                        metricsData: null,
+                      ),
+                    ),
+                  ],
+                ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
         selectedItemColor: AppColors.gold,
