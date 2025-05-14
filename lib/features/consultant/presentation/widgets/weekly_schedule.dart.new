@@ -1,0 +1,375 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+
+class WeeklyScheduleWidget extends StatefulWidget {
+  final String consultantId;
+
+  const WeeklyScheduleWidget({
+    Key? key,
+    required this.consultantId,
+  }) : super(key: key);
+
+  @override
+  State<WeeklyScheduleWidget> createState() => _WeeklyScheduleWidgetState();
+}
+
+class _WeeklyScheduleWidgetState extends State<WeeklyScheduleWidget> {
+  final DateTime _now = DateTime.now();
+  late DateTime _startOfWeek;
+  late DateTime _endOfWeek;
+  List<Map<String, dynamic>> _weeklyAppointments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateWeekBoundaries();
+    _loadWeeklySchedule();
+  }
+
+  void _calculateWeekBoundaries() {
+    // Calculate the start of week (Sunday)
+    _startOfWeek = DateTime(_now.year, _now.month, _now.day)
+        .subtract(Duration(days: _now.weekday % 7));
+    
+    // Calculate the end of week (Saturday)
+    _endOfWeek = _startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+    
+    // For debugging
+    print('DEBUG: Week range: ${DateFormat('yyyy-MM-dd HH:mm').format(_startOfWeek)} to ${DateFormat('yyyy-MM-dd HH:mm').format(_endOfWeek)}');
+  }
+
+  Future<void> _loadWeeklySchedule() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Query for appointments assigned to this consultant within the week range
+      final queryConsultantId = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('consultantId', isEqualTo: widget.consultantId)
+          .get();
+          
+      final queryAssignedConsultantId = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('assignedConsultantId', isEqualTo: widget.consultantId)
+          .get();
+          
+      final queryAssignedToId = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('assignedToId', isEqualTo: widget.consultantId)
+          .get();
+
+      // Process and filter appointments
+      Set<String> processedIds = {};
+      List<Map<String, dynamic>> weeklyAppointments = [];
+
+      for (var querySnapshot in [queryConsultantId, queryAssignedConsultantId, queryAssignedToId]) {
+        for (var doc in querySnapshot.docs) {
+          // Skip if already processed
+          if (processedIds.contains(doc.id)) continue;
+          
+          final data = doc.data();
+          if (data['appointmentTime'] != null && data['appointmentTime'] is Timestamp) {
+            final appointmentTime = (data['appointmentTime'] as Timestamp).toDate();
+            
+            // Check if appointment is within the week (inclusive of start and end dates)
+            if (!appointmentTime.isBefore(_startOfWeek) && !appointmentTime.isAfter(_endOfWeek)) {
+              // Get additional information - make sure we have all fields
+              final ministerName = data['ministerName'] ?? 'Unknown Minister';
+              final serviceName = data['serviceName'] ?? data['service'] ?? 'Consultation';
+              final venue = data['venue'] ?? 'Not specified';
+              
+              weeklyAppointments.add({
+                'id': doc.id,
+                ...data,
+                'appointmentTime': appointmentTime,
+                'ministerName': ministerName,
+                'serviceName': serviceName,
+                'venue': venue,
+              });
+              
+              processedIds.add(doc.id);
+              print('DEBUG: Added appointment ${doc.id} on ${DateFormat('yyyy-MM-dd HH:mm').format(appointmentTime)}');
+            } else {
+              print('DEBUG: Skipped appointment ${doc.id} on ${DateFormat('yyyy-MM-dd HH:mm').format(appointmentTime)} - outside week range');
+            }
+          } else {
+            print('DEBUG: Skipped appointment ${doc.id} - invalid or missing appointmentTime');
+          }
+        }
+      }
+
+      // Sort by time
+      weeklyAppointments.sort((a, b) {
+        return (a['appointmentTime'] as DateTime).compareTo(b['appointmentTime'] as DateTime);
+      });
+
+      setState(() {
+        _weeklyAppointments = weeklyAppointments;
+        _isLoading = false;
+      });
+      
+      print('DEBUG: Loaded ${weeklyAppointments.length} weekly appointments');
+    } catch (e) {
+      print('Error loading weekly schedule: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      color: Colors.black,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.amber[700]!, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Wrap in SingleChildScrollView to prevent overflow
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Weekly Schedule',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber[700],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '${DateFormat('MMM d').format(_startOfWeek)} - ${DateFormat('MMM d').format(_endOfWeek)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _weeklyAppointments.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text(
+                            'No appointments scheduled for this week.',
+                            style: TextStyle(color: Colors.white70),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: _weeklyAppointments.map((appointment) {
+                          final dateTime = appointment['appointmentTime'] as DateTime;
+                          final ministerName = appointment['ministerName'] ?? 'Unknown Minister';
+                          final serviceName = appointment['serviceName'] ?? 'Consultation';
+                          final venue = appointment['venue'] ?? 'Not specified';
+                          final status = appointment['status'] ?? 'pending';
+                          
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Card(
+                              color: Colors.grey.shade900,
+                              margin: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Date container
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              DateFormat('d').format(dateTime),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.amber[700],
+                                              ),
+                                            ),
+                                            Text(
+                                              DateFormat('E').format(dateTime),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    SizedBox(width: 12),
+                                    
+                                    // Appointment details - use Expanded to prevent overflow
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            serviceName,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          RichText(
+                                            text: TextSpan(
+                                              children: [
+                                                TextSpan(
+                                                  text: 'Minister: ',
+                                                  style: TextStyle(
+                                                    color: Colors.amber[700],
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: ministerName,
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          RichText(
+                                            text: TextSpan(
+                                              children: [
+                                                TextSpan(
+                                                  text: 'Time: ',
+                                                  style: TextStyle(
+                                                    color: Colors.amber[700],
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: DateFormat('h:mm a').format(dateTime),
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          RichText(
+                                            text: TextSpan(
+                                              children: [
+                                                TextSpan(
+                                                  text: 'Venue: ',
+                                                  style: TextStyle(
+                                                    color: Colors.amber[700],
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: venue,
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          RichText(
+                                            text: TextSpan(
+                                              children: [
+                                                TextSpan(
+                                                  text: 'Status: ',
+                                                  style: TextStyle(
+                                                    color: Colors.amber[700],
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: status.replaceAll('_', ' '),
+                                                  style: TextStyle(
+                                                    color: _getStatusColor(status),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    // Status indicator
+                                    Container(
+                                      width: 4,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(status),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.amber;
+      case 'confirmed':
+        return Colors.green;
+      case 'in_progress':
+      case 'in progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.purple;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+}

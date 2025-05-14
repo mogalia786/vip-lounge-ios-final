@@ -63,7 +63,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
 
   // Helper to get abbreviated weekday key (e.g., 'mon', 'tue', ...)
   String _weekdayKey(DateTime date) {
-    return DateFormat('E').format(date).toLowerCase(); // returns 'mon', 'tue', etc.
+    final key = DateFormat('E').format(date).toLowerCase();
+    print('[DEBUG] _weekdayKey for ${date.toIso8601String()} = $key');
+    return key;
   }
 
   // Helper to check if selected date is closed
@@ -790,6 +792,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         setState(() {
           _closedDaysSet = days.map((e) => e.toString()).toSet();
         });
+        print('[DEBUG] Loaded closedDays: \\n' + _closedDaysSet.toString());
       }
       // Business hours (per day)
       if (data['businessHours'] != null) {
@@ -797,12 +800,14 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         setState(() {
           _businessHoursMap = bh;
         });
+        print('[DEBUG] Loaded businessHours keys: ' + bh.keys.join(', '));
       }
       // Default opening/closing from settings (for buffer fallback)
       if (data['defaultBusinessHours'] != null) {
         setState(() {
           _defaultBusinessHours = data['defaultBusinessHours'] as Map<String, dynamic>;
         });
+        print('[DEBUG] Loaded defaultBusinessHours: ' + _defaultBusinessHours.toString());
       }
     }
   }

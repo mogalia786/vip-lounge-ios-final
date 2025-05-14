@@ -323,16 +323,7 @@ class _AttendanceActionsWidgetState extends State<AttendanceActionsWidget> {
           _showSnackBar('Could not determine location.');
           return;
         }
-        final close = business['closingHours'] ?? '18:00';
-        final closeParts = close.split(':');
-        final nowDate = DateTime.now();
-        final closeTime = TimeOfDay(hour: int.parse(closeParts[0]), minute: int.parse(closeParts[1]));
-        final closeBuffer = DateTime(nowDate.year, nowDate.month, nowDate.day, closeTime.hour, closeTime.minute).add(const Duration(hours: 1));
-        if (now.isAfter(closeBuffer)) {
-          setState(() => _isLoading = false);
-          _showSnackBar('Clock out only allowed until ${DateFormat('HH:mm').format(closeBuffer)}.');
-          return;
-        }
+        
         final ok = _calculateDistance(
           business['latitude'] ?? 0, business['longitude'] ?? 0,
           userLoc['latitude'] ?? 0, userLoc['longitude'] ?? 0,

@@ -114,5 +114,6 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   assets:
+    - assets/walking_man.png
     - .env
     - assets/splash_screen.png

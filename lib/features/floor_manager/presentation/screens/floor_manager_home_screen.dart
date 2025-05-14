@@ -137,17 +137,132 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
         'status': 'assigned', // Initial status when assigned
       });
       
-      // Call notification service for push notification
-      await VipNotificationService().notifyStaffAssignment(
-        appointmentId: appointmentId,
-        appointmentData: appointmentData ?? {},
-        consultantId: staffType == 'consultant' ? staffId : '',
-        consultantName: staffType == 'consultant' ? staffName : '',
-        conciergeId: staffType == 'concierge' ? staffId : '',
-        conciergeName: staffType == 'concierge' ? staffName : '',
-        cleanerId: staffType == 'cleaner' ? staffId : '',
-        cleanerName: staffType == 'cleaner' ? staffName : '',
-      );
+      // Gather all assigned staff IDs and names
+      final consultantId = appointmentData?['consultantId'] ?? (staffType == 'consultant' ? staffId : '');
+      final consultantName = appointmentData?['consultantName'] ?? (staffType == 'consultant' ? staffName : '');
+      final consultantPhone = appointmentData?['consultantPhone'] ?? '';
+      final conciergeId = appointmentData?['conciergeId'] ?? (staffType == 'concierge' ? staffId : '');
+      final conciergeName = appointmentData?['conciergeName'] ?? (staffType == 'concierge' ? staffName : '');
+      final conciergePhone = appointmentData?['conciergePhone'] ?? '';
+      final cleanerId = appointmentData?['cleanerId'] ?? (staffType == 'cleaner' ? staffId : '');
+      final cleanerName = appointmentData?['cleanerName'] ?? (staffType == 'cleaner' ? staffName : '');
+      final serviceName = appointmentData?['serviceName'] ?? '';
+      final ministerId = appointmentData?['ministerId'] ?? '';
+      final appointmentIdForNotif = appointmentId;
+
+      // Send notifications to assigned staff (consultant, concierge, cleaner)
+      if (consultantId != null && consultantId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentIdForNotif,
+            'staffType': 'consultant',
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'consultant',
+          assignedToId: consultantId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      if (conciergeId != null && conciergeId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentIdForNotif,
+            'staffType': 'concierge',
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'concierge',
+          assignedToId: conciergeId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      if (cleanerId != null && cleanerId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentIdForNotif,
+            'staffType': 'cleaner',
+            'consultantName': consultantName,
+            'conciergeName': conciergeName,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'cleaner',
+          assignedToId: cleanerId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      // If both consultant and concierge are assigned (not cleaner), notify minister with two detailed notifications
+      if (
+        consultantId != null && consultantId.toString().isNotEmpty &&
+        conciergeId != null && conciergeId.toString().isNotEmpty
+      ) {
+        // Consultant notification
+        await VipNotificationService().createNotification(
+          title: 'Consultant Assigned to Your Appointment',
+          body: 'Your consultant is $consultantName. You can contact them at ${consultantPhone.isNotEmpty ? consultantPhone : 'N/A'} or ${appointmentData?['consultantEmail'] ?? ''}.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentIdForNotif,
+            'staffType': 'consultant',
+            'consultantId': consultantId,
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': appointmentData?['consultantEmail'] ?? '',
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'booking_assigned',
+        );
+        // Concierge notification
+        await VipNotificationService().createNotification(
+          title: 'Concierge Assigned to Your Appointment',
+          body: 'Your concierge is $conciergeName. You can contact them at ${conciergePhone.isNotEmpty ? conciergePhone : 'N/A'} or ${appointmentData?['conciergeEmail'] ?? ''}.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentIdForNotif,
+            'staffType': 'concierge',
+            'conciergeId': conciergeId,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': appointmentData?['conciergeEmail'] ?? '',
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'booking_assigned',
+        );
+      }
       
       // Update the appointment document
       await FirebaseFirestore.instance
@@ -326,90 +441,10 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
     }
   }
   
-  Widget _buildWeeklySchedule() {
-    // Calculate the start of the current week (Monday)
-    final now = DateTime.now();
-    final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
-    
-    return Container(
-      color: Colors.black,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 16.0, top: 8.0, right: 16.0),
-            child: Text(
-              'Weekly Schedule',
-              style: TextStyle(
-                color: AppColors.gold,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: List.generate(7, (index) {
-                final day = currentWeekStart.add(Duration(days: index));
-                final isSelected = day.year == _selectedDate.year && 
-                                day.month == _selectedDate.month && 
-                                day.day == _selectedDate.day;
-                
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDate = day;
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.gold : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.gold),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${day.day}',
-                          style: TextStyle(
-                            color: isSelected ? Colors.black : AppColors.gold,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day.weekday - 1],
-                          style: TextStyle(
-                            color: isSelected ? Colors.black : AppColors.gold,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Divider(height: 1, thickness: 1, color: Color(0xFF333333)),
-        ],
-      ),
-    );
-  }
-  
-  // Function to open chat dialog
-  void _openChatDialog(BuildContext context, String appointmentId, String recipientRole, String recipientId, String recipientName) {
+  void _openChatDialog(BuildContext context, String appointmentId, String recipientId, String recipientName, String recipientRole) {
     final TextEditingController messageController = TextEditingController();
     
-    // Mark any unread notifications for this appointment as read
+    // Mark notifications as read
     FirebaseFirestore.instance
         .collection('notifications')
         .where('appointmentId', isEqualTo: appointmentId)
@@ -959,6 +994,61 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
     print('Available staff: ${availableStaff.length}');
     
     return availableStaff;
+  }
+
+  void _loadAppointments() {}
+
+  Widget _buildWeeklySchedule() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: days.map((day) {
+            final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedDate = day;
+                  _loadAppointments();
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.gold : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.gold),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('E').format(day),
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : AppColors.gold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('d').format(day),
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : AppColors.gold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   @override

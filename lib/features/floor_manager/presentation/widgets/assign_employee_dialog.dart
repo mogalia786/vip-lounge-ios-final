@@ -32,7 +32,7 @@ class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
-          .where('role', whereIn: ['employee', 'consultant'])
+          .where('role', whereIn: ['consultant', 'concierge', 'cleaner'])
           .orderBy('firstName')
           .get();
 
@@ -45,6 +45,7 @@ class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
                 'firstName': data['firstName'] ?? '',
                 'lastName': data['lastName'] ?? '',
                 'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
+                'role': data['role'] ?? '',
               };
             })
             .toList();
@@ -67,6 +68,65 @@ class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
   }
 
   Future<void> _assignEmployee() async {
+  if (selectedUserId == null) return;
+
+  setState(() => isLoading = true);
+
+  try {
+    final selectedEmployee = employees.firstWhere((e) => e['id'] == selectedUserId);
+    // Get the appointment ID from the correct field
+    final appointmentId = widget.appointmentData['appointmentId'] ?? widget.appointmentData['id'];
+    if (appointmentId == null) {
+      throw Exception('No appointment ID found in data');
+    }
+
+    // --- Prevent consultant double-booking for consultants only ---
+    final selectedRole = selectedEmployee['role'] ?? '';
+    if (selectedRole == 'consultant') {
+      final appointmentDoc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
+      if (!appointmentDoc.exists) {
+        throw Exception('Appointment not found');
+      }
+      final appointmentData = appointmentDoc.data()!;
+      final Timestamp? appointmentTime = appointmentData['appointmentTime'] as Timestamp?;
+      final int duration = appointmentData['duration'] is int ? appointmentData['duration'] as int : 60;
+      if (appointmentTime == null) {
+        throw Exception('Appointment time not found');
+      }
+      final DateTime start = appointmentTime.toDate();
+      final DateTime end = start.add(Duration(minutes: duration));
+
+      // Query for overlapping appointments for this consultant (excluding current)
+      final overlapping = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('consultantId', isEqualTo: selectedUserId)
+        .get();
+      for (final doc in overlapping.docs) {
+        if (doc.id == appointmentId) continue;
+        final data = doc.data();
+        final Timestamp? otherTime = data['appointmentTime'] as Timestamp?;
+        final int otherDuration = data['duration'] is int ? data['duration'] as int : 60;
+        if (otherTime == null) continue;
+        final DateTime otherStart = otherTime.toDate();
+        final DateTime otherEnd = otherStart.add(Duration(minutes: otherDuration));
+        // Overlap check
+        if (start.isBefore(otherEnd) && end.isAfter(otherStart)) {
+          // Conflict!
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('This consultant is already assigned to another appointment at this time.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          setState(() => isLoading = false);
+          return;
+        }
+      }
+    }
+    // --- End overlap check ---
+
     if (selectedUserId == null) return;
 
     setState(() => isLoading = true);

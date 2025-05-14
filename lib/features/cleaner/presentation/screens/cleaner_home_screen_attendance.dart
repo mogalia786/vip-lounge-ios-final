@@ -377,7 +377,6 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: days.map((day) {
             final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
             return GestureDetector(
@@ -573,12 +572,11 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        // onTap removed as per user request
-        // onTap: (index) {
-        //   setState(() {
-        //     _currentIndex = index;
-        //   });
-        // },
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),

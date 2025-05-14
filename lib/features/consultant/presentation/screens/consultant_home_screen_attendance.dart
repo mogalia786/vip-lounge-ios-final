@@ -2,6 +2,12 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+// import 'package:vip_lounge/core/widgets/standard_weekly_date_scroll.dart'; // (Reverted AI addition)
+
+// Walking man icon usage example
+// Place this widget where you want the icon to appear in your UI:
+// Image.asset('assets/walking_man.png', width: 32, height: 32)
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -619,54 +625,58 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   }
 
   Widget _buildWeeklySchedule() {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: days.map((day) {
-            final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
-            return GestureDetector(
-              onTap: () => _onDateSelected(day),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: Column(
-                  children: [
-                    Text(
-                      DateFormat('E').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('d').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
+  final now = DateTime.now();
+  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+  final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: days.map((day) {
+          final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDate = day;
+                _loadAppointmentsForDate(day);
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.gold : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.gold),
               ),
-            );
-          }).toList(),
-        ),
+              child: Column(
+                children: [
+                  Text(
+                    DateFormat('E').format(day),
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : AppColors.gold,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('d').format(day),
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : AppColors.gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildDashboardContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,9 +842,6 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
         'timestamp': Timestamp.now(),
         'status': status,
         'ministerId': ministerId,
-        'ministerName': (appointment['ministerName'] ?? '').toString(),
-        'consultantId': (_consultantId ?? '').toString(),
-        'consultantName': (_consultantName ?? '').toString(),
       };
 
       // Send to ALL active floor managers (role: floor_manager, isActive: true) WITH FCM PUSH
@@ -843,6 +850,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
           .where('role', isEqualTo: 'floor_manager')
           .where('isActive', isEqualTo: true)
           .get();
+
       if (floorManagersQuery.docs.isNotEmpty) {
         for (var doc in floorManagersQuery.docs) {
           final fmId = doc.id;
@@ -1003,8 +1011,8 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   }
 
   bool _canStartSession(Map<String, dynamic> appt) {
-    // Enable only if status is 'minister_arrived'
-    return appt['status'] == 'minister_arrived';
+    // Enable if status is 'minister_arrived' or conciergeSessionStarted is true
+    return appt['status'] == 'minister_arrived' || appt['conciergeSessionStarted'] == true;
   }
 
   void _chatWithMinister(Map<String, dynamic> appointment) async {
@@ -1178,6 +1186,21 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
       setState(() {
         appointment['status'] = 'completed';
       });
+      // Send thank you notification to minister
+      final ministerId = appointment['ministerId'] ?? appointment['ministerUid'];
+      if (ministerId != null && ministerId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'Thank You',
+          body: 'Thank you for attending your appointment and we look forward to seeing you in the future. Please be safe, from Consultant',
+          data: {
+            'appointmentId': appointment['id'],
+            'notificationType': 'thank_you',
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'thank_you',
+        );
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Session ended and marked as completed.')),
       );

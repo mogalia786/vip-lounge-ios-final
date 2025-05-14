@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/colors.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -141,17 +142,66 @@ class NotificationItem extends StatelessWidget {
     }
 
     // Compose details for display
+    final ministerEmail = data['ministerEmail']?.toString() ?? '';
+    final ministerId = data['ministerId']?.toString() ?? '';
+    // Top horizontal row: Minister Name, Phone (tappable), Email, ID
+    Widget ministerRow = Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Row(
+      children: [
+        if (displayName.isNotEmpty) ...[
+          Icon(Icons.person, color: AppColors.gold, size: 18),
+          SizedBox(width: 4),
+          Flexible(child: Text(displayName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
+        ],
+        if (ministerPhone.isNotEmpty) ...[
+          SizedBox(width: 12),
+          Icon(Icons.phone, color: AppColors.gold, size: 18),
+          SizedBox(width: 2),
+          GestureDetector(
+            onTap: () => NotificationItem._launchPhoneCall(ministerPhone),
+            child: Text(ministerPhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+          ),
+        ],
+      ],
+    ),
+    if (ministerId.isNotEmpty) ...[
+      SizedBox(height: 4),
+      Row(
+        children: [
+          Icon(Icons.badge, color: AppColors.gold, size: 18),
+          SizedBox(width: 2),
+          Text('ID: $ministerId', style: TextStyle(color: Colors.white, fontSize: 13)),
+        ],
+      ),
+    ],
+    if (ministerEmail.isNotEmpty) ...[
+      SizedBox(height: 4),
+      Row(
+        children: [
+          Icon(Icons.email, color: AppColors.gold, size: 18),
+          SizedBox(width: 2),
+          Text(ministerEmail, style: TextStyle(color: Colors.white, fontSize: 13)),
+        ],
+      ),
+    ],
+  ],
+);
+
+
+
+    // Details: Consultant, Venue, Service, Date, Time
     List<Widget> details = [];
-    if (serviceName.isNotEmpty) details.add(_infoRow(Icons.miscellaneous_services, 'Service', serviceName));
-    if (venueName.isNotEmpty) details.add(_infoRow(Icons.location_on, 'Venue', venueName));
-    if (appointmentTime.isNotEmpty) details.add(_infoRow(Icons.access_time, 'Time', appointmentTime));
-    if (status.isNotEmpty) details.add(_infoRow(Icons.info, 'Status', status.capitalize()));
-    if (displayName.isNotEmpty) details.add(_infoRow(Icons.person, 'Name', displayName));
-    if (ministerPhone.isNotEmpty) details.add(_infoRow(Icons.phone, 'Minister Phone', ministerPhone));
     if (consultantName.isNotEmpty) details.add(_infoRow(Icons.person, 'Consultant', consultantName));
-    if (conciergeName.isNotEmpty) details.add(_infoRow(Icons.person, 'Concierge', conciergeName));
-    if (cleanerName.isNotEmpty) details.add(_infoRow(Icons.person, 'Cleaner', cleanerName));
-    if (staffType.isNotEmpty && staffName.isNotEmpty) details.add(_infoRow(Icons.person, staffType.capitalize(), staffName));
+    if (venueName.isNotEmpty) details.add(_infoRow(Icons.location_on, 'Venue', venueName));
+    if (serviceName.isNotEmpty) details.add(_infoRow(Icons.miscellaneous_services, 'Service', serviceName));
+    if (appointmentTime.isNotEmpty) details.add(_infoRow(Icons.calendar_today, 'Date', appointmentTime));
+    // If time is separately available, add it
+    final timeStr = (data['appointmentTime'] is Timestamp)
+      ? DateFormat('HH:mm').format((data['appointmentTime'] as Timestamp).toDate())
+      : '';
+    if (timeStr.isNotEmpty) details.add(_infoRow(Icons.access_time, 'Time', timeStr));
 
     return Dismissible(
       key: Key(notification['id'] ?? ''),
@@ -231,6 +281,12 @@ class NotificationItem extends StatelessWidget {
                             body,
                             style: TextStyle(color: Colors.grey[300], fontSize: 14),
                           ),
+                        ),
+                      // Always show the minister row if any info present
+                      if (displayName.isNotEmpty || ministerPhone.isNotEmpty || ministerEmail.isNotEmpty || ministerId.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6.0, bottom: 2.0),
+                          child: ministerRow,
                         ),
                       if (details.isNotEmpty)
                         Padding(
@@ -370,5 +426,12 @@ class NotificationItem extends StatelessWidget {
         );
       });
     });
+  }
+    // Helper function to launch phone call
+  static Future<void> _launchPhoneCall(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 }

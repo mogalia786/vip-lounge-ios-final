@@ -82,22 +82,9 @@ class RoleNotificationListEnhanced extends StatelessWidget {
           final apptDoc = apptQuery.docs.first;
           final apptData = apptDoc.data();
           final apptMap = {'id': apptDoc.id, if (apptData != null) ...apptData};
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => UnifiedAppointmentCard(
-                role: effectiveUserRole ?? 'consultant',
-                isConsultant: (effectiveUserRole ?? '').toLowerCase() == 'consultant',
-                ministerName: apptMap['ministerName'] ?? '',
-                appointmentId: appointmentId,
-                appointmentInfo: apptMap,
-                date: apptMap['appointmentTime'] is DateTime
-                    ? apptMap['appointmentTime']
-                    : (apptMap['appointmentTime'] is Timestamp)
-                        ? (apptMap['appointmentTime'] as Timestamp).toDate()
-                        : null,
-                viewOnly: true,
-              ),
-            ),
+          showDialog(
+            context: context,
+            builder: (_) => StaffAssignmentDialog(appointment: apptMap),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -253,16 +240,61 @@ class RoleNotificationListEnhanced extends StatelessWidget {
                       .doc(notification.id)
                       .delete();
                 },
-                child: NotificationItem(
-                  notification: notificationData,
-                  onTapCallback: notificationData['type'] == 'booking_confirmation' || notificationData['notificationType'] == 'booking_confirmation'
-                      ? null
-                      : () => _handleNotificationTap(context, notificationData, notification, effectiveUserRole),
-                  onDismissCallback: () => FirebaseFirestore.instance
-                        .collection('notifications')
-                        .doc(notification.id)
-                        .delete(),
-                  iconColor: _getNotificationIconColor(notificationData['type'] ?? notificationData['notificationType'] ?? ''),
+                child: Container(
+                  margin: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey[300] ?? Colors.white,
+                        blurRadius: 4.0,
+                        spreadRadius: 0.0,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.circle, color: _getNotificationIconColor(notificationData['type'] ?? notificationData['notificationType'] ?? ''), size: 12),
+                          const SizedBox(width: 8),
+                          Text(notificationData['type'] ?? notificationData['notificationType'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(notificationData['message'] ?? '', style: const TextStyle(fontSize: 14)),
+                      const SizedBox(height: 8),
+                      Text('Appointment Date/Time: ${notificationData['appointmentTime'] ?? ''}', style: const TextStyle(fontSize: 14)),
+                      Text('Venue: ${notificationData['venue'] ?? ''}', style: const TextStyle(fontSize: 14)),
+                      Text('Service: ${notificationData['service'] ?? ''}', style: const TextStyle(fontSize: 14)),
+                      Text('Consultant/Concierge Name: ${notificationData['consultantName'] ?? ''}', style: const TextStyle(fontSize: 14)),
+                      Text('Email: ${notificationData['consultantEmail'] ?? ''}', style: const TextStyle(fontSize: 14)),
+                      if (notificationData['consultantPhone'] != null)
+                        TextButton(
+                          onPressed: () {
+                            final url = 'tel:${notificationData['consultantPhone']}';
+                            launchUrl(Uri.parse(url));
+                          },
+                          child: Text('Call ${notificationData['consultantPhone']}', style: const TextStyle(fontSize: 14, color: Colors.blue)),
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              _handleNotificationTap(context, notificationData, notification, effectiveUserRole);
+                            },
+                            child: const Text('View Details', style: TextStyle(fontSize: 14, color: Colors.blue)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

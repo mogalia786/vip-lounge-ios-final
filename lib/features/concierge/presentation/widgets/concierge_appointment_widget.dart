@@ -45,7 +45,7 @@ class ConciergeAppointmentWidget extends StatelessWidget {
     final ministerPhone = appointment['ministerPhone'] ?? '';
     final ministerEmail = appointment['ministerEmail'] ?? '';
     final isCompleted = appointment['status'] == 'completed';
-    final hasStarted = appointment['status'] == 'in-progress' || appointment['status'] == 'in_progress';
+    final hasStarted = appointment['conciergeSessionStarted'] == true && !isCompleted;
 
     return Card(
       color: isEvenCard ? Colors.grey[900] : Colors.black,
@@ -76,6 +76,28 @@ class ConciergeAppointmentWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
+                if (isCompleted)
+                  ElevatedButton(
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[700],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Completed'),
+                  )
+                else ...[
+                  if (!hasStarted && onStartSession != null)
+                    ElevatedButton(
+                      onPressed: disableStartSession ? null : onStartSession,
+                      child: const Text('Start Session'),
+                    ),
+                  if (hasStarted && onEndSession != null)
+                    ElevatedButton(
+                      onPressed: onEndSession,
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: const Text('End Session'),
+                    ),
+                ],
                 if (ministerPhone.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.phone, color: AppColors.gold),

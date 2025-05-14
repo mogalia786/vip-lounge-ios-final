@@ -10,7 +10,7 @@ import 'features/minister/presentation/screens/minister_choice_screen.dart';
 import 'features/minister/presentation/screens/appointment_booking_screen.dart';
 import 'features/operational_manager/presentation/screens/operational_manager_home_screen.dart';
 import 'features/consultant/presentation/screens/consultant_home_screen_attendance.dart';
-import 'features/concierge/presentation/screens/concierge_home_screen_attendance.dart';
+import 'features/concierge/presentation/screens/concierge_home_screen_attendance.dart' as concierge_attendance;
 import 'features/cleaner/presentation/screens/cleaner_home_screen_attendance.dart';
 import 'features/marketing_agent/presentation/screens/marketing_agent_home_screen.dart';
 import 'features/staff/presentation/screens/staff_home_screen.dart';
@@ -87,7 +87,7 @@ class _AppState extends State<App> {
               return MaterialPageRoute(builder: (_) => const ConsultantHomeScreenAttendance());
             case 'concierge':
               // Route to new attendance-based concierge home screen (with query date fixed)
-              return MaterialPageRoute(builder: (_) => const ConciergeHomeScreenAttendance());
+              return MaterialPageRoute(builder: (_) => const concierge_attendance.ConciergeHomeScreenAttendance());
             case 'cleaner':
               return MaterialPageRoute(builder: (_) => const CleanerHomeScreenAttendance());
             default:
@@ -115,7 +115,7 @@ class _AppState extends State<App> {
             print('DEBUG: Loading ConsultantHomeScreenAttendance for /consultant/home route');
             return MaterialPageRoute(builder: (_) => const ConsultantHomeScreenAttendance());
           case '/concierge/home':
-            return MaterialPageRoute(builder: (_) => const ConciergeHomeScreenAttendance());
+            return MaterialPageRoute(builder: (_) => const concierge_attendance.ConciergeHomeScreenAttendance());
           case '/cleaner/home':
             return MaterialPageRoute(builder: (_) => const CleanerHomeScreenAttendance());
           case '/marketing_agent/home':

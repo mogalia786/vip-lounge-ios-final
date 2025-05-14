@@ -335,9 +335,14 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     
     try {
       // Create notification data
+      String updatedBody = body;
+      if (type == 'session_end' || title.toLowerCase().contains('session ended')) {
+        final venue = _appointment['venue'] ?? _appointment['venueName'] ?? 'Venue not specified';
+        updatedBody = body.contains(venue) ? body : body + ' at ' + venue;
+      }
       final notificationData = {
         'title': title,
-        'body': body,
+        'body': updatedBody,
         'senderId': user.id,
         'senderName': user.name,
         'type': type,

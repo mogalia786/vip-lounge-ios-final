@@ -110,29 +110,43 @@ class ConsultantAppointmentWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.play_arrow, color: Colors.green),
-                    label: const Text('Start Session', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[900],
-                      side: const BorderSide(color: Colors.green),
+                if (isCompleted)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check, color: Colors.white),
+                      label: const Text('Completed', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[700],
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: null,
                     ),
-                    onPressed: disableStartSession ? null : onStartSession,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.stop, color: Colors.red),
-                    label: const Text('End Session', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[900],
-                      side: const BorderSide(color: Colors.red),
+                  )
+                else ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.play_arrow, color: Colors.green),
+                      label: const Text('Start Session', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[900],
+                        side: const BorderSide(color: Colors.green),
+                      ),
+                      onPressed: disableStartSession ? null : onStartSession,
                     ),
-                    onPressed: onEndSession,
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.stop, color: Colors.red),
+                      label: const Text('End Session', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[900],
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                      onPressed: onEndSession,
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 8),

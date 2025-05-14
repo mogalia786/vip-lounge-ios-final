@@ -1,24 +1,35 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
-import '../../../../core/providers/app_auth_provider.dart';
 import 'dart:async';
 import 'dart:math';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+// import 'package:vip_lounge/core/widgets/standard_weekly_date_scroll.dart'; // (Reverted AI addition)
 
-import '../../../../core/constants/colors.dart';
-import '../../../../features/floor_manager/presentation/screens/notifications_screen.dart';
-import '../../../../core/services/vip_notification_service.dart';
-import '../../../../core/services/vip_messaging_service.dart';
-import 'package:vip_lounge/core/widgets/staff_performance_widget.dart';
-import 'package:vip_lounge/features/consultant/presentation/widgets/performance_metrics_widget.dart';
-import '../widgets/concierge_appointment_widget.dart';
-import '../../../../features/floor_manager/widgets/attendance_actions_widget.dart';
-import '../../../../core/services/device_location_service.dart';
-import '../../../../core/widgets/role_notification_list.dart';
+// Walking man icon usage example
+// Place this widget where you want the icon to appear in your UI:
+// Image.asset('assets/walking_man.png', width: 32, height: 32)
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
+import 'package:vip_lounge/core/services/vip_messaging_service.dart';
+import 'package:vip_lounge/core/services/vip_notification_service.dart';
+import 'package:vip_lounge/core/services/device_location_service.dart';
+import 'package:vip_lounge/core/widgets/glass_card.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:vip_lounge/features/floor_manager/widgets/attendance_actions_widget.dart' show AttendanceActionsWidget;
+import 'package:provider/provider.dart';
+import '../../../../core/providers/app_auth_provider.dart';
 import '../../../../core/widgets/unified_appointment_card.dart';
+import 'package:vip_lounge/features/consultant/presentation/screens/appointment_detail_screen.dart';
+import '../../../../core/widgets/role_notification_list.dart';
+// import '../widgets/minister_search_dialog.dart'; // Removed: file not found
+import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
+import '../widgets/performance_metrics_widget.dart';
 
 class LatLng {
   final double latitude;
@@ -33,7 +44,57 @@ class ConciergeHomeScreenAttendance extends StatefulWidget {
   State<ConciergeHomeScreenAttendance> createState() => _ConciergeHomeScreenAttendanceState();
 }
 
-class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAttendance> {
+class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAttendance> with TickerProviderStateMixin {
+  void _openChatWithSender(String senderId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: Text('Chat with Sender', style: TextStyle(color: AppColors.gold)),
+        content: Text('Chat dialog with senderId: ' + senderId, style: TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close', style: TextStyle(color: AppColors.gold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+ Widget build(BuildContext context) {
+  return _buildMainContent(context);
+}
+
+  String _performanceTimeframe = 'Month';
+  DateTime _getPerformanceDateForTimeframe(String timeframe) {
+    final now = DateTime.now();
+    switch (timeframe) {
+      case 'Year':
+        return DateTime(now.year, 1, 1);
+      case 'Month':
+        return DateTime(now.year, now.month, 1);
+      case 'Week':
+        final weekDay = now.weekday;
+        return now.subtract(Duration(days: weekDay - 1)); // Monday of this week
+      case 'Future':
+        return now.add(const Duration(days: 30));
+      default:
+        return now;
+    }
+  }
+
+  Map<String, dynamic> _metricsData = {
+    'totalAppointments': 0,
+    'completedAppointments': 0,
+    'inProgressAppointments': 0,
+    'completionRate': 0,
+  };
+  bool _isLoadingMetrics = false;
+  Timer? _metricsUpdateTimer;
+  Map<String, Map<String, dynamic>> _performanceHistory = {};
+
   String _conciergeId = '';
   String _conciergeName = '';
   DateTime _selectedDate = DateTime.now();
@@ -42,12 +103,6 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
   int _currentIndex = 0;
   int _unreadNotifications = 0;
   List<Map<String, dynamic>> _unreadNotificationsList = [];
-  Map<String, dynamic> _metricsData = {
-    'totalAppointments': 0,
-    'completedAppointments': 0,
-    'inProgressAppointments': 0,
-    'completionRate': 0,
-  };
 
   final VipNotificationService _notificationService = VipNotificationService();
   final VipMessagingService _messagingService = VipMessagingService();
@@ -66,23 +121,43 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
   void initState() {
     super.initState();
     _loadConciergeDetails();
+    _metricsUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _updatePerformanceMetrics();
+    });
+  }
+
+  void _updatePerformanceMetrics() {
+    // Placeholder: implement actual metrics update logic if needed
+    setState(() {
+      _isLoadingMetrics = false;
+      // _metricsData = ... // fetch or calculate metrics
+    });
   }
 
   Future<void> _loadConciergeDetails() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
-      if (userDoc.exists) {
-        final userData = userDoc.data();
-        setState(() {
-          _conciergeId = user.uid;
-          _conciergeName = userData != null ? '${userData['firstName']} ${userData['lastName']}' : 'concierge';
-        });
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          setState(() {
+            _conciergeId = user.uid;
+            _conciergeName = userData != null ? '${userData['firstName']} ${userData['lastName']}' : 'concierge';
+          });
+        }
       }
+      // Set the UID early so it is available for all subsequent calls
+      await Future.delayed(Duration.zero);
+      _loadAppointments();
+      _setupNotificationListener();
+      _setupMessageListener();
+    } catch (e) {
+      print('Error loading concierge details: $e');
     }
     // Set the UID early so it is available for all subsequent calls
     await Future.delayed(Duration.zero);
@@ -199,90 +274,15 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     );
   }
 
-  // Weekly schedule selector for the dashboard (mirrors consultant)
-  Widget _buildWeeklySchedule() {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: days.map((day) {
-            final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedDate = day;
-                  _loadAppointments();
-                });
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: Column(
-                  children: [
-                    Text(
-                      DateFormat('E').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('d').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // Appointment card widget for the dashboard (mirrors consultant)
+  // Dashboard content builder (fixes missing method error)
   Widget _buildDashboardContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildWeeklySchedule(),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Appointments',
-                style: TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
         Expanded(
-          child: _appointments.isEmpty
-              ? const Center(
-                  child: Text('No appointments scheduled.', style: TextStyle(color: Colors.white)),
-                )
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator())
               : ListView.builder(
                   itemCount: _appointments.length,
                   itemBuilder: (context, index) {
@@ -290,17 +290,17 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                     return UnifiedAppointmentCard(
                       role: 'concierge',
                       isConsultant: false,
-                      ministerName: appt['ministerName'] ?? '',
-                      appointmentId: appt['id'] ?? '',
+                      ministerName: appt['ministerName'] ??
+  (appt['minister'] != null && appt['minister']['name'] != null ? appt['minister']['name'] : null) ??
+  (((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim().isNotEmpty
+    ? ((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim()
+    : 'Unknown Minister'),
+                      appointmentId: appt['id'] ?? appt['appointmentId'] ?? '',
                       appointmentInfo: appt,
-                      date: appt['appointmentTime'] is DateTime
-                          ? appt['appointmentTime']
-                          : (appt['appointmentTime'] is Timestamp)
-                              ? (appt['appointmentTime'] as Timestamp).toDate()
-                              : DateTime.now(),
-                      time: null,
-                      ministerId: appt['ministerId'],
+                      date: appt['appointmentTime'] is Timestamp ? (appt['appointmentTime'] as Timestamp).toDate() : null,
+                      ministerId: appt['ministerId'] ?? appt['ministerUid'],
                       disableStartSession: false,
+                      viewOnly: false,
                     );
                   },
                 ),
@@ -309,386 +309,121 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     );
   }
 
-  // Notifications view
-  Widget _buildNotificationsView() {
+  // --- Notifications Tab (copied from consultant) ---
+  Widget _buildNotificationsTab() {
     if (_conciergeId.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
     // Use the new uniform notification widget
-    return RoleNotificationList(
-      userId: _conciergeId,
-      userRole: 'concierge',
-      showTitle: false,
+    return Expanded(
+      child: RoleNotificationList(
+        userId: _conciergeId,
+        userRole: 'concierge',
+        showTitle: false,
+      ),
     );
   }
 
-  String _performanceTimeframe = 'Month';
-
-  DateTime _getPerformanceDateForTimeframe(String timeframe) {
-    final now = DateTime.now();
-    switch (timeframe) {
-      case 'Year':
-        return DateTime(now.year, 1, 1);
-      case 'Month':
-        return DateTime(now.year, now.month, 1);
-      case 'Week':
-        final weekDay = now.weekday;
-        return now.subtract(Duration(days: weekDay - 1)); // Monday
-      case 'Future':
-        return now.add(const Duration(days: 30));
-      default:
-        return now;
-    }
-  }
-
+  // --- Performance Tab (copied from consultant) ---
   Widget _buildPerformanceTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            children: [
-              const Text('Show:', style: TextStyle(color: Colors.white70)),
-              const SizedBox(width: 12),
-              DropdownButton<String>(
-                value: _performanceTimeframe,
-                dropdownColor: Colors.black,
-                iconEnabledColor: Colors.white,
-                style: const TextStyle(color: Colors.white),
-                items: ['Year', 'Month', 'Week', 'Future']
-                    .map((val) => DropdownMenuItem(
-                          value: val,
-                          child: Text(val),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _performanceTimeframe = val;
-                      _selectedDate = _getPerformanceDateForTimeframe(val);
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Flexible(
-                child: PerformanceMetricsWidget(
-                  consultantId: _conciergeId,
-                  role: 'concierge',
-                  selectedDate: _selectedDate,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Performance:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: _performanceTimeframe,
+                  dropdownColor: Colors.black,
+                  style: const TextStyle(color: Colors.white),
+                  items: const [
+                    DropdownMenuItem(value: 'Week', child: Text('Week')),
+                    DropdownMenuItem(value: 'Month', child: Text('Month')),
+                    DropdownMenuItem(value: 'Year', child: Text('Year')),
+                    DropdownMenuItem(value: 'Future', child: Text('Future')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _performanceTimeframe = val;
+                      });
+                    }
+                  },
                 ),
-              ),
-              StaffPerformanceWidget(
-                userId: _conciergeId,
-                role: 'concierge',
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ConciergePerformanceMetricsWidget(
+              conciergeId: _conciergeId,
+              selectedDate: _getPerformanceDateForTimeframe(_performanceTimeframe),
+              timeframe: _performanceTimeframe,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  // Opens the full chat dialog for the given appointment and minister
-  Future<void> _openFullChatDialog(BuildContext context, Map<String, dynamic> appointment, String ministerId) async {
-    final appointmentId = appointment['id'];
-    final ministerName = appointment['ministerName'] ?? 'Minister';
-    // Mark messages as read first (mirroring consultant)
-    await _markMessagesAsRead(appointmentId);
-    final TextEditingController messageController = TextEditingController();
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              appBar: AppBar(
-                backgroundColor: Colors.black,
-                title: Text(
-                  'Chat with Minister $ministerName',
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: AppColors.gold),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
+  // Weekly schedule selector for the dashboard (mirrors consultant)
+  Widget _buildWeeklySchedule() {
+  final now = DateTime.now();
+  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+  final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: days.map((day) {
+          final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDate = day;
+                _loadAppointments();
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.gold : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.gold),
               ),
-              body: Column(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('messages')
-                          .where('appointmentId', isEqualTo: appointmentId)
-                          .orderBy('timestamp', descending: true)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        final messages = snapshot.data?.docs ?? [];
-                        if (messages.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No messages yet. Start the conversation!',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          );
-                        }
-                        return ListView.builder(
-                          reverse: true,
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final message = messages[index].data() as Map<String, dynamic>;
-                            final senderId = message['senderId'];
-                            final senderName = message['senderName'];
-                            final messageContent = message['message'];
-                            final timestamp = message['timestamp'] as Timestamp?;
-                            final isSentByCurrentUser = senderId == _conciergeId;
-                            IconData notificationIcon;
-                            Color iconColor;
-                            if (isSentByCurrentUser) {
-                              notificationIcon = Icons.person;
-                              iconColor = Colors.blue;
-                            } else {
-                              notificationIcon = Icons.person_add;
-                              iconColor = AppColors.gold;
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                              child: Row(
-                                mainAxisAlignment: isSentByCurrentUser
-                                    ? MainAxisAlignment.end
-                                    : MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (!isSentByCurrentUser)
-                                    CircleAvatar(
-                                      backgroundColor: iconColor,
-                                      radius: 16,
-                                      child: Text(
-                                        senderName?.isNotEmpty == true
-                                            ? senderName[0].toUpperCase()
-                                            : 'M',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  if (!isSentByCurrentUser)
-                                    const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: isSentByCurrentUser ? Colors.blue[100] : AppColors.gold.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            messageContent ?? '',
-                                            style: TextStyle(
-                                              color: isSentByCurrentUser ? Colors.black : AppColors.gold,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          if (timestamp != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 4.0),
-                                              child: Text(
-                                                DateFormat('h:mm a').format(timestamp.toDate()),
-                                                style: TextStyle(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
+                  Text(
+                    DateFormat('E').format(day),
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : AppColors.gold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    color: Colors.black,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Type a message...',
-                              hintStyle: TextStyle(color: Colors.grey[600]),
-                              filled: true,
-                              fillColor: Colors.grey[900],
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(Icons.send, color: AppColors.gold),
-                          onPressed: () async {
-                            final text = '';
-                            if (text.isEmpty) return;
-                            await _sendDirectMessage(
-                              appointmentId: appointmentId,
-                              message: text,
-                              recipientId: ministerId,
-                              recipientRole: 'minister',
-                              recipientName: ministerName,
-                            );
-                          },
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('d').format(day),
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : AppColors.gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        }).toList(),
+      ),
+    ),
+  );
+}
 
-  // Mark all unread messages as read for this appointment (mirrors consultant logic)
-  Future<void> _markMessagesAsRead(String appointmentId) async {
-    try {
-      final unreadMessages = await FirebaseFirestore.instance
-          .collection('messages')
-          .where('appointmentId', isEqualTo: appointmentId)
-          .where('recipientId', isEqualTo: _conciergeId)
-          .where('recipientRole', isEqualTo: 'concierge')
-          .where('isRead', isEqualTo: false)
-          .get();
-      for (var doc in unreadMessages.docs) {
-        await doc.reference.update({'isRead': true});
-      }
-      // Also mark any related notifications as read
-      final unreadNotifications = await FirebaseFirestore.instance
-          .collection('notifications')
-          .where('appointmentId', isEqualTo: appointmentId)
-          .where('assignedToId', isEqualTo: _conciergeId)
-          .where('type', isEqualTo: 'message')
-          .where('isRead', isEqualTo: false)
-          .get();
-      for (var doc in unreadNotifications.docs) {
-        await doc.reference.update({'isRead': true});
-      }
-      setState(() {
-        _appointmentUnreadCounts.remove(appointmentId);
-        _unreadNotificationsList.removeWhere(
-          (notif) => notif['appointmentId'] == appointmentId && notif['type'] == 'message'
-        );
-        _unreadNotifications = _unreadNotificationsList.length;
-      });
-    } catch (e) {
-      // Optionally log error
-    }
-  }
-
-  // Send a direct message to the minister (mirrors consultant logic, fixes recipientId param)
-  Future<void> _sendDirectMessage({
-    required String appointmentId,
-    required String message,
-    required String recipientId,
-    required String recipientRole,
-    required String recipientName,
-  }) async {
-    try {
-      final appointmentDoc = await FirebaseFirestore.instance
-          .collection('appointments')
-          .doc(appointmentId)
-          .get();
-      if (!appointmentDoc.exists) {
-        throw Exception('Appointment not found');
-      }
-      final appointmentData = appointmentDoc.data()!;
-      await FirebaseFirestore.instance.collection('messages').add({
-        'appointmentId': appointmentId,
-        'message': message,
-        'senderId': _conciergeId,
-        'senderName': _conciergeName,
-        'senderRole': 'concierge',
-        'recipientId': recipientId,
-        'recipientRole': recipientRole,
-        'isRead': false,
-        'timestamp': FieldValue.serverTimestamp(),
-        'appointmentData': {
-          'id': appointmentId,
-          'ministerId': recipientId,
-          'ministerName': recipientName
-        },
-      });
-      _notificationService.createNotification(
-        title: 'New Message',
-        body: "Message from $_conciergeName",
-        data: {
-          'appointmentId': appointmentId,
-          'type': 'message',
-          'senderId': _conciergeId,
-          'senderName': _conciergeName,
-          'message': message
-        },
-        role: recipientRole,
-        assignedToId: recipientId,
-        notificationType: 'message'
-      );
-      _notificationService.sendFCMToUser(
-        userId: recipientId,
-        title: 'Message from $_conciergeName',
-        body: message.length > 100 ? '${message.substring(0, 97)}...' : message,
-        data: {
-          'appointmentId': appointmentId,
-          'type': 'message',
-          'messageId': appointmentId
-        },
-        messageType: 'message'
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message sent')),
-      );
-    } catch (e) {
-      print('Error sending message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending message: $e')),
-      );
-    }
-  }
-
-  // Start session logic for concierge
-  Future<void> _startSession(String appointmentId) async {
+  Future<void> _endSession(String appointmentId) async {
     try {
       final appointmentDoc = await FirebaseFirestore.instance
           .collection('appointments')
@@ -700,195 +435,51 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         );
         return;
       }
-      // Only set the flag to enable consultant start, do not set status!
+      final appointmentData = appointmentDoc.data()!;
+      // Mark appointment as completed
       await FirebaseFirestore.instance
           .collection('appointments')
           .doc(appointmentId)
           .update({
-        'conciergeSessionStarted': true,
-        // Optionally, record the time
-        'ministerArrivedAt': DateTime.now(),
+        'status': 'completed',
+        'conciergeEndTime': DateTime.now(),
       });
-      // Send notification to consultant and floor manager that minister has arrived
-      final appointmentData = appointmentDoc.data()!;
+
+      // Send notification to consultant (and optionally floor manager)
       final consultantId = appointmentData['consultantId'] ?? appointmentData['assignedConsultantId'];
-      final floorManagerId = appointmentData['floorManagerId'] ?? appointmentData['assignedFloorManagerId'];
-      final notificationService = VipNotificationService();
+      final venue = appointmentData['venue'] ?? appointmentData['venueName'] ?? 'Venue not specified';
       if (consultantId != null && consultantId.toString().isNotEmpty) {
-        await notificationService.createNotification(
-          title: 'Minister Has Arrived',
-          body: 'Minister ${appointmentData['ministerName'] ?? ''} has arrived at ${appointmentData['venueName'] ?? ''}. Please prepare for your appointment.',
+        await _notificationService.createNotification(
+          title: 'Session Ended',
+          body: 'Concierge has ended the session at $venue.',
           data: {
-            ...appointmentData,
             'appointmentId': appointmentId,
-            'ministerArrivedAt': DateTime.now(),
-            'venueName': appointmentData['venueName'] ?? '',
-            'ministerName': appointmentData['ministerName'] ?? '',
-            'notificationType': 'minister_arrived',
+            'venue': venue,
+            'notificationType': 'session_ended',
           },
           role: 'consultant',
           assignedToId: consultantId,
-          notificationType: 'minister_arrived',
+          notificationType: 'session_ended',
         );
       }
-      if (floorManagerId != null && floorManagerId.toString().isNotEmpty) {
-        await notificationService.createNotification(
-          title: 'Minister Has Arrived',
-          body: 'Minister ${appointmentData['ministerName'] ?? ''} has arrived at ${appointmentData['venueName'] ?? ''}.',
+      // Send thank you notification to minister
+      final ministerId = appointmentData['ministerId'] ?? appointmentData['ministerUid'];
+      if (ministerId != null && ministerId.toString().isNotEmpty) {
+        await _notificationService.createNotification(
+          title: 'Thank You',
+          body: 'Thank you for attending your appointment and we look forward to seeing you in the future. Please be safe, from Concierge',
           data: {
-            ...appointmentData,
             'appointmentId': appointmentId,
-            'ministerArrivedAt': DateTime.now(),
-            'venueName': appointmentData['venueName'] ?? '',
-            'ministerName': appointmentData['ministerName'] ?? '',
-            'notificationType': 'minister_arrived',
+            'notificationType': 'thank_you',
           },
-          role: 'floor_manager',
-          assignedToId: floorManagerId,
-          notificationType: 'minister_arrived',
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'thank_you',
         );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Session started (consultant can now start)')),
-      );
-      _loadAppointments();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error starting session: $e')),
-      );
-    }
-  }
-
-  // Shows the appointment details dialog for the given appointment
-  void _showAppointmentDetailsDialog(Map<String, dynamic> appointment) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          'Appointment Details',
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Minister:  ${appointment['ministerName'] ?? 'N/A'}', style: const TextStyle(color: Colors.white)),
-            Text('Service: ${appointment['serviceName'] ?? 'N/A'}', style: const TextStyle(color: Colors.white)),
-            Text('Time: ${appointment['appointmentTime'] ?? 'N/A'}', style: const TextStyle(color: Colors.white)),
-            // Add more fields as needed
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close', style: TextStyle(color: Colors.amber)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<LatLng?> _getDeviceLocation() async {
-    try {
-      final gmLatLng = await DeviceLocationService.getCurrentUserLocation(context);
-      if (gmLatLng == null) return null;
-      return LatLng(gmLatLng.latitude, gmLatLng.longitude);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error getting device location: $e')),
-      );
-      return null;
-    }
-  }
-
-  Future<bool> _verifyLocation() async {
-    try {
-      final userLocation = await _getDeviceLocation();
-      if (userLocation == null) return false;
-      final businessLocation = await _getBusinessLocation();
-      if (businessLocation == null) return false;
-      print('[ATTENDANCE DEBUG] Device Location: lat=${userLocation.latitude}, lng=${userLocation.longitude}');
-      print('[ATTENDANCE DEBUG] Business Location: lat=${businessLocation['lat']}, lng=${businessLocation['lng']}');
-      final double distanceInMeters = _calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        businessLocation['lat'],
-        businessLocation['lng'],
-      );
-      final isWithinAllowedDistance = distanceInMeters <= _allowedDistanceInMeters;
-      if (!isWithinAllowedDistance) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('You must be within 1km of the workplace to clock in/out.')),
-        );
-      }
-      return isWithinAllowedDistance;
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error verifying location: $e')),
-      );
-      return false;
-    }
-  }
-
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371000; // meters
-    final double dLat = _deg2rad(lat2 - lat1);
-    final double dLon = _deg2rad(lon2 - lon1);
-    final double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) *
-        sin(dLon / 2) * sin(dLon / 2);
-    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadius * c;
-  }
-
-  double _deg2rad(double deg) {
-    return deg * (pi / 180);
-  }
-
-  Future<Map<String, dynamic>?> _getBusinessLocation() async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
-      if (!doc.exists) return null;
-      final data = doc.data()!;
-      return {
-        'lat': data['latitude'],
-        'lng': data['longitude'],
-      };
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching business location: $e')),
-      );
-      return null;
-    }
-  }
-
-  // Provide status options for concierge
-  List<Map<String, String>> get _statusOptions => [
-    {'value': 'pending', 'label': 'Pending'},
-    {'value': 'in_progress', 'label': 'In Progress'},
-    {'value': 'completed', 'label': 'Completed'},
-  ];
-
-  void _endSession(String id) {}
-  void _addNotes(String appointmentId) async {
-    try {
-      // Find the appointment by ID
-      final appointment = _appointments.firstWhere(
-        (a) => a['id'] == appointmentId,
-        orElse: () => {},
-      );
-      if (appointment.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Appointment not found.')),
-        );
-        return;
-      }
-      final currentNotes = appointment['conciergeNotes'] ?? '';
-      await _showNotesDialog(appointmentId, currentNotes);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error opening notes dialog: $e')),
+        SnackBar(content: Text('Error ending session: $e')),
       );
     }
   }
@@ -957,23 +548,15 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        _buildMainContent(context),
-      ],
-    );
-  }
 
   Widget _buildMainContent(BuildContext context) {
     Widget body;
     if (_currentIndex == 0) {
       body = _buildDashboardContent();
     } else if (_currentIndex == 1) {
-      body = _buildNotificationsView();
+      body = _buildNotificationsTab();
     } else {
-      body = Center(child: Text('Profile', style: TextStyle(color: Colors.white)));
+      body = _buildPerformanceTab();
     }
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -987,8 +570,11 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
               style: TextStyle(
                 color: AppColors.gold,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
             ),
+            const SizedBox(width: 8),
+            const Icon(Icons.verified, color: AppColors.gold, size: 22),
           ],
         ),
         actions: [
@@ -1004,29 +590,46 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
           ),
         ],
       ),
-      body: body,
+      body: SafeArea(
+        child: _conciergeId.isNotEmpty
+            ? NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  SliverToBoxAdapter(child: _buildAttendanceContainer()),
+                ],
+                body: body,
+              )
+            : const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
         backgroundColor: Colors.black,
         selectedItemColor: AppColors.gold,
-        unselectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
+            icon: Badge(
+              isLabelVisible: _unreadNotifications > 0,
+              label: Text(
+                _unreadNotifications.toString(),
+                style: const TextStyle(color: Colors.white, fontSize: 10),
+              ),
+              child: const Icon(Icons.notifications),
+            ),
             label: 'Notifications',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Performance',
           ),
         ],
       ),

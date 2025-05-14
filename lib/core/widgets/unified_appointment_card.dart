@@ -49,8 +49,16 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   @override
   void didUpdateWidget(covariant UnifiedAppointmentCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the date passed from the parent changes, update local appointmentTime
-    if (widget.date != null && widget.date != oldWidget.date) {
+    // If the appointmentInfo changes (e.g., new appointment for different date), update all fields
+    if (widget.appointmentInfo != oldWidget.appointmentInfo) {
+      _appointmentData = Map<String, dynamic>.from(widget.appointmentInfo);
+      // Always override appointmentTime with widget.date if provided
+      if (widget.date != null) {
+        _appointmentData['appointmentTime'] = widget.date;
+      }
+      setState(() {});
+    } else if (widget.date != null && widget.date != oldWidget.date) {
+      // Only the date changed, update just appointmentTime
       _updateLocalFields({'appointmentTime': widget.date});
     }
   }
@@ -176,8 +184,45 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           });
           _updateLocalFields({startField: true, 'status': 'in-progress', '${role}StartTime': DateTime.now()});
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Session started')), 
+            SnackBar(content: Text('Session started')), // TODO: Localize
           );
+          // --- SEND NOTIFICATION TO CONSULTANT ON MINISTER ARRIVAL ---
+          if (role == 'concierge' && _appointmentData['consultantId'] != null && _appointmentData['consultantId'].toString().isNotEmpty) {
+            final notificationService = VipNotificationService();
+            await notificationService.createNotification(
+              title: 'Minister Arrived',
+              body: 'The minister has arrived for the appointment.',
+              data: {
+                'appointmentId': appointmentId,
+                'notificationType': 'minister_arrived',
+                'ministerName': _appointmentData['ministerName'] ?? '',
+                'serviceName': _appointmentData['serviceName'] ?? '',
+                'venueName': _appointmentData['venueName'] ?? '',
+                'appointmentTime': _appointmentData['appointmentTime'],
+                'consultantId': _appointmentData['consultantId'],
+                'consultantName': _appointmentData['consultantName'] ?? '',
+              },
+              role: 'consultant',
+              assignedToId: _appointmentData['consultantId'],
+              notificationType: 'minister_arrived',
+            );
+            await notificationService.sendFCMToUser(
+              userId: _appointmentData['consultantId'],
+              title: 'Minister Arrived',
+              body: 'The minister has arrived for the appointment.',
+              data: {
+                'appointmentId': appointmentId,
+                'notificationType': 'minister_arrived',
+                'ministerName': _appointmentData['ministerName'] ?? '',
+                'serviceName': _appointmentData['serviceName'] ?? '',
+                'venueName': _appointmentData['venueName'] ?? '',
+                'appointmentTime': _appointmentData['appointmentTime'],
+                'consultantId': _appointmentData['consultantId'],
+                'consultantName': _appointmentData['consultantName'] ?? '',
+              },
+              messageType: 'minister_arrived',
+            );
+          }
         } else {
           // End session logic
           await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
@@ -187,7 +232,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           });
           _updateLocalFields({endField: true, 'status': role == 'concierge' ? 'completed' : 'in-progress', '${role}EndTime': DateTime.now()});
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Session ended')), 
+            SnackBar(content: Text('Session ended')), // TODO: Localize
           );
 
           // --- SEND NOTIFICATIONS ON CONSULTANT SESSION END ---
@@ -226,11 +271,18 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             if (appointmentData['ministerId'] != null && appointmentData['ministerId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'Thank You for Attending',
-                body: 'Thank you for attending your appointment. We appreciate your presence.',
+                body: 'Thank you for attending your appointment. You were assigned to consultant: '
+                    '${appointmentData['consultantName'] ?? ''} at ${appointmentData['venueName'] ?? ''} on '
+                    '${appointmentData['appointmentTime'] != null ? DateFormat('yyyy-MM-dd – kk:mm').format((appointmentData['appointmentTime'] is Timestamp)
+                        ? (appointmentData['appointmentTime'] as Timestamp).toDate()
+                        : appointmentData['appointmentTime']) : ''}',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'thank_minister',
                   'serviceName': appointmentData['serviceName'] ?? '',
+                  'consultantName': appointmentData['consultantName'] ?? '',
+                  'venueName': appointmentData['venueName'] ?? '',
+                  'appointmentTime': appointmentData['appointmentTime'],
                 },
                 role: 'minister',
                 assignedToId: appointmentData['ministerId'],
@@ -239,11 +291,18 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
               await notificationService.sendFCMToUser(
                 userId: appointmentData['ministerId'],
                 title: 'Thank You for Attending',
-                body: 'Thank you for attending your appointment. We appreciate your presence.',
+                body: 'Thank you for attending your appointment. You were assigned to consultant: '
+                    '${appointmentData['consultantName'] ?? ''} at ${appointmentData['venueName'] ?? ''} on '
+                    '${appointmentData['appointmentTime'] != null ? DateFormat('yyyy-MM-dd – kk:mm').format((appointmentData['appointmentTime'] is Timestamp)
+                        ? (appointmentData['appointmentTime'] as Timestamp).toDate()
+                        : appointmentData['appointmentTime']) : ''}',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'thank_minister',
                   'serviceName': appointmentData['serviceName'] ?? '',
+                  'consultantName': appointmentData['consultantName'] ?? '',
+                  'venueName': appointmentData['venueName'] ?? '',
+                  'appointmentTime': appointmentData['appointmentTime'],
                 },
                 messageType: 'thank_minister',
               );
@@ -462,45 +521,45 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                       ),
                     ),
                     // Add chat icon for consultant/concierge if ministerId exists
-                    if ((widget.role == 'consultant' || widget.role == 'concierge' || widget.role == 'cleaner') && (widget.ministerId != null && widget.ministerId!.isNotEmpty))
-  IconButton(
-    icon: Icon(Icons.chat_bubble_outline, color: Colors.amber[600], size: 26),
-    tooltip: 'Chat with Minister',
-    onPressed: () {
-      // Navigate to chat screen with minister for all roles
-      String route;
-      Map<String, dynamic> args = {
-        'appointmentId': widget.appointmentId,
-        'ministerId': widget.ministerId,
-        'ministerName': safeMinisterName,
-      };
-      if (widget.role == 'consultant') {
-        route = '/consultant/chat';
-        args.addAll({
-          'consultantId': widget.appointmentInfo['consultantId'] ?? '',
-          'consultantName': widget.appointmentInfo['consultantName'] ?? '',
-          'consultantRole': 'consultant',
-        });
-      } else if (widget.role == 'concierge') {
-        route = '/concierge/chat';
-        args.addAll({
-          'conciergeId': widget.appointmentInfo['conciergeId'] ?? '',
-          'conciergeName': widget.appointmentInfo['conciergeName'] ?? '',
-          'conciergeRole': 'concierge',
-        });
-      } else if (widget.role == 'cleaner') {
-        route = '/cleaner/chat';
-        args.addAll({
-          'cleanerId': widget.appointmentInfo['cleanerId'] ?? '',
-          'cleanerName': widget.appointmentInfo['cleanerName'] ?? '',
-          'cleanerRole': 'cleaner',
-        });
-      } else {
-        route = '/chat';
-      }
-      Navigator.of(context).pushNamed(route, arguments: args);
-    },
-  ),
+                    if (!widget.viewOnly && (widget.role == 'consultant' || widget.role == 'concierge' || widget.role == 'cleaner') && (widget.ministerId != null && widget.ministerId!.isNotEmpty))
+                      IconButton(
+                        icon: Icon(Icons.chat_bubble_outline, color: Colors.amber[600], size: 26),
+                        tooltip: 'Chat with Minister',
+                        onPressed: () {
+                          // Navigate to chat screen with minister for all roles
+                          String route;
+                          Map<String, dynamic> args = {
+                            'appointmentId': widget.appointmentId,
+                            'ministerId': widget.ministerId,
+                            'ministerName': safeMinisterName,
+                          };
+                          if (widget.role == 'consultant') {
+                            route = '/consultant/chat';
+                            args.addAll({
+                              'consultantId': widget.appointmentInfo['consultantId'] ?? '',
+                              'consultantName': widget.appointmentInfo['consultantName'] ?? '',
+                              'consultantRole': 'consultant',
+                            });
+                          } else if (widget.role == 'concierge') {
+                            route = '/concierge/chat';
+                            args.addAll({
+                              'conciergeId': widget.appointmentInfo['conciergeId'] ?? '',
+                              'conciergeName': widget.appointmentInfo['conciergeName'] ?? '',
+                              'conciergeRole': 'concierge',
+                            });
+                          } else if (widget.role == 'cleaner') {
+                            route = '/cleaner/chat';
+                            args.addAll({
+                              'cleanerId': widget.appointmentInfo['cleanerId'] ?? '',
+                              'cleanerName': widget.appointmentInfo['cleanerName'] ?? '',
+                              'cleanerRole': 'cleaner',
+                            });
+                          } else {
+                            route = '/chat';
+                          }
+                          Navigator.of(context).pushNamed(route, arguments: args);
+                        },
+                      ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -515,7 +574,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 if (assignedToName.isNotEmpty)
                   _infoRow(context, 'Assigned To', assignedToName, accentColor, textColor: textColor, valueFlex: 3),
                 const SizedBox(height: 10),
-                if (widget.role == 'consultant' && !widget.viewOnly)
+                if (!widget.viewOnly && widget.role == 'consultant')
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -545,21 +604,23 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                           dropdownColor: Colors.black,
                           iconEnabledColor: Colors.amber[600],
                           underline: Container(height: 1, color: Colors.amber[600]),
+                          disabledHint: Text(_statusLabel(statusValue), style: TextStyle(color: Colors.grey)),
                         ),
                       ),
                     ],
                   ),
                 const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.note_add, color: Colors.amber[600]),
-                  label: Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber[800],
-                    side: BorderSide(color: Colors.amber[600]!),
-                    textStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                if (!widget.viewOnly)
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.note_add, color: Colors.amber[600]),
+                    label: Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[800],
+                      side: BorderSide(color: Colors.amber[600]!),
+                      textStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    onPressed: () => _showNotesDialog(context, appointmentData),
                   ),
-                  onPressed: widget.viewOnly ? null : () => _showNotesDialog(context, appointmentData),
-                ),
                 const SizedBox(height: 8),
                 if (widget.role == 'consultant' && appointmentData['consultantSessionEnded'] == true && !widget.viewOnly)
                   Row(
@@ -578,44 +639,10 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                       ),
                     ],
                   ),
-                if (widget.role == 'concierge' && appointmentData['conciergeSessionEnded'] == true && !widget.viewOnly)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.check_circle, color: Colors.blue),
-                          label: const Text('Session Completed', style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[900],
-                            side: const BorderSide(color: Colors.blue, width: 2),
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: null,
-                        ),
-                      ),
-                    ],
-                  ),
-                if (widget.role == 'cleaner' && appointmentData['cleanerSessionEnded'] == true && !widget.viewOnly)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.check_circle, color: Colors.blue),
-                          label: const Text('Session Completed', style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[900],
-                            side: const BorderSide(color: Colors.blue, width: 2),
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: null,
-                        ),
-                      ),
-                    ],
-                  ),
                 if (showStartSession &&
-                    !(widget.role == 'consultant' && appointmentData['consultantSessionEnded'] == true) &&
-                    !(widget.role == 'concierge' && appointmentData['conciergeSessionEnded'] == true) &&
-                    !(widget.role == 'cleaner' && appointmentData['cleanerSessionEnded'] == true))
+                     !(widget.role == 'consultant' && appointmentData['consultantSessionEnded'] == true) &&
+                     !(widget.role == 'concierge' && appointmentData['conciergeSessionEnded'] == true) &&
+                     !(widget.role == 'cleaner' && appointmentData['cleanerSessionEnded'] == true) && !widget.viewOnly)
                   Row(
                     children: [
                       Expanded(

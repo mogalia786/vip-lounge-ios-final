@@ -48,14 +48,43 @@ class _StaffAssignmentDialogState extends State<StaffAssignmentDialog> {
           .get();
       
       final List<Map<String, dynamic>> consultantsList = [];
-      for (var doc in consultantsSnapshot.docs) {
-        final data = doc.data();
-        consultantsList.add({
-          'id': doc.id,
-          'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
-          ...data,
-        });
+final Timestamp? currentAppointmentTime = widget.appointment['appointmentTime'];
+DateTime? currentStartTime = currentAppointmentTime?.toDate();
+DateTime? currentEndTime = currentStartTime != null && widget.appointment['duration'] != null
+    ? currentStartTime.add(Duration(minutes: int.tryParse(widget.appointment['duration'].toString()) ?? 60))
+    : (currentStartTime != null ? currentStartTime.add(Duration(hours: 1)) : null);
+
+for (var doc in consultantsSnapshot.docs) {
+  final data = doc.data();
+  final consultantId = doc.id;
+  // Query for overlapping appointments for this consultant
+  final overlapping = await FirebaseFirestore.instance
+      .collection('appointments')
+      .where('consultantId', isEqualTo: consultantId)
+      .where('appointmentTime', isGreaterThanOrEqualTo: Timestamp.fromDate(currentStartTime ?? DateTime(2000)))
+      .get();
+  bool isDoubleBooked = false;
+  for (var appt in overlapping.docs) {
+    if (appt.id == widget.appointment['id']) continue; // skip self
+    final apptTime = (appt.data()['appointmentTime'] as Timestamp?)?.toDate();
+    final apptDuration = int.tryParse(appt.data()['duration']?.toString() ?? '') ?? 60;
+    final apptEnd = apptTime != null ? apptTime.add(Duration(minutes: apptDuration)) : null;
+    if (apptTime != null && currentStartTime != null && currentEndTime != null && apptEnd != null) {
+      // Check for overlap
+      if (apptTime.isBefore(currentEndTime) && apptEnd.isAfter(currentStartTime)) {
+        isDoubleBooked = true;
+        break;
       }
+    }
+  }
+  if (!isDoubleBooked) {
+    consultantsList.add({
+      'id': consultantId,
+      'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
+      ...data,
+    });
+  }
+}
       
       // Load concierges
       final conciergesSnapshot = await FirebaseFirestore.instance

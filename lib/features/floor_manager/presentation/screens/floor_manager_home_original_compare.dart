@@ -42,6 +42,18 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
   @override
   void initState() {
     super.initState();
+    // Show a toast/snackbar with the home screen name for confirmation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = this.context;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('FloorManagerHomeScreenNew'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.blueGrey,
+        ),
+      );
+    });
+    super.initState();
     _listenToUnreadNotifications();
     _loadActiveBreaksForToday();
     final floorManager = Provider.of<AppAuthProvider>(context, listen: false).appUser;
