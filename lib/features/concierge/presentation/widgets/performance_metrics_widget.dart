@@ -250,23 +250,32 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
               padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
               child: Text('Future Appointments', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: _futureAppointments.length,
-            itemBuilder: (context, index) {
-              final appt = _futureAppointments[index];
-              return Card(
-                color: Colors.black,
-                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                child: ListTile(
-                  title: Text(appt['ministerName'] ?? 'Unknown Minister', style: const TextStyle(color: AppColors.gold)),
-                  subtitle: Text(DateFormat('MMM d, yyyy h:mm a').format(appt['appointmentTime']), style: const TextStyle(color: Colors.white70)),
-                  trailing: _buildStatusChip(appt['status'] ?? ''),
+          ..._groupFutureAppointmentsByMinister().entries.map((entry) {
+            final ministerName = entry.key;
+            final appts = entry.value;
+            return Card(
+              color: Colors.grey[900],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ministerName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.gold),
+                    ),
+                    ...appts.map((appt) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(DateFormat('MMM d, yyyy h:mm a').format(appt['appointmentTime']), style: const TextStyle(color: Colors.white70)),
+                          trailing: _buildStatusChip(appt['status'] ?? ''),
+                        )),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -298,12 +307,24 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
                 style: const TextStyle(color: Colors.white, fontSize: 10),
                 textAlign: TextAlign.center,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Map<String, List<Map<String, dynamic>>> _groupFutureAppointmentsByMinister() {
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+    for (final appt in _futureAppointments) {
+      String ministerName = appt['ministerName'] ??
+        (appt['minister'] != null && appt['minister']['name'] != null ? appt['minister']['name'] : null) ??
+        (((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim().isNotEmpty
+          ? ((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim()
+          : 'Unknown Minister');
+      grouped.putIfAbsent(ministerName, () => []).add(appt);
+    }
+    return grouped;
   }
 }

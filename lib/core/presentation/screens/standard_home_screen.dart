@@ -17,6 +17,8 @@ class StandardHomeScreen extends StatefulWidget {
 class _StandardHomeScreenState extends State<StandardHomeScreen> {
   int _selectedIndex = 0;
   int _unreadNotifications = 0;
+  DateTime _selectedDate = DateTime.now();
+
 
   @override
   void initState() {
@@ -129,7 +131,19 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
             ),
           ],
         ),
-        body: DailySchedule(selectedDate: DateTime.now()),
+        body: Column(
+          children: [
+            // Date scroll bar
+            SizedBox(
+              height: 60,
+              // Date scroll removed as per user instruction
+              child: SizedBox(),
+            ),
+            Expanded(
+              child: DailySchedule(selectedDate: _selectedDate),
+            ),
+          ],
+        ),
       ),
 
       // Notifications Page

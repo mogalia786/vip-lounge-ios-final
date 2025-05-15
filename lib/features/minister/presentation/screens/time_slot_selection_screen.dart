@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'concierge_closed_day_helper.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/workflow_service.dart';
 import '../../../../core/constants/colors.dart';
@@ -55,7 +56,6 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
   final WorkflowService _workflowService = WorkflowService();
 
   // --- CLOSED DAYS & BUSINESS HOURS STATE ---
-  Set<String> _closedDaysSet = {};
   TimeOfDay? _openingTime;
   TimeOfDay? _closingTime;
   Map<String, dynamic>? _businessHoursMap;
@@ -68,15 +68,13 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     return key;
   }
 
-  // Helper to check if selected date is closed
+  // Use shared ClosedDayHelper for closed day logic
+  Future<void> _ensureClosedDayDataLoaded() async {
+    await ClosedDayHelper.ensureLoaded();
+  }
+
   bool _isDateClosed(DateTime date) {
-    final String dayKey = _weekdayKey(date);
-    print('[DEBUG] Checking closed for $dayKey: ' + (_businessHoursMap != null ? _businessHoursMap![dayKey].toString() : 'NO MAP'));
-    if (_businessHoursMap != null && _businessHoursMap![dayKey] is Map && _businessHoursMap![dayKey]['closed'] == true) {
-      print('[DEBUG] $dayKey is closed');
-      return true;
-    }
-    return _closedDaysSet.contains(DateFormat('yyyy-MM-dd').format(date));
+    return ClosedDayHelper.isDateClosed(date);
   }
 
   // Returns the opening/closing TimeOfDay for the selected date, or null if closed
@@ -786,14 +784,6 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
     final data = doc.data();
     if (data != null) {
-      // Closed days
-      if (data['closedDays'] != null) {
-        final List<dynamic> days = data['closedDays'];
-        setState(() {
-          _closedDaysSet = days.map((e) => e.toString()).toSet();
-        });
-        print('[DEBUG] Loaded closedDays: \\n' + _closedDaysSet.toString());
-      }
       // Business hours (per day)
       if (data['businessHours'] != null) {
         final bh = data['businessHours'] as Map<String, dynamic>;

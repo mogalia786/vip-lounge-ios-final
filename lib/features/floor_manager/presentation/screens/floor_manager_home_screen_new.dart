@@ -1759,17 +1759,25 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(
-              'Welcome, $userName',
-              style: TextStyle(color: AppColors.gold, fontSize: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome, $userName',
+                    style: TextStyle(color: AppColors.gold, fontSize: 16),
+                  ),
+                  Text(
+                    DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-            Text(
-              DateFormat('EEEE, MMMM d').format(DateTime.now()),
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.check_circle, color: Colors.blue, size: 22),
           ],
         ),
         actions: [

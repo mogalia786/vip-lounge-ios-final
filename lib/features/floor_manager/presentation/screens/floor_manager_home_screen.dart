@@ -8,6 +8,7 @@ import '../../../../core/providers/app_auth_provider.dart';
 import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import '../../../../core/services/notification_service.dart';
 import 'appointments_screen.dart';
+import 'package:vip_lounge/features/minister/presentation/screens/concierge_closed_day_helper.dart';
 import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
 import '../widgets/staff_assignment_dialog.dart';
@@ -996,56 +997,66 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
     return availableStaff;
   }
 
-  void _loadAppointments() {}
+  void _loadAppointments() {
+    setState(() {});
+  }
 
-  Widget _buildWeeklySchedule() {
+  Widget _buildDateScroll30Days() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: days.map((day) {
-            final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedDate = day;
-                  _loadAppointments();
-                });
-              },
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      DateFormat('E').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
+    final days = List.generate(30, (i) => DateTime(now.year, now.month, now.day).add(Duration(days: i)));
+    return Container(
+      color: Colors.greenAccent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+        child: SizedBox(
+          height: 80, // Increased height for visibility
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: days.length,
+            itemBuilder: (context, i) {
+              final day = days[i];
+              final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
+              // Debug print
+              print('Building date item for: ' + day.toString());
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedDate = day;
+                    _loadAppointments();
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.redAccent : Colors.yellow.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('E').format(day),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('d').format(day),
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('d').format(day),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1090,7 +1101,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
       ),
       body: Column(
         children: [
-          _buildWeeklySchedule(),
+          _buildDateScroll30Days(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -1102,7 +1113,6 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator(color: AppColors.gold));
                 }
-                
                 final appointments = snapshot.data!.docs;
                 if (appointments.isEmpty) {
                   return Center(
@@ -1119,7 +1129,6 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                     ),
                   );
                 }
-                
                 return ListView.builder(
                   itemCount: appointments.length,
                   padding: const EdgeInsets.all(8),

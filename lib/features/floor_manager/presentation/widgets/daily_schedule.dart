@@ -162,26 +162,29 @@ class DailySchedule extends StatelessWidget {
                             ),
                             
                             // Service and venue
-                            Padding(
+                             Padding(
                               padding: const EdgeInsets.only(top: 6.0),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.spa, size: 14, color: Colors.grey),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '${appointment['serviceName'] ?? 'Not specified'}',
-                                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                                  ),
-                                  Spacer(),
-                                  Text(
-                                    _getStatusText(appointment['status']),
-                                    style: TextStyle(
-                                      color: _getStatusColor(appointment['status']),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.spa, size: 14, color: Colors.grey),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '${appointment['serviceName'] ?? 'Not specified'}',
+                                      style: TextStyle(color: Colors.white70, fontSize: 13),
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 12),
+                                    Text(
+                                      _getStatusText(appointment['status']),
+                                      style: TextStyle(
+                                        color: _getStatusColor(appointment['status']),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             
