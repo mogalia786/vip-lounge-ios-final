@@ -1,0 +1,2 @@
+# VIP Lounge Notification Debug Log
+# Each line: [TIMESTAMP] EVENT_TYPE | FROM: <sender> | TO: <recipient> | BODY: <body> | STATUS: <success/failure>

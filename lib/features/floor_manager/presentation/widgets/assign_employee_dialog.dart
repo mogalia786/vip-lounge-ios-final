@@ -28,27 +28,68 @@ class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
 
   Future<void> _loadEmployees() async {
     setState(() => isLoading = true);
-
     try {
+      final appointmentId = widget.appointmentData['appointmentId'] ?? widget.appointmentData['id'];
+      final appointmentTime = widget.appointmentData['appointmentTime'];
+      final duration = widget.appointmentData['duration'] is int ? widget.appointmentData['duration'] as int : 60;
+      final role = widget.appointmentData['assignRole'] ?? widget.appointmentData['role'] ?? '';
+      final sickUserId = widget.appointmentData['sickUserId'];
+      final sickRole = widget.appointmentData['sickRole'];
+      final Timestamp? startTimestamp = appointmentTime is Timestamp ? appointmentTime : null;
+      final DateTime? startDate = startTimestamp?.toDate();
+      final DateTime? endDate = startDate != null ? startDate.add(Duration(minutes: duration)) : null;
+
+      // Get all employees for the role
       final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
-          .where('role', whereIn: ['consultant', 'concierge', 'cleaner'])
+          .where('role', isEqualTo: role)
           .orderBy('firstName')
           .get();
+      List<Map<String, dynamic>> loadedEmployees = querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'firstName': data['firstName'] ?? '',
+              'lastName': data['lastName'] ?? '',
+              'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
+              'role': data['role'] ?? '',
+            };
+          })
+          .toList();
 
+      // Exclude sick user
+      if (sickUserId != null && sickRole == role) {
+        loadedEmployees = loadedEmployees.where((e) => e['id'] != sickUserId).toList();
+      }
+      // For consultants, exclude those already assigned to another post at the same slot
+      if (role == 'consultant' && startDate != null && endDate != null) {
+        List<Map<String, dynamic>> filteredEmployees = [];
+        for (final emp in loadedEmployees) {
+          final assigned = await FirebaseFirestore.instance
+              .collection('appointments')
+              .where('consultantId', isEqualTo: emp['id'])
+              .get();
+          bool hasConflict = false;
+          for (final doc in assigned.docs) {
+            if (doc.id == appointmentId) continue;
+            final data = doc.data();
+            final Timestamp? otherTime = data['appointmentTime'] as Timestamp?;
+            final int otherDuration = data['duration'] is int ? data['duration'] as int : 60;
+            if (otherTime == null) continue;
+            final DateTime otherStart = otherTime.toDate();
+            final DateTime otherEnd = otherStart.add(Duration(minutes: otherDuration));
+            if (startDate.isBefore(otherEnd) && endDate.isAfter(otherStart)) {
+              hasConflict = true;
+              break;
+            }
+          }
+          if (!hasConflict) filteredEmployees.add(emp);
+        }
+        loadedEmployees = filteredEmployees;
+      }
       setState(() {
-        employees = querySnapshot.docs
-            .map((doc) {
-              final data = doc.data();
-              return {
-                'id': doc.id,
-                'firstName': data['firstName'] ?? '',
-                'lastName': data['lastName'] ?? '',
-                'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
-                'role': data['role'] ?? '',
-              };
-            })
-            .toList();
+        employees = loadedEmployees;
       });
     } catch (e) {
       print('Error loading employees: $e');
@@ -173,6 +214,29 @@ class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
         floorManagerId: floorManagerId,
         floorManagerName: floorManagerName,
       );
+
+      // Notify minister with new assignment details
+      final appointmentDoc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
+      final appointmentData = appointmentDoc.data() ?? {};
+      final consultantName = assignedUsers.firstWhere((u) => u['assignRole'] == 'consultant', orElse: () => null)?['userName'] ?? '';
+      final conciergeName = assignedUsers.firstWhere((u) => u['assignRole'] == 'concierge', orElse: () => null)?['userName'] ?? '';
+      final ministerNotificationBody = 'A new ${consultantName.isNotEmpty ? 'consultant: $consultantName' : ''}${consultantName.isNotEmpty && conciergeName.isNotEmpty ? ' and ' : ''}${conciergeName.isNotEmpty ? 'concierge: $conciergeName' : ''} has been assigned to your appointment on '
+        + (appointmentData['appointmentTime'] is Timestamp ? (appointmentData['appointmentTime'] as Timestamp).toDate().toString() : '')
+        + '. Please check your appointment details.';
+      if (ministerId != null && ministerId.toString().isNotEmpty) {
+        await notificationService.createNotification(
+          title: 'Appointment Staff Updated',
+          body: ministerNotificationBody,
+          data: {
+            ...appointmentData,
+            'consultantName': consultantName,
+            'conciergeName': conciergeName,
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'staff_assignment',
+        );
+      }
 
       print('[ASSIGN] Assignment and notification complete.');
       if (mounted) {

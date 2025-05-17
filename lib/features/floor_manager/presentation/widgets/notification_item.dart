@@ -277,10 +277,31 @@ class NotificationItem extends StatelessWidget {
                       if (body.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4.0, bottom: 2.0),
-                          child: Text(
-                            body,
-                            style: TextStyle(color: Colors.grey[300], fontSize: 14),
-                          ),
+                          child: notification['role'] == 'minister'
+                              ? Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.gold.withOpacity(0.13),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppColors.gold, width: 1.2),
+                                  ),
+                                  child: Text(
+                                    body,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.left,
+                                  ),
+                                )
+                              : Text(
+                                  body,
+                                  style: TextStyle(color: Colors.grey[300], fontSize: 14),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                         ),
                       // Always show the minister row if any info present
                       if (displayName.isNotEmpty || ministerPhone.isNotEmpty || ministerEmail.isNotEmpty || ministerId.isNotEmpty)

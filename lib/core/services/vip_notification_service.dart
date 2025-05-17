@@ -4,11 +4,36 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 
 /// Enhanced notification service that implements the complete notification flow process
 /// for the VIP lounge booking system, ensuring all stakeholders receive appropriate
 /// notifications at each stage of the booking process.
 class VipNotificationService {
+  // Debug log file path
+  static const String debugLogFilePath = 'debugs/notification_debug_log.txt';
+
+  /// Append a debug log entry to the notification debug log file
+  Future<void> logNotificationDebug({
+    required String trigger,
+    required String eventType,
+    required String recipient,
+    required String body,
+    required bool localSuccess,
+    required bool fcmSuccess,
+    String? error,
+  }) async {
+    try {
+      final now = DateTime.now().toIso8601String();
+      final logLine = '[${now}] TRIGGER: $trigger | EVENT: $eventType | TO: $recipient | BODY: $body | LOCAL: ${localSuccess ? 'success' : 'fail'} | FCM: ${fcmSuccess ? 'success' : 'fail'}${error != null ? ' | ERROR: $error' : ''}\n';
+      final logFile = File(debugLogFilePath);
+      await logFile.writeAsString(logLine, mode: FileMode.append, flush: true);
+    } catch (e) {
+      // If logging fails, print to console
+      print('[DEBUG LOGGING ERROR] $e');
+    }
+  }
+
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -50,6 +75,15 @@ class VipNotificationService {
       if (appointmentId != null && appointmentId.toString().isNotEmpty) {
         enrichedData['appointmentId'] = appointmentId.toString();
       }
+      // Always join users collection for assignedToId to get contact info
+      if (assignedToId != null && assignedToId.isNotEmpty) {
+        final userDoc = await _firestore.collection('users').doc(assignedToId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          enrichedData['userPhone'] = userData['phone'] ?? userData['phoneNumber'] ?? '';
+          enrichedData['userEmail'] = userData['email'] ?? '';
+        }
+      }
       if (appointmentId != null && (data['serviceName'] == null || data['ministerName'] == null)) {
         // Get appointment details
         final appointmentDoc = await _firestore.collection('appointments').doc(appointmentId).get();
@@ -88,10 +122,23 @@ class VipNotificationService {
         'notificationType': notificationType ?? 'general',
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(), // Always set timestamp for sorting
+        // For minister notifications, ensure phone, date, and message body are present at top level
+        if (role == 'minister') ...{
+          'phone': enrichedData['ministerPhone'] ?? '',
+          'fullBody': body,
+          'notificationDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+        },
       };
+      // Also ensure phone is in data for UI
+      if (role == 'minister') {
+        notificationData['data']['ministerPhone'] = enrichedData['ministerPhone'] ?? '';
+      }
       if (role == 'consultant' || role == 'concierge' || role == 'cleaner') {
         notificationData['staffId'] = assignedToId;
       }
+      // Remove any null or empty fields for cleanliness
+      notificationData.removeWhere((k, v) => v == null);
       await _firestore.collection('notifications').add(notificationData);
       // Send FCM push notification if assignedToId is present
       if (assignedToId != null && assignedToId.isNotEmpty) {
@@ -179,6 +226,13 @@ class VipNotificationService {
       // Ensure we have complete minister information
       final ministerData = await _getMinisterDetails(appointmentData['ministerId']);
       
+      // Format date and time for readability in notifications
+      final appointmentTime = appointmentData['appointmentTime'] is Timestamp
+          ? (appointmentData['appointmentTime'] as Timestamp).toDate()
+          : DateTime.now();
+      final formattedDateTime = DateFormat('EEEE, MMMM d, y, h:mm a').format(appointmentTime);
+      final serviceName = appointmentData['serviceName'] ?? 'Unknown Service';
+      
       // Make sure we have all appointment details
       final fullAppointmentData = {
         ...appointmentData,
@@ -189,236 +243,156 @@ class VipNotificationService {
         'ministerLastName': ministerData['lastName'] ?? '',
       };
       
-      // Format date and time for readability in notifications
-      final appointmentTime = appointmentData['appointmentTime'] is Timestamp
-          ? (appointmentData['appointmentTime'] as Timestamp).toDate()
-          : DateTime.now();
-      
-      final formattedDateTime = DateFormat('EEEE, MMMM d, y, h:mm a').format(appointmentTime);
-      final serviceName = appointmentData['serviceName'] ?? 'Unknown Service';
-      
-      // 1. Send notification to ALL floor managers
-      final floorManagerDocs = await _firestore
-          .collection('users')
-          .where('role', isEqualTo: 'floor_manager')
-          .get();
-      
-      for (var doc in floorManagerDocs.docs) {
-        final floorManagerId = doc.id;
-        
-        // Create in-app notification (appears in bottom nav bar)
-        await createNotification(
-          title: 'New Booking Request',
-          body: 'Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} has requested a ${serviceName} appointment for $formattedDateTime',
-          data: fullAppointmentData,
-          role: 'floor_manager',
-          assignedToId: floorManagerId,
-          notificationType: 'booking_created',
-        );
-        
-        // Send FCM push notification
-        await sendFCMToUser(
-          userId: floorManagerId,
-          title: 'New Booking Request',
-          body: 'Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} has requested a ${serviceName} appointment for $formattedDateTime',
-          data: fullAppointmentData,
-          messageType: 'booking_created',
-        );
-      }
-    } catch (e) {
-      print('Error notifying booking creation: $e');
-      throw e;
-    }
-  }
-
-  /// 2. STAFF ASSIGNMENT: Floor manager assigns staff to an appointment
-  Future<void> notifyStaffAssignment({
-    required String appointmentId,
-    required Map<String, dynamic> appointmentData,
-    required String consultantId,
-    required String consultantName,
-    required String conciergeId,
-    required String conciergeName,
-    String? cleanerId,
-    String? cleanerName,
-  }) async {
-    if (appointmentId.isEmpty) {
-      print('[ERROR] notifyStaffAssignment: appointmentId is empty, aborting notification send.');
-      return;
-    }
-    if (consultantId.isEmpty) {
-      print('[ERROR] notifyStaffAssignment: consultantId is empty, aborting notification send.');
-      return;
-    }
-    if (conciergeId.isEmpty) {
-      print('[ERROR] notifyStaffAssignment: conciergeId is empty, aborting notification send.');
-      return;
-    }
-    try {
-      print('[DEBUG] notifyStaffAssignment called for appointmentId: $appointmentId');
-      print('[DEBUG] consultantId: $consultantId, consultantName: $consultantName');
-      print('[DEBUG] conciergeId: $conciergeId, conciergeName: $conciergeName');
-      print('[DEBUG] cleanerId: $cleanerId, cleanerName: $cleanerName');
-
-      // Get floor manager ID from appointmentData or fallback to assignedBy
-      final floorManagerId = appointmentData['assignedById'] ?? appointmentData['floorManagerId'] ?? appointmentData['assignedFloorManagerId'];
-      print('[DEBUG] Floor Manager ID for notification: $floorManagerId');
-
-      // Ensure we have complete minister information
-      final ministerData = await _getMinisterDetails(appointmentData['ministerId']);
-      
-      // Format date and time for readability in notifications
-      final appointmentTime = appointmentData['appointmentTime'] is Timestamp
-          ? (appointmentData['appointmentTime'] as Timestamp).toDate()
-          : DateTime.now();
-      
-      final formattedDateTime = DateFormat('EEEE, MMMM d, y, h:mm a').format(appointmentTime);
-      final serviceName = appointmentData['serviceName'] ?? 'Unknown Service';
-      
-      // Make sure we have all appointment details
-      final fullAppointmentData = {
-        ...appointmentData,
-        'id': appointmentId,
-        'ministerPhone': ministerData['phone'] ?? '',
-        'ministerEmail': ministerData['email'] ?? '',
-        'ministerName': (
-          (ministerData['firstName'] != null && ministerData['lastName'] != null && ministerData['firstName'] != 'Unknown')
-            ? '${ministerData['firstName']} ${ministerData['lastName']}'
-            : (appointmentData['ministerName'] ?? 'Minister')
-        ),
-        'consultantId': consultantId,
-        'consultantName': consultantName,
-        'conciergeId': conciergeId,
-        'conciergeName': conciergeName,
-        'cleanerId': cleanerId,
-        'cleanerName': cleanerName,
-      };
-      
       // Add phone numbers to notification data
       final consultantPhone = appointmentData['consultantPhone'] ?? '';
       final conciergePhone = appointmentData['conciergePhone'] ?? '';
       
       // 1. Notify Consultant
-      print('[DEBUG] Creating consultant notification: assignedToId=$consultantId, data=$fullAppointmentData');
-      await createNotification(
-        title: 'New Appointment Assigned',
-        body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerName']}, Service: ${fullAppointmentData['serviceName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime. Concierge: $conciergeName, Phone: $conciergePhone',
-        data: {
-          ...fullAppointmentData,
-          'appointmentId': appointmentId,
-          'notificationType': 'booking_assigned',
-          'consultantPhone': consultantPhone,
-          'conciergePhone': conciergePhone,
-        },
-        role: 'consultant',
-        assignedToId: consultantId,
-        notificationType: 'booking_assigned',
-      );
-      print('[DEBUG] Consultant notification written to Firestore');
-      print('[DEBUG] Before sending FCM to consultantId: $consultantId');
-      await sendFCMToUser(
-        userId: consultantId,
-        title: 'New Appointment Assigned',
-        body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerName']}, Service: ${fullAppointmentData['serviceName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime. Concierge: $conciergeName, Phone: $conciergePhone',
-        data: convertToStringMap({
-          ...fullAppointmentData,
-          'appointmentId': appointmentId,
-          'notificationType': 'booking_assigned',
-          'consultantPhone': consultantPhone,
-          'conciergePhone': conciergePhone,
-        }),
-        messageType: 'booking_assigned',
-      );
-      print('[DEBUG] After sending FCM to consultantId: $consultantId');
+      final consultant = appointmentData['staff'] != null && appointmentData['staff']['consultant'] != null
+          ? appointmentData['staff']['consultant']
+          : null;
+      if (consultant != null && consultant['id'] != null && consultant['id'].toString().isNotEmpty) {
+        final consultantId = consultant['id'];
+        final consultantName = consultant['name'] ?? '';
+        await createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
+          data: {
+            ...fullAppointmentData,
+            'appointmentId': appointmentId,
+            'notificationType': 'booking_assigned',
+            'consultantPhone': consultantPhone,
+            'conciergePhone': conciergePhone,
+          },
+          role: 'consultant',
+          assignedToId: consultantId,
+          notificationType: 'booking_assigned',
+        );
+        print('[DEBUG] Consultant notification written to Firestore');
+        await sendFCMToUser(
+          userId: consultantId,
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
+          data: convertToStringMap({
+            ...fullAppointmentData,
+            'appointmentId': appointmentId,
+            'notificationType': 'booking_assigned',
+            'consultantPhone': consultantPhone,
+            'conciergePhone': conciergePhone,
+          }),
+          messageType: 'booking_assigned',
+        );
+        print('[DEBUG] After sending FCM to consultantId: $consultantId');
+      }
       
       // 2. Notify Concierge
-      await createNotification(
-        title: 'New Appointment Assigned',
-        body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerName']} for ${fullAppointmentData['serviceName']} on $formattedDateTime. Consultant: $consultantName, Phone: $consultantPhone',
-        data: {
-          ...fullAppointmentData,
-          'appointmentId': appointmentId,
-          'notificationType': 'booking_assigned',
-          'consultantPhone': consultantPhone,
-          'conciergePhone': conciergePhone,
-        },
-        role: 'concierge',
-        assignedToId: conciergeId,
-        notificationType: 'booking_assigned',
-      );
-      print('[DEBUG] Before sending FCM to conciergeId: $conciergeId');
-      await sendFCMToUser(
-        userId: conciergeId,
-        title: 'New Appointment Assigned',
-        body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerName']} for ${fullAppointmentData['serviceName']} on $formattedDateTime. Consultant: $consultantName, Phone: $consultantPhone',
-        data: convertToStringMap({
-          ...fullAppointmentData,
-          'appointmentId': appointmentId,
-          'notificationType': 'booking_assigned',
-          'consultantPhone': consultantPhone,
-          'conciergePhone': conciergePhone,
-        }),
-        messageType: 'booking_assigned',
-      );
-      print('[DEBUG] After sending FCM to conciergeId: $conciergeId');
+      final concierge = appointmentData['staff'] != null && appointmentData['staff']['concierge'] != null
+          ? appointmentData['staff']['concierge']
+          : null;
+      if (concierge != null && concierge['id'] != null && concierge['id'].toString().isNotEmpty) {
+        final conciergeId = concierge['id'];
+        final conciergeName = concierge['name'] ?? '';
+        await createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
+          data: {
+            ...fullAppointmentData,
+            'appointmentId': appointmentId,
+            'notificationType': 'booking_assigned',
+            'consultantPhone': consultantPhone,
+            'conciergePhone': conciergePhone,
+          },
+          role: 'concierge',
+          assignedToId: conciergeId,
+          notificationType: 'booking_assigned',
+        );
+        await sendFCMToUser(
+          userId: conciergeId,
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
+          data: convertToStringMap({
+            ...fullAppointmentData,
+            'appointmentId': appointmentId,
+            'notificationType': 'booking_assigned',
+            'consultantPhone': consultantPhone,
+            'conciergePhone': conciergePhone,
+          }),
+          messageType: 'booking_assigned',
+        );
+        print('[DEBUG] After sending FCM to conciergeId: $conciergeId');
+      }
       
       // 3. Notify Cleaner if assigned
-      if (cleanerId != null && cleanerId.isNotEmpty) {
+      final cleaner = appointmentData['staff'] != null && appointmentData['staff']['cleaner'] != null
+          ? appointmentData['staff']['cleaner']
+          : null;
+      if (cleaner != null && cleaner['id'] != null && cleaner['id'].toString().isNotEmpty) {
+        final cleanerId = cleaner['id'];
+        final cleanerName = cleaner['name'] ?? '';
         await createNotification(
           title: 'New Appointment Assigned',
           body: "You have been assigned to prepare the venue for Minister "+
-                "${fullAppointmentData['ministerName']}'s ${fullAppointmentData['serviceName']} on $formattedDateTime",
+                "${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}'s appointment on $formattedDateTime",
           data: fullAppointmentData,
           role: 'cleaner',
           assignedToId: cleanerId,
           notificationType: 'booking_assigned',
         );
         
-        print('[DEBUG] Before sending FCM to cleanerId: $cleanerId');
         await sendFCMToUser(
           userId: cleanerId,
           title: 'New Appointment Assigned',
           body: "You have been assigned to prepare the venue for Minister "+
-                "${fullAppointmentData['ministerName']}'s ${fullAppointmentData['serviceName']} on $formattedDateTime",
+                "${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}'s appointment on $formattedDateTime",
           data: convertToStringMap(fullAppointmentData),
           messageType: 'booking_assigned',
         );
         print('[DEBUG] After sending FCM to cleanerId: $cleanerId');
       }
       
-      // 4. Notify Minister about staff assignment
-      await createNotification(
-        title: 'Staff Assigned to Your Appointment',
-        body: 'Your ${fullAppointmentData['serviceName']} appointment on $formattedDateTime has been assigned to $consultantName (Consultant) and $conciergeName (Concierge)',
-        data: fullAppointmentData,
-        role: 'minister',
-        assignedToId: appointmentData['ministerId'],
-        notificationType: 'staff_assigned',
-      );
+      // 4. Notify Minister about staff assignment (if any staff assigned)
+      String assignedConsultant = consultant != null && consultant['name'] != null ? consultant['name'] : '';
+      String assignedConcierge = concierge != null && concierge['name'] != null ? concierge['name'] : '';
+      if (assignedConsultant.isNotEmpty || assignedConcierge.isNotEmpty) {
+        await createNotification(
+          title: 'Staff Assigned to Your Appointment',
+          body: 'Your appointment on $formattedDateTime has been assigned to ' +
+            (assignedConsultant.isNotEmpty ? '$assignedConsultant (Consultant)' : '') +
+            (assignedConsultant.isNotEmpty && assignedConcierge.isNotEmpty ? ' and ' : '') +
+            (assignedConcierge.isNotEmpty ? '$assignedConcierge (Concierge)' : ''),
+          data: fullAppointmentData,
+          role: 'minister',
+          assignedToId: appointmentData['ministerId'],
+          notificationType: 'staff_assigned',
+        );
+      }
       
       // Send FCM push notification to minister
       await sendFCMToUser(
         userId: appointmentData['ministerId'],
         title: 'Staff Assigned to Your Appointment',
-        body: 'Your ${fullAppointmentData['serviceName']} appointment on $formattedDateTime has been assigned to $consultantName (Consultant) and $conciergeName (Concierge)',
+        body: 'Your appointment on $formattedDateTime has been assigned to ' +
+          (assignedConsultant.isNotEmpty ? '$assignedConsultant (Consultant)' : '') +
+          (assignedConsultant.isNotEmpty && assignedConcierge.isNotEmpty ? ' and ' : '') +
+          (assignedConcierge.isNotEmpty ? '$assignedConcierge (Concierge)' : ''),
         data: convertToStringMap(fullAppointmentData),
         messageType: 'staff_assigned',
       );
       
       // 5. Notify floor manager (assignment summary)
-      if (floorManagerId != null && floorManagerId.toString().isNotEmpty) {
+      final floorManagersQuery = await _firestore.collection('users').where('role', isEqualTo: 'floor_manager').get();
+      for (var doc in floorManagersQuery.docs) {
+        final floorManagerId = doc.id;
         await createNotification(
           title: 'Staff Assignment Successful',
           body:
-              'You assigned consultant $consultantName and concierge $conciergeName to appointment $appointmentId.\nService: ${fullAppointmentData['serviceName']}\nVenue: ${fullAppointmentData['venueName']}\nDate: $formattedDateTime\nMinister: ${fullAppointmentData['ministerName']}\nDuration: ${fullAppointmentData['duration'] ?? ''} min',
+              'You assigned consultant ' +
+              (assignedConsultant.isNotEmpty ? assignedConsultant : 'Not assigned') +
+              ' and concierge ' +
+              (assignedConcierge.isNotEmpty ? assignedConcierge : 'Not assigned') +
+              ' to appointment $appointmentId.\nService: ${fullAppointmentData['serviceName']}\nVenue: ${fullAppointmentData['venueName']}\nDate: $formattedDateTime\nMinister: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}\nDuration: ${fullAppointmentData['duration'] ?? ''} min',
           data: {
             ...fullAppointmentData,
-            'consultantId': consultantId,
-            'consultantName': consultantName,
-            'conciergeId': conciergeId,
-            'conciergeName': conciergeName,
-            'venueName': fullAppointmentData['venueName'] ?? '',
-            'duration': fullAppointmentData['duration'] ?? '',
           },
           role: 'floor_manager',
           assignedToId: floorManagerId,
@@ -699,54 +673,17 @@ class VipNotificationService {
       final ministerData = await _getMinisterDetails(appointmentData['ministerId']);
       final ministerName = '${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''}';
       
+      final floorManagersQuery = await _firestore.collection('users').where('role', isEqualTo: 'floor_manager').get();
+      
+      // Format time and service name safely
+      final DateTime appointmentDateTime = appointmentData['appointmentTime'] is Timestamp
+          ? (appointmentData['appointmentTime'] as Timestamp).toDate()
+          : DateTime.now();
+      final formattedTime = DateFormat('EEEE, MMMM d, y, h:mm a').format(appointmentDateTime);
+      final serviceName = appointmentData['serviceName'] ?? 'the service';
       final now = DateTime.now();
-      final formattedTime = DateFormat('h:mm a').format(now);
-      final serviceName = appointmentData['serviceName'] ?? 'Unknown Service';
       
-      // 1. Notify minister
-      await createNotification(
-        title: 'Appointment Started',
-        body: 'Welcome! Your $serviceName appointment has started with $staffName (${_getRoleTitle(staffRole)})',
-        data: {
-          ...appointmentData,
-          'id': appointmentId,
-          'startedBy': staffId,
-          'startedByName': staffName,
-          'startedByRole': staffRole,
-          'startTime': now,
-          'staffPhone': staffPhone,
-          'staffEmail': staffEmail,
-        },
-        role: 'minister',
-        assignedToId: appointmentData['ministerId'],
-        notificationType: 'appointment_started',
-      );
-      
-      // Send FCM to minister
-      await sendFCMToUser(
-        userId: appointmentData['ministerId'],
-        title: 'Appointment Started',
-        body: 'Welcome! Your $serviceName appointment has started with $staffName (${_getRoleTitle(staffRole)})',
-        data: {
-          ...appointmentData,
-          'id': appointmentId,
-          'startedBy': staffId,
-          'startedByName': staffName,
-          'startedByRole': staffRole,
-          'startTime': Timestamp.fromDate(now),
-          'staffPhone': staffPhone,
-          'staffEmail': staffEmail,
-        },
-        messageType: 'appointment_started',
-      );
-      
-      // 2. Notify floor managers
-      final floorManagerDocs = await _firestore
-          .collection('users')
-          .where('role', isEqualTo: 'floor_manager')
-          .get();
-      
-      for (var doc in floorManagerDocs.docs) {
+      for (var doc in floorManagersQuery.docs) {
         final floorManagerId = doc.id;
         
         await createNotification(
@@ -1109,13 +1046,25 @@ class VipNotificationService {
       return;
     }
     try {
+      // Fetch sender contact info
+      final senderDoc = await _firestore.collection('users').doc(senderId).get();
+      final senderData = senderDoc.data() ?? {};
+      
+      // Fetch recipient contact info
+      final recipientDoc = await _firestore.collection('users').doc(recipientId).get();
+      final recipientData = recipientDoc.data() ?? {};
+      
       // Create the notification data
       final notificationData = {
         'senderId': senderId,
         'senderName': senderName,
         'senderRole': senderRole,
+        'senderPhone': senderData['phone'] ?? senderData['phoneNumber'] ?? '',
+        'senderEmail': senderData['email'] ?? '',
         'recipientId': recipientId,
         'recipientRole': recipientRole,
+        'recipientPhone': recipientData['phone'] ?? recipientData['phoneNumber'] ?? '',
+        'recipientEmail': recipientData['email'] ?? '',
         'message': message,
         'timestamp': FieldValue.serverTimestamp(),
         'appointmentId': appointmentId,

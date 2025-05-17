@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vip_lounge/core/constants/colors.dart';
 
-class ConsultantAppointmentWidget extends StatelessWidget {
+class ConsultantAppointmentWidget extends StatefulWidget {
   final Map<String, dynamic> appointment;
   final bool isEvenCard;
   final VoidCallback? onStartSession;
@@ -29,6 +29,13 @@ class ConsultantAppointmentWidget extends StatelessWidget {
     this.onChangeStatus,
     this.disableStartSession = false,
   }) : super(key: key);
+
+  @override
+  State<ConsultantAppointmentWidget> createState() => _ConsultantAppointmentWidgetState();
+}
+
+class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidget> {
+  bool _endSessionButtonDisabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +150,10 @@ class ConsultantAppointmentWidget extends StatelessWidget {
                         backgroundColor: Colors.red[900],
                         side: const BorderSide(color: Colors.red),
                       ),
-                      onPressed: onEndSession,
+                      onPressed: _endSessionButtonDisabled ? null : () async {
+  setState(() { _endSessionButtonDisabled = true; });
+  if (widget.onEndSession != null) await widget.onEndSession!();
+}
                     ),
                   ),
                 ],

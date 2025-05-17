@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/role_notification_list.dart';
 import '../../../../core/providers/app_auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/services/vip_messaging_service.dart';
@@ -2150,6 +2151,13 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   }
 
   Widget _buildNotificationsView() {
+    final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    return RoleNotificationList(
+      userId: user?.uid,
+      userRole: 'minister',
+      showTitle: true,
+    );
+  
     // Sort so chat notifications are at the top
     final sortedNotifications = List<Map<String, dynamic>>.from(_unreadNotificationsList);
     sortedNotifications.sort((a, b) {

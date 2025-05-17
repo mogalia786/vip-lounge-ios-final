@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../widgets/sick_leave_dialog.dart';
 // import 'package:vip_lounge/core/widgets/standard_weekly_date_scroll.dart'; // (Reverted AI addition)
 
 // Walking man icon usage example
@@ -1486,7 +1487,23 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
         selectedItemColor: AppColors.gold,
         unselectedItemColor: Colors.white70,
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) async {
+          if (index == 3) {
+            final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+            if (user != null) {
+              await showDialog(
+                context: context,
+                builder: (ctx) => SickLeaveDialog(
+                  userId: user.uid,
+                  userName: user.firstName + ' ' + user.lastName,
+                  role: 'consultant',
+                ),
+              );
+            }
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
@@ -1499,6 +1516,10 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
             label: 'Performance',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sick, color: Colors.redAccent),
+            label: 'Sick Leave',
           ),
         ],
       ),

@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vip_lounge/core/constants/colors.dart';
 
-class ConciergeAppointmentWidget extends StatelessWidget {
+class ConciergeAppointmentWidget extends StatefulWidget {
   final Map<String, dynamic> appointment;
   final bool isEvenCard;
   final VoidCallback? onStartSession;
@@ -29,6 +29,13 @@ class ConciergeAppointmentWidget extends StatelessWidget {
     this.onChangeStatus,
     this.disableStartSession = false,
   }) : super(key: key);
+
+  @override
+  State<ConciergeAppointmentWidget> createState() => _ConciergeAppointmentWidgetState();
+}
+
+class _ConciergeAppointmentWidgetState extends State<ConciergeAppointmentWidget> {
+  bool _endSessionButtonDisabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +131,7 @@ class ConciergeAppointmentWidget extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.message, color: AppColors.gold),
                     tooltip: 'Chat with Minister',
-                    onPressed: onChatWithMinister,
+                    onPressed: widget.onChatWithMinister,
                   ),
               ],
             ),
@@ -139,7 +146,7 @@ class ConciergeAppointmentWidget extends StatelessWidget {
                       backgroundColor: Colors.green[900],
                       side: const BorderSide(color: Colors.green),
                     ),
-                    onPressed: disableStartSession ? null : onStartSession,
+                    onPressed: widget.disableStartSession ? null : widget.onStartSession,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -151,7 +158,10 @@ class ConciergeAppointmentWidget extends StatelessWidget {
                       backgroundColor: Colors.red[900],
                       side: const BorderSide(color: Colors.red),
                     ),
-                    onPressed: onEndSession,
+                    onPressed: _endSessionButtonDisabled ? null : () async {
+                      setState(() { _endSessionButtonDisabled = true; });
+                      if (widget.onEndSession != null) await widget.onEndSession!();
+                    },
                   ),
                 ),
               ],

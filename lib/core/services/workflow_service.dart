@@ -136,7 +136,7 @@ class WorkflowService {
       final welcomeMessage = {
         'title': 'Thank you for your booking',
         'body': 'We have received your booking for $serviceName at $venueName on $appointmentTimeStr. We look forward to serving you.',
-        'receiverId': ministerId,
+        'assignedToId': ministerId,
         'type': 'booking_confirmation',
         'appointmentId': appointmentId,
         'timestamp': FieldValue.serverTimestamp(),
@@ -173,7 +173,7 @@ class WorkflowService {
       final consultantNotification = {
         'title': 'Minister Has Arrived',
         'body': '$ministerName has arrived and is being escorted by the concierge. Please prepare for your session. ($currentTime)',
-        'receiverId': consultantId,
+        'assignedToId': consultantId,
         'type': 'minister_arrival',
         'appointmentId': appointmentId,
         'timestamp': FieldValue.serverTimestamp(),
@@ -228,7 +228,7 @@ class WorkflowService {
         for (var doc in floorManagersQuery.docs) {
           final notification = {
             ...floorManagerNotification,
-            'receiverId': doc.id,
+            'assignedToId': doc.id,
           };
           await _firestore.collection('notifications').add(notification);
         }
@@ -297,7 +297,7 @@ class WorkflowService {
         for (var doc in floorManagersQuery.docs) {
           final notification = {
             ...floorManagerNotification,
-            'receiverId': doc.id,
+            'assignedToId': doc.id,
           };
           await _firestore.collection('notifications').add(notification);
         }
@@ -326,7 +326,7 @@ class WorkflowService {
         final ministerThankYou = {
           'title': 'Thank You for Your Visit',
           'body': 'Thank you for allowing us to serve you today. It was our pleasure to assist you with $serviceName. We look forward to your next visit.',
-          'receiverId': ministerId,
+          'assignedToId': ministerId,
           'type': 'thank_you',
           'appointmentId': appointmentId,
           'timestamp': FieldValue.serverTimestamp(),
@@ -358,7 +358,7 @@ class WorkflowService {
         final consultantNotification = {
           'title': 'Minister Has Left',
           'body': '$ministerName has left the premises. The appointment is now fully completed. ($currentTime)',
-          'receiverId': consultantId,
+          'assignedToId': consultantId,
           'type': 'minister_left',
           'appointmentId': appointmentId,
           'timestamp': FieldValue.serverTimestamp(),
@@ -383,7 +383,7 @@ class WorkflowService {
         for (var doc in floorManagersQuery.docs) {
           final notification = {
             ...floorManagerNotification,
-            'receiverId': doc.id,
+            'assignedToId': doc.id,
           };
           await _firestore.collection('notifications').add(notification);
         }
@@ -480,7 +480,7 @@ class WorkflowService {
         await _firestore.collection('notifications').add({
           'title': 'Appointment Cancelled',
           'body': 'The $serviceName appointment with $ministerName on $formattedTime has been cancelled.',
-          'receiverId': doc.id,
+          'assignedToId': doc.id,
           'type': 'appointment_cancelled',
           'appointmentId': appointmentId,
           'timestamp': FieldValue.serverTimestamp(),
@@ -495,7 +495,7 @@ class WorkflowService {
         await _firestore.collection('notifications').add({
           'title': 'Appointment Cancelled',
           'body': 'Your $serviceName appointment on $formattedTime has been cancelled. If this is an error, please contact support.',
-          'receiverId': ministerId,
+          'assignedToId': ministerId,
           'type': 'appointment_cancelled',
           'appointmentId': appointmentId,
           'timestamp': FieldValue.serverTimestamp(),
