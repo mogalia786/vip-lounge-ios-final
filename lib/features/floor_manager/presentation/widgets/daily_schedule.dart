@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
+import 'staff_assignment_dialog.dart';
 
 
 class DailySchedule extends StatelessWidget {
@@ -212,7 +213,17 @@ class DailySchedule extends StatelessWidget {
                                   // Consultant button
                                   Expanded(
                                     child: ElevatedButton(
-                                      onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'consultant'),
+                                      onPressed: () {
+  showDialog(
+    context: context,
+    builder: (context) => StaffAssignmentDialog(
+      appointment: {
+        ...appointment,
+        'id': appointmentId,
+      },
+    ),
+  );
+},
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: consultantAssigned ? Colors.green : AppColors.gold,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
@@ -221,7 +232,7 @@ class DailySchedule extends StatelessWidget {
                                         elevation: 0,
                                       ),
                                       child: Text(
-                                        consultantAssigned ? (appointment['consultantName'] ?? 'Reassign') : 'Consultant',
+                                        consultantAssigned ? (appointment['assignedConsultantName'] ?? 'Reassign') : 'Consultant',
                                         style: const TextStyle(color: Colors.black, fontSize: 11),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -232,7 +243,17 @@ class DailySchedule extends StatelessWidget {
                                   const SizedBox(width: 5),
                                   Expanded(
                                     child: ElevatedButton(
-                                      onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'cleaner'),
+                                      onPressed: () {
+  showDialog(
+    context: context,
+    builder: (context) => StaffAssignmentDialog(
+      appointment: {
+        ...appointment,
+        'id': appointmentId,
+      },
+    ),
+  );
+},
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: cleanerAssigned ? Colors.green : AppColors.gold,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
@@ -241,7 +262,7 @@ class DailySchedule extends StatelessWidget {
                                         elevation: 0,
                                       ),
                                       child: Text(
-                                        cleanerAssigned ? (appointment['cleanerName'] ?? 'Reassign') : 'Cleaner',
+                                        cleanerAssigned ? (appointment['assignedCleanerName'] ?? 'Reassign') : 'Cleaner',
                                         style: const TextStyle(color: Colors.black, fontSize: 11),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -252,7 +273,17 @@ class DailySchedule extends StatelessWidget {
                                   const SizedBox(width: 5),
                                   Expanded(
                                     child: ElevatedButton(
-                                      onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'concierge'),
+                                      onPressed: () {
+  showDialog(
+    context: context,
+    builder: (context) => StaffAssignmentDialog(
+      appointment: {
+        ...appointment,
+        'id': appointmentId,
+      },
+    ),
+  );
+},
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: conciergeAssigned ? Colors.green : AppColors.gold,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
@@ -261,7 +292,7 @@ class DailySchedule extends StatelessWidget {
                                         elevation: 0,
                                       ),
                                       child: Text(
-                                        conciergeAssigned ? (appointment['conciergeName'] ?? 'Reassign') : 'Concierge',
+                                        conciergeAssigned ? (appointment['assignedConciergeName'] ?? 'Reassign') : 'Concierge',
                                         style: const TextStyle(color: Colors.black, fontSize: 11),
                                         overflow: TextOverflow.ellipsis,
                                       ),

@@ -437,6 +437,30 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         return;
       }
       final appointmentData = appointmentDoc.data()!;
+
+      // Fetch user details for enrichment
+      Future<Map<String, dynamic>> getUserDetails(String? userId) async {
+        if (userId == null || userId.isEmpty) return {};
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        if (!userDoc.exists) return {};
+        final data = userDoc.data() ?? {};
+        return {
+          'id': userId,
+          'firstName': data['firstName'] ?? '',
+          'lastName': data['lastName'] ?? '',
+          'phone': data['phone'] ?? data['phoneNumber'] ?? '',
+          'email': data['email'] ?? '',
+        };
+      }
+
+      final ministerId = appointmentData['ministerId'] ?? appointmentData['ministerUid'];
+      final consultantId = appointmentData['consultantId'] ?? appointmentData['assignedConsultantId'];
+      final conciergeId = appointmentData['conciergeId'] ?? appointmentData['assignedConciergeId'];
+
+      final ministerDetails = await getUserDetails(ministerId?.toString());
+      final consultantDetails = await getUserDetails(consultantId?.toString());
+      final conciergeDetails = await getUserDetails(conciergeId?.toString());
+
       // Mark appointment as completed
       await FirebaseFirestore.instance
           .collection('appointments')
@@ -446,16 +470,24 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         'conciergeEndTime': DateTime.now(),
       });
 
-      // Send notification to consultant (and optionally floor manager)
-      final consultantId = appointmentData['consultantId'] ?? appointmentData['assignedConsultantId'];
+      // Build enriched appointment data for notifications
+      Map<String, dynamic> fullDetails = {
+        ...appointmentData,
+        'appointmentId': appointmentId,
+        'minister': ministerDetails,
+        'consultant': consultantDetails,
+        'concierge': conciergeDetails,
+      };
+
       final venue = appointmentData['venue'] ?? appointmentData['venueName'] ?? 'Venue not specified';
+
+      // Notify consultant
       if (consultantId != null && consultantId.toString().isNotEmpty) {
         await _notificationService.createNotification(
           title: 'Session Ended',
           body: 'Concierge has ended the session at $venue.',
           data: {
-            'appointmentId': appointmentId,
-            'venue': venue,
+            ...fullDetails,
             'notificationType': 'session_ended',
           },
           role: 'consultant',
@@ -463,14 +495,33 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
           notificationType: 'session_ended',
         );
       }
+
+      // Notify all floor managers
+      final floorManagers = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'floor_manager')
+          .get();
+      for (var doc in floorManagers.docs) {
+        await _notificationService.createNotification(
+          title: 'Minister Departure',
+          body: 'The minister has left the venue ($venue). Please review the appointment details.',
+          data: {
+            ...fullDetails,
+            'notificationType': 'minister_departure',
+          },
+          role: 'floor_manager',
+          assignedToId: doc.id,
+          notificationType: 'minister_departure',
+        );
+      }
+
       // Send thank you notification to minister
-      final ministerId = appointmentData['ministerId'] ?? appointmentData['ministerUid'];
       if (ministerId != null && ministerId.toString().isNotEmpty) {
         await _notificationService.createNotification(
           title: 'Thank You',
           body: 'Thank you for attending your appointment and we look forward to seeing you in the future. Please be safe, from Concierge',
           data: {
-            'appointmentId': appointmentId,
+            ...fullDetails,
             'notificationType': 'thank_you',
           },
           role: 'minister',
@@ -484,6 +535,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
       );
     }
   }
+
   void _chatWithMinister(Map<String, dynamic> appointment) {}
   void _changeStatus(Map<String, dynamic> appointment, String? val) {}
 

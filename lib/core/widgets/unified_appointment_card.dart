@@ -49,9 +49,26 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   @override
   void didUpdateWidget(covariant UnifiedAppointmentCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the appointmentInfo changes (e.g., new appointment for different date), update all fields
-    if (widget.appointmentInfo != oldWidget.appointmentInfo) {
-      _appointmentData = Map<String, dynamic>.from(widget.appointmentInfo);
+    // Only update local state if new appointmentInfo is actually different
+    final Map<String, dynamic> newInfo = Map<String, dynamic>.from(widget.appointmentInfo);
+    bool hasChanged = false;
+    for (final key in newInfo.keys) {
+      if (_appointmentData[key] != newInfo[key]) {
+        hasChanged = true;
+        break;
+      }
+    }
+    if (hasChanged) {
+      // --- Only update fields that are NOT session state fields, to preserve local UI state ---
+      for (final entry in newInfo.entries) {
+        final key = entry.key;
+        // Do not overwrite session state fields if already set locally
+        if (key.endsWith('SessionStarted') || key.endsWith('SessionEnded') || key.endsWith('StartTime') || key.endsWith('EndTime')) {
+          // If the local value is not null/undefined, keep it
+          if (_appointmentData[key] != null) continue;
+        }
+        _appointmentData[key] = entry.value;
+      }
       // Always override appointmentTime with widget.date if provided
       if (widget.date != null) {
         _appointmentData['appointmentTime'] = widget.date;
@@ -61,6 +78,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
       // Only the date changed, update just appointmentTime
       _updateLocalFields({'appointmentTime': widget.date});
     }
+    // This logic ensures session state fields are only set by direct user actions, not by upstream prop changes.
   }
 
   void _updateLocalFields(Map<String, dynamic> fields) {
@@ -225,12 +243,16 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           }
         } else {
           // End session logic
+          String? newStatus = _appointmentData['status'];
+          if (role == 'concierge') {
+            newStatus = 'completed';
+          }
           await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
             endField: true,
             '${role}EndTime': DateTime.now(),
-            'status': role == 'concierge' ? 'completed' : 'in-progress',
+            'status': newStatus,
           });
-          _updateLocalFields({endField: true, 'status': role == 'concierge' ? 'completed' : 'in-progress', '${role}EndTime': DateTime.now()});
+          _updateLocalFields({endField: true, 'status': newStatus, '${role}EndTime': DateTime.now()});
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Session ended')), // TODO: Localize
           );
@@ -586,9 +608,11 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                             ? statusValue
                             : _consultantStatusOptions.first['value'],
                           isExpanded: true,
-                          onChanged: (newStatus) async {
-                            await _updateStatus(context, newStatus);
-                          },
+                          onChanged: (appointmentData['consultantSessionEnded'] == true)
+                              ? null
+                              : (newStatus) async {
+                                  await _updateStatus(context, newStatus);
+                                },
                           items: _consultantStatusOptions.map((option) {
                             return DropdownMenuItem<String>(
                               value: option['value'],
@@ -651,9 +675,21 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                             appointmentData['${widget.role}SessionStarted'] == true ? Icons.stop : Icons.play_arrow,
                             color: appointmentData['${widget.role}SessionStarted'] == true ? Colors.red : Colors.green,
                           ),
-                          label: Text(
-                            appointmentData['${widget.role}SessionStarted'] == true ? 'End Session' : 'Start Session',
-                            style: const TextStyle(color: Colors.white),
+                          label: Row(
+                            children: [
+                              Text(
+                                appointmentData['${widget.role}SessionStarted'] == true ? 'End Session' : 'Start Session',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              if (widget.role == 'concierge' && appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6.0),
+                                  child: Tooltip(
+                                    message: 'Consultant must end session first',
+                                    child: Icon(Icons.info_outline, color: Colors.redAccent, size: 18),
+                                  ),
+                                ),
+                            ],
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: widget.disableStartSession
@@ -666,7 +702,10 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                             ),
                             foregroundColor: Colors.white,
                           ),
-                          onPressed: widget.disableStartSession ? null : () => _handleStartSession(context, appointmentData),
+                          onPressed: (widget.disableStartSession || appointmentData['consultantSessionEnded'] == true ||
+  (widget.role == 'concierge' && appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true))
+  ? null
+  : () => _handleStartSession(context, appointmentData),
                         ),
                       ),
                     ],

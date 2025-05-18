@@ -16,6 +16,11 @@ class AssignEmployeeDialog extends StatefulWidget {
 }
 
 class _AssignEmployeeDialogState extends State<AssignEmployeeDialog> {
+  @override
+  void initState() {
+    super.initState();
+    print('[DEBUG] AssignEmployeeDialog opened.');
+  }
   String? selectedUserId;
   bool isLoading = false;
   List<Map<String, dynamic>> employees = [];

@@ -16,7 +16,7 @@ class RoleNotificationList extends StatelessWidget {
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    if (month < 1 || month > 12) return '';R
+    if (month < 1 || month > 12) return '';
     return months[month];
   }
 

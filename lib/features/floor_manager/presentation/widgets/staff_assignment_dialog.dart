@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/sick_leave_service.dart';
 
 import '../../../../core/constants/colors.dart';
 import '../../../../core/services/vip_notification_service.dart';
@@ -18,6 +19,7 @@ class StaffAssignmentDialog extends StatefulWidget {
 }
 
 class _StaffAssignmentDialogState extends State<StaffAssignmentDialog> {
+
   String? _selectedConsultant;
   String? _selectedConcierge;
   String? _selectedCleaner;
@@ -32,6 +34,7 @@ class _StaffAssignmentDialogState extends State<StaffAssignmentDialog> {
   @override
   void initState() {
     super.initState();
+    print('[DEBUG] StaffAssignmentDialog opened from notification tap. Appointment id: \'${widget.appointment['id']}\'');
     _loadStaff();
   }
   
@@ -54,27 +57,49 @@ DateTime? currentEndTime = currentStartTime != null && widget.appointment['durat
     ? currentStartTime.add(Duration(minutes: int.tryParse(widget.appointment['duration'].toString()) ?? 60))
     : (currentStartTime != null ? currentStartTime.add(Duration(hours: 1)) : null);
 
+
+final DateTime? apptDay = currentStartTime != null ? DateTime(currentStartTime.year, currentStartTime.month, currentStartTime.day) : null;
+
+final sickLeaveService = SickLeaveService();
+final sickConsultantLeaves = apptDay != null
+    ? await sickLeaveService.getSickLeavesForRange(apptDay, 'consultant')
+    : [];
+final sickConciergeLeaves = apptDay != null
+    ? await sickLeaveService.getSickLeavesForRange(apptDay, 'concierge')
+    : [];
+final sickCleanerLeaves = apptDay != null
+    ? await sickLeaveService.getSickLeavesForRange(apptDay, 'cleaner')
+    : [];
+final sickConsultantIds = sickConsultantLeaves.map((s) => s.userId).toSet();
+final sickConciergeIds = sickConciergeLeaves.map((s) => s.userId).toSet();
+final sickCleanerIds = sickCleanerLeaves.map((s) => s.userId).toSet();
+
 for (var doc in consultantsSnapshot.docs) {
   final data = doc.data();
   final consultantId = doc.id;
-  // Query for overlapping appointments for this consultant
-  final overlapping = await FirebaseFirestore.instance
+  // Exclude if consultant is on sick leave for the day
+  if (sickConsultantIds.contains(consultantId)) continue;
+  // Query all appointments at this slot (not cancelled) where this consultant is assigned
+  final assignedAppointments = await FirebaseFirestore.instance
       .collection('appointments')
-      .where('consultantId', isEqualTo: consultantId)
-      .where('appointmentTime', isGreaterThanOrEqualTo: Timestamp.fromDate(currentStartTime ?? DateTime(2000)))
+      .where('appointmentTime', isEqualTo: currentStartTime != null ? Timestamp.fromDate(currentStartTime) : null)
+      .where('status', isNotEqualTo: 'cancelled')
       .get();
+
   bool isDoubleBooked = false;
-  for (var appt in overlapping.docs) {
+  print('[DEBUG] Checking consultant $consultantId for appointmentTime: '
+        'currentStartTime=$currentStartTime, as Timestamp=${currentStartTime != null ? Timestamp.fromDate(currentStartTime) : 'null'}');
+  for (var appt in assignedAppointments.docs) {
     if (appt.id == widget.appointment['id']) continue; // skip self
-    final apptTime = (appt.data()['appointmentTime'] as Timestamp?)?.toDate();
-    final apptDuration = int.tryParse(appt.data()['duration']?.toString() ?? '') ?? 60;
-    final apptEnd = apptTime != null ? apptTime.add(Duration(minutes: apptDuration)) : null;
-    if (apptTime != null && currentStartTime != null && currentEndTime != null && apptEnd != null) {
-      // Check for overlap
-      if (apptTime.isBefore(currentEndTime) && apptEnd.isAfter(currentStartTime)) {
-        isDoubleBooked = true;
-        break;
-      }
+    final apptData = appt.data();
+    print('[DEBUG] Found appointmentTime in Firestore: '
+          '${apptData['appointmentTime']} (as DateTime: '
+          '${apptData['appointmentTime'] is Timestamp ? (apptData['appointmentTime'] as Timestamp).toDate() : apptData['appointmentTime']})');
+    final apptConsultantId = apptData['consultantId'] ?? apptData['assignedConsultantId'];
+    if (apptConsultantId == consultantId) {
+      print('[DEBUG] Consultant $consultantId excluded: already assigned at this slot (appointment ${appt.id}).');
+      isDoubleBooked = true;
+      break;
     }
   }
   if (!isDoubleBooked) {
@@ -95,6 +120,9 @@ for (var doc in consultantsSnapshot.docs) {
       final List<Map<String, dynamic>> conciergesList = [];
       for (var doc in conciergesSnapshot.docs) {
         final data = doc.data();
+        final conciergeId = doc.id;
+        // Exclude if concierge is on sick leave for the day
+        if (sickConciergeIds.contains(conciergeId)) continue;
         conciergesList.add({
           'id': doc.id,
           'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
@@ -111,6 +139,9 @@ for (var doc in consultantsSnapshot.docs) {
       final List<Map<String, dynamic>> cleanersList = [];
       for (var doc in cleanersSnapshot.docs) {
         final data = doc.data();
+        final cleanerId = doc.id;
+        // Exclude if cleaner is on sick leave for the day
+        if (sickCleanerIds.contains(cleanerId)) continue;
         cleanersList.add({
           'id': doc.id,
           'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
@@ -363,6 +394,7 @@ for (var doc in consultantsSnapshot.docs) {
                         }).toList(),
                       ],
                       onChanged: (value) {
+                        print('Floor manager selecting Consultant: $value');
                         setState(() {
                           _selectedConsultant = value;
                         });
@@ -468,7 +500,10 @@ for (var doc in consultantsSnapshot.docs) {
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
-                          onPressed: _assignStaff,
+                          onPressed: () {
+  print('Floor manager tapped Select Consultant button');
+  _assignStaff();
+},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.gold,
                             foregroundColor: Colors.black,

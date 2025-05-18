@@ -1183,9 +1183,10 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
 
   void _endSession(Map<String, dynamic> appointment) async {
     try {
-      await FirebaseFirestore.instance.collection('appointments').doc(appointment['id']).update({'status': 'completed', 'consultantEndTime': DateTime.now()});
+      await FirebaseFirestore.instance.collection('appointments').doc(appointment['id']).update({'status': 'completed', 'consultantEndTime': DateTime.now(), 'consultantSessionEnded': true});
       setState(() {
         appointment['status'] = 'completed';
+        appointment['consultantSessionEnded'] = true;
       });
       // Send thank you notification to minister
       final ministerId = appointment['ministerId'] ?? appointment['ministerUid'];

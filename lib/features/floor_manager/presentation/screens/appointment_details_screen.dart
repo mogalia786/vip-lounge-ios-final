@@ -206,8 +206,49 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   }
 
   Future<bool> _isStaffAvailable(String staffId, String staffType, Timestamp appointmentTime, int duration, String currentAppointmentId) async {
-    // Implement availability check logic as needed
-    // For now, always return true (or copy logic from home screen if required)
+    // Check if staff is on sick leave
+    final staffDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(staffId)
+        .get();
+    if (staffDoc.exists) {
+      final staffData = staffDoc.data();
+      if (staffData != null && (staffData['isSick'] == true || staffData['onSickLeave'] == true)) {
+        print('[DEBUG][AVAILABILITY] Staff $staffId is on sick leave');
+        return false;
+      }
+    }
+
+    final appointmentStart = appointmentTime.toDate();
+    final appointmentEnd = appointmentStart.add(Duration(minutes: duration));
+
+    // Check for overlapping appointments
+    final overlappingAppointments = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('${staffType}Id', isEqualTo: staffId)
+        .get();
+
+    for (var doc in overlappingAppointments.docs) {
+      final data = doc.data();
+
+      // Skip if looking at the same appointment
+      if (doc.id == currentAppointmentId) continue;
+
+      if (data['appointmentTime'] is Timestamp) {
+        final otherAppointmentTime = data['appointmentTime'] as Timestamp;
+        final otherStart = otherAppointmentTime.toDate();
+        final otherDuration = data['duration'] is int ? data['duration'] as int : 60;
+        final otherEnd = otherStart.add(Duration(minutes: otherDuration));
+
+        // Check for overlap
+        if (appointmentStart.isBefore(otherEnd) && appointmentEnd.isAfter(otherStart)) {
+          print('[DEBUG][AVAILABILITY] Staff $staffId has conflict with appointment ${doc.id} ($otherStart - $otherEnd)');
+          return false;
+        }
+      }
+    }
+
+    print('[DEBUG][AVAILABILITY] Staff $staffId is available for $appointmentStart - $appointmentEnd');
     return true;
   }
 
@@ -233,6 +274,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         foregroundColor: Colors.black,
       ),
       onPressed: () {
+        print('[DEBUG][ASSIGN BUTTON] Pressed for role: ' + role.toLowerCase());
         _showStaffSelectionDialog(role.toLowerCase());
       },
       child: assigned

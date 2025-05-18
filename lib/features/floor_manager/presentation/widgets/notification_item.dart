@@ -44,6 +44,14 @@ class NotificationItem extends StatelessWidget {
     return notification;
   }
 
+  // Helper for launching email
+  void _launchEmail(String email) async {
+    final Uri emailUri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = _getNotificationData();
@@ -144,50 +152,128 @@ class NotificationItem extends StatelessWidget {
     // Compose details for display
     final ministerEmail = data['ministerEmail']?.toString() ?? '';
     final ministerId = data['ministerId']?.toString() ?? '';
+    // Consultant/Concierge contact info
+    // (No redeclaration of consultantName/conciergeName here, already declared above)
+    final consultantPhone = data['consultantPhone']?.toString() ?? data['consultantMobile']?.toString() ?? '';
+    final consultantEmail = data['consultantEmail']?.toString() ?? '';
+    final conciergePhone = data['conciergePhone']?.toString() ?? data['conciergeMobile']?.toString() ?? '';
+    final conciergeEmail = data['conciergeEmail']?.toString() ?? '';
+
     // Top horizontal row: Minister Name, Phone (tappable), Email, ID
     Widget ministerRow = Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (displayName.isNotEmpty) ...[
-          Icon(Icons.person, color: AppColors.gold, size: 18),
-          SizedBox(width: 4),
-          Flexible(child: Text(displayName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
-        ],
-        if (ministerPhone.isNotEmpty) ...[
-          SizedBox(width: 12),
-          Icon(Icons.phone, color: AppColors.gold, size: 18),
-          SizedBox(width: 2),
-          GestureDetector(
-            onTap: () => NotificationItem._launchPhoneCall(ministerPhone),
-            child: Text(ministerPhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+        Row(
+          children: [
+            if (displayName.isNotEmpty) ...[
+              Icon(Icons.person, color: AppColors.gold, size: 18),
+              SizedBox(width: 4),
+              Flexible(child: Text(displayName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            if (ministerPhone.isNotEmpty) ...[
+              SizedBox(width: 12),
+              Icon(Icons.phone, color: AppColors.gold, size: 18),
+              SizedBox(width: 2),
+              GestureDetector(
+                onTap: () => NotificationItem._launchPhoneCall(ministerPhone),
+                child: Text(ministerPhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+              ),
+            ],
+          ],
+        ),
+        if (ministerId.isNotEmpty) ...[
+          SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.badge, color: AppColors.gold, size: 18),
+              SizedBox(width: 2),
+              Text('ID: $ministerId', style: TextStyle(color: Colors.white, fontSize: 13)),
+            ],
           ),
         ],
+        if (ministerEmail.isNotEmpty) ...[
+          SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.email, color: AppColors.gold, size: 18),
+              SizedBox(width: 2),
+              GestureDetector(
+                onTap: () => _launchEmail(ministerEmail),
+                child: Text(ministerEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+              ),
+            ],
+          ),
+        ],
+        // Consultant Info
+        if (consultantName.isNotEmpty || consultantPhone.isNotEmpty || consultantEmail.isNotEmpty) ...[
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.person_outline, color: AppColors.gold, size: 18),
+              SizedBox(width: 4),
+              Flexible(child: Text('Consultant: $consultantName', style: TextStyle(color: Colors.white, fontSize: 13), overflow: TextOverflow.ellipsis)),
+              if (consultantPhone.isNotEmpty) ...[
+                SizedBox(width: 8),
+                Icon(Icons.phone, color: AppColors.gold, size: 18),
+                SizedBox(width: 2),
+                GestureDetector(
+                  onTap: () => NotificationItem._launchPhoneCall(consultantPhone),
+                  child: Text(consultantPhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                ),
+              ],
+            ],
+          ),
+          if (consultantEmail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 24, top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.email, color: AppColors.gold, size: 18),
+                  SizedBox(width: 2),
+                  GestureDetector(
+                    onTap: () => _launchEmail(consultantEmail),
+                    child: Text(consultantEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        // Concierge Info
+        if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNotEmpty) ...[
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.person_outline, color: AppColors.gold, size: 18),
+              SizedBox(width: 4),
+              Flexible(child: Text('Concierge: $conciergeName', style: TextStyle(color: Colors.white, fontSize: 13), overflow: TextOverflow.ellipsis)),
+              if (conciergePhone.isNotEmpty) ...[
+                SizedBox(width: 8),
+                Icon(Icons.phone, color: AppColors.gold, size: 18),
+                SizedBox(width: 2),
+                GestureDetector(
+                  onTap: () => NotificationItem._launchPhoneCall(conciergePhone),
+                  child: Text(conciergePhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                ),
+              ],
+            ],
+          ),
+          if (conciergeEmail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 24, top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.email, color: AppColors.gold, size: 18),
+                  SizedBox(width: 2),
+                  GestureDetector(
+                    onTap: () => _launchEmail(conciergeEmail),
+                    child: Text(conciergeEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ],
-    ),
-    if (ministerId.isNotEmpty) ...[
-      SizedBox(height: 4),
-      Row(
-        children: [
-          Icon(Icons.badge, color: AppColors.gold, size: 18),
-          SizedBox(width: 2),
-          Text('ID: $ministerId', style: TextStyle(color: Colors.white, fontSize: 13)),
-        ],
-      ),
-    ],
-    if (ministerEmail.isNotEmpty) ...[
-      SizedBox(height: 4),
-      Row(
-        children: [
-          Icon(Icons.email, color: AppColors.gold, size: 18),
-          SizedBox(width: 2),
-          Text(ministerEmail, style: TextStyle(color: Colors.white, fontSize: 13)),
-        ],
-      ),
-    ],
-  ],
-);
+    );
 
 
 
