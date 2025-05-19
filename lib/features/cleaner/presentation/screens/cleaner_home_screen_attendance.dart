@@ -35,6 +35,10 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
   String _cleanerId = '';
   String _cleanerName = '';
   DateTime _selectedDate = DateTime.now();
+  List<DateTime> get _sevenDayRange {
+    final now = DateTime.now();
+    return List.generate(7, (i) => DateTime(now.year, now.month, now.day).add(Duration(days: i)));
+  }
   List<Map<String, dynamic>> _appointments = [];
   bool _isLoading = true;
   int _currentIndex = 0;
@@ -369,9 +373,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
   }
 
   Widget _buildWeeklySchedule() {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+    final days = _sevenDayRange;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: SingleChildScrollView(
@@ -387,12 +389,13 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
                 });
               },
               child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.gold : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.gold),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 child: Column(
                   children: [
                     Text(

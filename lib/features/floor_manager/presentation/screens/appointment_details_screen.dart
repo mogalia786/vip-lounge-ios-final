@@ -513,13 +513,47 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         throw Exception('Appointment not found');
       }
       final appointmentData = appointmentDoc.data();
-      final updateData = {
-        '${staffType}Id': staffId,
-        '${staffType}Name': staffName,
+      final updateData = <String, dynamic>{
         'updatedAt': FieldValue.serverTimestamp(),
         'lastUpdatedBy': floorManagerId,
         'lastUpdatedByName': floorManagerName,
       };
+
+      if (staffType == 'consultant') {
+        updateData['consultantId'] = staffId;
+        updateData['consultantName'] = staffName;
+        // Reset session state fields for consultant
+        updateData['consultantSessionStarted'] = false;
+        updateData['consultantSessionEnded'] = false;
+        // Fetch consultant contact info from users collection
+        final consultantDoc = await FirebaseFirestore.instance.collection('users').doc(staffId).get();
+        final consultantData = consultantDoc.data() ?? {};
+        updateData['consultantPhone'] = consultantData['phoneNumber'] ?? '';
+        updateData['consultantEmail'] = consultantData['email'] ?? '';
+      }
+      if (staffType == 'concierge') {
+        updateData['conciergeId'] = staffId;
+        updateData['conciergeName'] = staffName;
+        // Reset session state fields for concierge
+        updateData['conciergeSessionStarted'] = false;
+        updateData['conciergeSessionEnded'] = false;
+        // Fetch concierge contact info from users collection
+        final conciergeDoc = await FirebaseFirestore.instance.collection('users').doc(staffId).get();
+        final conciergeData = conciergeDoc.data() ?? {};
+        updateData['conciergePhone'] = conciergeData['phoneNumber'] ?? '';
+        updateData['conciergeEmail'] = conciergeData['email'] ?? '';
+      }
+      if (staffType == 'cleaner') {
+        updateData['cleanerId'] = staffId;
+        updateData['cleanerName'] = staffName;
+      }
+      // Always reset session state fields for assignment
+      if (staffType == 'consultant' || staffType == 'concierge') {
+        updateData['consultantSessionStarted'] = false;
+        updateData['consultantSessionEnded'] = false;
+        updateData['conciergeSessionStarted'] = false;
+        updateData['conciergeSessionEnded'] = false;
+      }
       await FirebaseFirestore.instance
           .collection('appointments')
           .doc(appointmentId)

@@ -99,6 +99,10 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
   String _conciergeId = '';
   String _conciergeName = '';
   DateTime _selectedDate = DateTime.now();
+  List<DateTime> get _sevenDayRange {
+    final now = DateTime.now();
+    return List.generate(7, (i) => DateTime(now.year, now.month, now.day).add(Duration(days: i)));
+  }
   List<Map<String, dynamic>> _appointments = [];
   bool _isLoading = true;
   int _currentIndex = 0;
@@ -371,34 +375,32 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
 
   // Weekly schedule selector for the dashboard (mirrors consultant)
   Widget _buildWeeklySchedule() {
-  final now = DateTime.now();
-  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-  final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: days.map((day) {
-          final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedDate = day;
-                _loadAppointments();
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.gold : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.gold),
-              ),
-              child: Column(
-                children: [
-                  Text(
+    final days = _sevenDayRange;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: days.map((day) {
+            final isSelected = _selectedDate.year == day.year && _selectedDate.month == day.month && _selectedDate.day == day.day;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedDate = day;
+                  _loadAppointments();
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.gold : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.gold),
+                ),
+                child: Column(
+                  children: [
+                    Text(
                     DateFormat('E').format(day),
                     style: TextStyle(
                       color: isSelected ? Colors.black : AppColors.gold,

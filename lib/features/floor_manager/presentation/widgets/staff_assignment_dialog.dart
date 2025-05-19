@@ -162,7 +162,15 @@ for (var doc in consultantsSnapshot.docs) {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading staff: $e');
+      print('[ERROR] Error during staff loading: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load staff: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       setState(() {
         _isLoading = false;
       });
@@ -221,6 +229,35 @@ for (var doc in consultantsSnapshot.docs) {
         cleanerName = 'Unknown Cleaner';
       }
     }
+    // --- Add session and contact fields for consultant/concierge ---
+    Map<String, dynamic> consultantContact = {
+      'consultantPhone': '',
+      'consultantEmail': '',
+    };
+    Map<String, dynamic> conciergeContact = {
+      'conciergePhone': '',
+      'conciergeEmail': '',
+    };
+    if (_selectedConsultant != null && _selectedConsultant!.isNotEmpty) {
+      final consultant = (_consultants).firstWhere(
+        (staff) => staff['id'] == _selectedConsultant,
+        orElse: () => {},
+      );
+      consultantContact = {
+        'consultantPhone': consultant['phoneNumber'] ?? consultant['phone'] ?? '',
+        'consultantEmail': consultant['email'] ?? '',
+      };
+    }
+    if (_selectedConcierge != null && _selectedConcierge!.isNotEmpty) {
+      final concierge = (_concierges).firstWhere(
+        (staff) => staff['id'] == _selectedConcierge,
+        orElse: () => {},
+      );
+      conciergeContact = {
+        'conciergePhone': concierge['phoneNumber'] ?? concierge['phone'] ?? '',
+        'conciergeEmail': concierge['email'] ?? '',
+      };
+    }
     final updateData = {
       'assignedConsultantId': _selectedConsultant ?? '',
       'assignedConsultantName': consultantName,
@@ -228,13 +265,23 @@ for (var doc in consultantsSnapshot.docs) {
       'assignedConciergeName': conciergeName,
       'assignedCleanerId': _selectedCleaner ?? '',
       'assignedCleanerName': cleanerName,
+      // Session state fields (always set on assignment)
+      'consultantSessionStarted': false,
+      'consultantSessionEnded': false,
+      'conciergeSessionStarted': false,
+      'conciergeSessionEnded': false,
+      ...consultantContact,
+      ...conciergeContact,
     };
+
     print('[DEBUG] FINAL updateData for Firestore:');
     updateData.forEach((k, v) {
       print('  $k = $v (type: \${v.runtimeType})');
     });
+    print('[DEBUG] Attempting Firestore update for appointment: ${widget.appointment['id']}');
     try {
       await FirebaseFirestore.instance.collection('appointments').doc(widget.appointment['id'].toString()).update(updateData);
+      print('[DEBUG] Firestore update successful for appointment: ${widget.appointment['id']}');
       // --- Send notifications to assigned staff ---
       if (_selectedConsultant != null && _selectedConsultant!.isNotEmpty) {
         await _notificationService.createNotification(

@@ -1,0 +1,48 @@
+# VIP Lounge Session Flow Reference
+
+## 1. Minister Books Appointment
+- Notification sent to Floor Manager.
+
+## 2. Floor Manager Assigns Users
+- Assigns Consultant, Concierge, and Cleaner.
+- Consultant: Only consultant time slot availability and sick leave rules apply.
+- Concierge: Only sick leave affects assignment eligibility.
+- Assigned users are notified.
+
+## 3. Initial Session Button States
+- Consultant: "Start Session" is disabled.
+- Concierge: "Start Session" is enabled.
+
+## 4. Concierge Starts Session
+- Concierge clicks "Start Session".
+- Notification sent to Consultant: "Minister has arrived".
+- Concierge button changes to disabled "End Session".
+- Consultant's "Start Session" is now enabled.
+
+## 5. Consultant Handles Session
+- Consultant clicks "Start Session", changes status, and then clicks "End Session".
+- On "End Session":
+  - Consultant's button is hidden.
+  - Notification sent to Concierge: "Fetch Minister".
+  - Notification sent to Minister: Thank you (from consultant) with:
+    - Full appointment details.
+    - Status of application.
+    - Consultant's clickable contact details.
+
+## 6. Concierge Ends Session
+- Concierge's "End Session" button becomes enabled upon receiving "Fetch Minister" notification.
+- Concierge clicks "End Session":
+  - Notification sent to Consultant and Floor Manager: "Minister escorted out".
+  - Notification sent to Minister: Thank you (from concierge) with:
+    - Full appointment details.
+    - Concierge's clickable contact details (no application status).
+  - Concierge's button is hidden.
+
+## 7. Completion
+- After both have ended their sessions, all session buttons for both users are hidden for that appointment.
+
+## Implementation Notes
+- Button state/visibility must be driven by both local actions and backend state, with proper notification and async update handling.
+- Notifications must be sent at each critical step, with correct content and recipient.
+- No button should reappear or be enabled out of order due to screen refreshes, navigation, or Firestore updates.
+- Contact details in notifications must be clickable and accurate.

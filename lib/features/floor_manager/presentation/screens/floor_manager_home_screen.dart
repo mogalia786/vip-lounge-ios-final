@@ -68,13 +68,255 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
   
   // Method to assign staff to an appointment
   Future<void> _assignStaff(String appointmentId, String staffType, String staffName, String staffId) async {
+    // Fetch user contact info from users collection
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(staffId).get();
+    final userData = userDoc.data() ?? {};
+    final String phone = userData['phoneNumber'] ?? '';
+    final String email = userData['email'] ?? '';
+    final String fullName = ((userData['firstName'] ?? '') + ' ' + (userData['lastName'] ?? '')).trim();
+
+    // Prepare update data
+    final updateData = <String, dynamic>{};
+    if (staffType == 'consultant') {
+      updateData['consultantId'] = staffId;
+      updateData['consultantName'] = fullName.isNotEmpty ? fullName : staffName;
+      updateData['consultantPhone'] = phone;
+      updateData['consultantEmail'] = email;
+    } else if (staffType == 'concierge') {
+      updateData['conciergeId'] = staffId;
+      updateData['conciergeName'] = fullName.isNotEmpty ? fullName : staffName;
+      updateData['conciergePhone'] = phone;
+      updateData['conciergeEmail'] = email;
+    }
+    // Always initialize all session fields
+    updateData['consultantSessionStarted'] = false;
+    updateData['consultantSessionEnded'] = false;
+    updateData['conciergeSessionStarted'] = false;
+    updateData['conciergeSessionEnded'] = false;
+    await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update(updateData);
+    // Existing notification/activity logic continues below (unchanged)
+  
     try {
-      print('======= [DEBUG] _assignStaff called (floor_manager_home_screen) =======');
-      print('[DEBUG] appointmentId: $appointmentId');
-      print('[DEBUG] staffType: $staffType');
-      print('[DEBUG] staffName: $staffName');
-      print('[DEBUG] staffId: $staffId');
       // Get the current floor manager's ID
+      final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+      final floorManagerId = user?.uid;
+      final floorManagerName = user?.name ?? 'Floor Manager';
+
+      // Get the appointment data first to include in activity log
+      final appointmentDoc = await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(appointmentId)
+          .get();
+
+      if (!appointmentDoc.exists) {
+        throw Exception('Appointment not found');
+      }
+
+      final appointmentData = appointmentDoc.data();
+
+      // Get full minister data to ensure we have the complete name
+      String ministerName = 'Unknown Minister';
+      if (appointmentData != null && appointmentData['ministerId'] != null) {
+        final ministerDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(appointmentData['ministerId'])
+            .get();
+
+        if (ministerDoc.exists) {
+          final ministerData = ministerDoc.data();
+          ministerName = ministerData?['name'] ??
+                        (ministerData?['firstName'] != null && ministerData?['lastName'] != null ?
+                        '${ministerData?['firstName']} ${ministerData?['lastName']}' :
+                        appointmentData['ministerName'] ?? 'Unknown Minister');
+        } else {
+          ministerName = appointmentData['ministerName'] ?? 'Unknown Minister';
+        }
+      }
+
+      final appointmentTime = appointmentData?['appointmentTime'];
+      final venueName = appointmentData?['venueName'] ?? 'No venue';
+      final serviceName = appointmentData?['serviceName'] ?? '';
+      final ministerId = appointmentData?['ministerId'] ?? '';
+      final consultantId = appointmentData?['consultantId'] ?? (staffType == 'consultant' ? staffId : '');
+      final consultantName = appointmentData?['consultantName'] ?? (staffType == 'consultant' ? (fullName.isNotEmpty ? fullName : staffName) : '');
+      final consultantPhone = appointmentData?['consultantPhone'] ?? (staffType == 'consultant' ? phone : '');
+      final consultantEmail = appointmentData?['consultantEmail'] ?? (staffType == 'consultant' ? email : '');
+      final conciergeId = appointmentData?['conciergeId'] ?? (staffType == 'concierge' ? staffId : '');
+      final conciergeName = appointmentData?['conciergeName'] ?? (staffType == 'concierge' ? (fullName.isNotEmpty ? fullName : staffName) : '');
+      final conciergePhone = appointmentData?['conciergePhone'] ?? (staffType == 'concierge' ? phone : '');
+      final conciergeEmail = appointmentData?['conciergeEmail'] ?? (staffType == 'concierge' ? email : '');
+      final cleanerId = appointmentData?['cleanerId'] ?? (staffType == 'cleaner' ? staffId : '');
+      final cleanerName = appointmentData?['cleanerName'] ?? (staffType == 'cleaner' ? staffName : '');
+
+      // Merge all update fields
+      final mergedUpdateData = <String, dynamic>{
+        // Contact info
+        if (staffType == 'consultant')
+          ...{
+            'consultantId': staffId,
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': consultantEmail,
+          },
+        if (staffType == 'concierge')
+          ...{
+            'conciergeId': staffId,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': conciergeEmail,
+          },
+        // Audit info
+        '${staffType}Id': staffId,
+        '${staffType}Name': fullName.isNotEmpty ? fullName : staffName,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastUpdatedBy': floorManagerId,
+        'lastUpdatedByName': floorManagerName,
+      };
+
+      await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update(mergedUpdateData);
+
+      // Track the assignment in staff_activities collection
+      await FirebaseFirestore.instance.collection('staff_activities').add({
+        'staffId': staffId,
+        'staffName': fullName.isNotEmpty ? fullName : staffName,
+        'staffType': staffType,
+        'activityType': 'assignment',
+        'appointmentId': appointmentId,
+        'ministerName': ministerName,
+        'venueName': venueName,
+        'appointmentTime': appointmentTime,
+        'assignedBy': floorManagerId,
+        'assignedByName': floorManagerName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'assigned',
+      });
+
+      // Send notifications to assigned staff (consultant, concierge, cleaner)
+      if (consultantId != null && consultantId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentId,
+            'staffType': 'consultant',
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': consultantEmail,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': conciergeEmail,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'consultant',
+          assignedToId: consultantId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      if (conciergeId != null && conciergeId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentId,
+            'staffType': 'concierge',
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': consultantEmail,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': conciergeEmail,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'concierge',
+          assignedToId: conciergeId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      if (cleanerId != null && cleanerId.toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'New Appointment Assigned',
+          body: 'You have been assigned to a new appointment. Minister: $ministerName, Service: $serviceName, Venue: $venueName.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentId,
+            'staffType': 'cleaner',
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': consultantEmail,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': conciergeEmail,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'cleaner',
+          assignedToId: cleanerId,
+          notificationType: 'booking_assigned',
+        );
+      }
+      // If both consultant and concierge are assigned (not cleaner), notify minister with two detailed notifications
+      if (
+        consultantId != null && consultantId.toString().isNotEmpty &&
+        conciergeId != null && conciergeId.toString().isNotEmpty
+      ) {
+        // Consultant notification
+        await VipNotificationService().createNotification(
+          title: 'Consultant Assigned to Your Appointment',
+          body: 'Your consultant is $consultantName. You can contact them at ${consultantPhone.isNotEmpty ? consultantPhone : 'N/A'} or $consultantEmail.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentId,
+            'staffType': 'consultant',
+            'consultantId': consultantId,
+            'consultantName': consultantName,
+            'consultantPhone': consultantPhone,
+            'consultantEmail': consultantEmail,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'booking_assigned',
+        );
+        // Concierge notification
+        await VipNotificationService().createNotification(
+          title: 'Concierge Assigned to Your Appointment',
+          body: 'Your concierge is $conciergeName. You can contact them at ${conciergePhone.isNotEmpty ? conciergePhone : 'N/A'} or $conciergeEmail.',
+          data: {
+            ...appointmentData ?? {},
+            'appointmentId': appointmentId,
+            'staffType': 'concierge',
+            'conciergeId': conciergeId,
+            'conciergeName': conciergeName,
+            'conciergePhone': conciergePhone,
+            'conciergeEmail': conciergeEmail,
+            'serviceName': serviceName,
+            'venueName': venueName,
+            'appointmentTime': appointmentTime,
+            'ministerName': ministerName,
+          },
+          role: 'minister',
+          assignedToId: ministerId,
+          notificationType: 'booking_assigned',
+        );
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$staffType assigned successfully')),
+      );
+    } catch (e) {
       final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
       final floorManagerId = user?.uid;
       final floorManagerName = user?.name ?? 'Floor Manager';
