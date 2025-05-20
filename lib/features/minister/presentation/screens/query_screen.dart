@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/providers/app_auth_provider.dart';
+import '../../../../core/services/vip_query_service.dart';
 
 class QueryScreen extends StatefulWidget {
   const QueryScreen({super.key});
@@ -27,9 +30,26 @@ class _QueryScreenState extends State<QueryScreen> {
     });
 
     try {
-      // TODO: Implement query submission
-      await Future.delayed(const Duration(seconds: 1)); // Simulated delay
-      
+      // Get minister info from provider
+      final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
+      final ministerData = authProvider.ministerData;
+      if (ministerData == null) throw Exception('Minister data not found');
+      final ministerId = ministerData['uid'] ?? '';
+      final ministerFirstName = ministerData['firstName'] ?? '';
+      final ministerLastName = ministerData['lastName'] ?? '';
+      final ministerEmail = ministerData['email'] ?? '';
+      final ministerPhone = ministerData['phoneNumber'] ?? '';
+      final subject = 'General Query';
+      final queryText = _queryController.text.trim();
+      await VipQueryService().submitMinisterQuery(
+        ministerId: ministerId,
+        ministerFirstName: ministerFirstName,
+        ministerLastName: ministerLastName,
+        ministerEmail: ministerEmail,
+        ministerPhone: ministerPhone,
+        subject: subject,
+        queryText: queryText,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

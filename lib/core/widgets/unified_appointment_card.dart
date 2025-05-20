@@ -39,39 +39,17 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   // Local UI state for button hiding/disabling
   bool _hideConsultantSessionButton = false;
   bool _hideConciergeSessionButton = false;
-  bool _conciergeButtonDisabled = false;
 
   void _updateSessionButtonStateFromData(Map<String, dynamic> data) {
-    // Consultant: hide button if session ended, show if not ended
     if (widget.role == 'consultant') {
-      final consultantStarted = data['consultantSessionStarted'] == true;
       final consultantEnded = data['consultantSessionEnded'] == true;
       setState(() {
         _hideConsultantSessionButton = consultantEnded;
       });
-    }
-    // Concierge: new logic for button states
-    if (widget.role == 'concierge') {
-      final consultantEnded = data['consultantSessionEnded'] == true;
-      final conciergeStarted = data['conciergeSessionStarted'] == true;
+    } else if (widget.role == 'concierge') {
       final conciergeEnded = data['conciergeSessionEnded'] == true;
       setState(() {
-        if (conciergeEnded) {
-          _hideConciergeSessionButton = true;
-          _conciergeButtonDisabled = false;
-        } else if (!conciergeStarted) {
-          // Show start session
-          _hideConciergeSessionButton = false;
-          _conciergeButtonDisabled = false;
-        } else if (conciergeStarted && !consultantEnded) {
-          // Show end session, but disabled until consultant ends
-          _hideConciergeSessionButton = false;
-          _conciergeButtonDisabled = true;
-        } else if (conciergeStarted && consultantEnded && !conciergeEnded) {
-          // Show end session, enabled
-          _hideConciergeSessionButton = false;
-          _conciergeButtonDisabled = false;
-        }
+        _hideConciergeSessionButton = conciergeEnded;
       });
     }
   }
@@ -84,8 +62,12 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     if (widget.date != null) {
       _appointmentData['appointmentTime'] = widget.date;
     }
-    _fetchSessionStateFromFirestore();
-    // Set correct button state for all roles
+    _fetchSessionStateFromFirestore().then((_) {
+      setState(() {
+        _updateSessionButtonStateFromData(_appointmentData);
+      });
+    });
+    // Set correct button state for all roles (in case fetch is slow, still set initial state)
     _updateSessionButtonStateFromData(_appointmentData);
   }
 
@@ -139,6 +121,9 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     } else if (widget.date != null && widget.date != oldWidget.date) {
       // Only the date changed, update just appointmentTime
       _updateLocalFields({'appointmentTime': widget.date});
+      setState(() {
+        _updateSessionButtonStateFromData(_appointmentData);
+      });
     }
     // This logic ensures session state fields are only set by direct user actions, not by upstream prop changes.
   }
@@ -239,7 +224,6 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
       try {
         final doc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
         final data = doc.data();
-        bool isSessionStarted = false;
         String startField = '';
         String endField = '';
         if (role == 'concierge') {
@@ -252,68 +236,119 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           startField = 'cleanerSessionStarted';
           endField = 'cleanerSessionEnded';
         }
-        // Maintain persistent state fields for session button enable/disable
-        // (used for local UI logic below)
-        if (_appointmentData['hideConsultantSessionButton'] == null) _appointmentData['hideConsultantSessionButton'] = false;
-        if (_appointmentData['enableConciergeEndSession'] == null) _appointmentData['enableConciergeEndSession'] = false;
-        if (_appointmentData['disableConciergeEndSession'] == null) _appointmentData['disableConciergeEndSession'] = false;
-        if (startField.isNotEmpty && data != null) {
-          isSessionStarted = data[startField] == true && data[endField] != true;
-        }
-        if (!isSessionStarted) {
+        if (data != null && data[startField] != true) {
           // Start session logic
           await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
             startField: true,
             '${role}StartTime': DateTime.now(),
             'status': 'in-progress',
-            if (role == 'concierge') 'enableConciergeEndSession': false,
           });
-          _updateLocalFields({startField: true, 'status': 'in-progress', '${role}StartTime': DateTime.now(), if (role == 'concierge') 'enableConciergeEndSession': false});
+          _updateLocalFields({startField: true, 'status': 'in-progress', '${role}StartTime': DateTime.now()});
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Session started')), // TODO: Localize
+            SnackBar(content: Text('Session started')),
           );
-          // --- Concierge starts session: notify consultant, set button states ---
-          if (role == 'concierge' && _appointmentData['consultantId'] != null && _appointmentData['consultantId'].toString().isNotEmpty) {
-            final notificationService = VipNotificationService();
-            await notificationService.createNotification(
-              title: 'Minister Arrived',
-              body: 'The minister has arrived for the appointment.',
-              data: {
-                'appointmentId': appointmentId,
-                'notificationType': 'minister_arrived',
-                'ministerName': _appointmentData['ministerName'] ?? '',
-                'serviceName': _appointmentData['serviceName'] ?? '',
-                'venueName': _appointmentData['venueName'] ?? '',
-                'appointmentTime': _appointmentData['appointmentTime'],
-                'consultantId': _appointmentData['consultantId'],
-                'consultantName': _appointmentData['consultantName'] ?? '',
-              },
-              role: 'consultant',
-              assignedToId: _appointmentData['consultantId'],
-              notificationType: 'minister_arrived',
-            );
-            await notificationService.sendFCMToUser(
-              userId: _appointmentData['consultantId'],
-              title: 'Minister Arrived',
-              body: 'The minister has arrived for the appointment.',
-              data: {
-                'appointmentId': appointmentId,
-                'notificationType': 'minister_arrived',
-                'ministerName': _appointmentData['ministerName'] ?? '',
-                'serviceName': _appointmentData['serviceName'] ?? '',
-                'venueName': _appointmentData['venueName'] ?? '',
-                'appointmentTime': _appointmentData['appointmentTime'],
-                'consultantId': _appointmentData['consultantId'],
-                'consultantName': _appointmentData['consultantName'] ?? '',
-              },
-              messageType: 'minister_arrived',
-            );
-            // Concierge: End Session remains disabled until consultant ends
-            _updateLocalFields({'conciergeSessionStarted': true, 'conciergeSessionEnded': false, 'enableConciergeEndSession': false});
+          final notificationService = VipNotificationService();
+          // Send notification to all parties with contact info
+          if (role == 'concierge') {
+            // Notify consultant and minister
+            if (_appointmentData['consultantId'] != null && _appointmentData['consultantId'].toString().isNotEmpty) {
+              await notificationService.createNotification(
+                title: 'Minister Arrived',
+                body: 'The minister has arrived for the appointment.',
+                data: {
+                  'appointmentId': appointmentId,
+                  'notificationType': 'minister_arrived',
+                  'ministerName': _appointmentData['ministerName'] ?? '',
+                  'serviceName': _appointmentData['serviceName'] ?? '',
+                  'venueName': _appointmentData['venueName'] ?? '',
+                  'appointmentTime': _appointmentData['appointmentTime'],
+                  'consultantId': _appointmentData['consultantId'],
+                  'consultantName': _appointmentData['consultantName'] ?? '',
+                  'consultantPhone': _appointmentData['consultantPhone'] ?? '',
+                  'consultantEmail': _appointmentData['consultantEmail'] ?? '',
+                  'conciergeName': _appointmentData['conciergeName'] ?? '',
+                  'conciergePhone': _appointmentData['conciergePhone'] ?? '',
+                  'conciergeEmail': _appointmentData['conciergeEmail'] ?? '',
+                },
+                role: 'consultant',
+                assignedToId: _appointmentData['consultantId'],
+                notificationType: 'minister_arrived',
+              );
+              await notificationService.sendFCMToUser(
+                userId: _appointmentData['consultantId'],
+                title: 'Minister Arrived',
+                body: 'The minister has arrived for the appointment.',
+                data: {
+                  'appointmentId': appointmentId,
+                  'notificationType': 'minister_arrived',
+                  'ministerName': _appointmentData['ministerName'] ?? '',
+                  'serviceName': _appointmentData['serviceName'] ?? '',
+                  'venueName': _appointmentData['venueName'] ?? '',
+                  'appointmentTime': _appointmentData['appointmentTime'],
+                  'consultantId': _appointmentData['consultantId'],
+                  'consultantName': _appointmentData['consultantName'] ?? '',
+                  'consultantPhone': _appointmentData['consultantPhone'] ?? '',
+                  'consultantEmail': _appointmentData['consultantEmail'] ?? '',
+                  'conciergeName': _appointmentData['conciergeName'] ?? '',
+                  'conciergePhone': _appointmentData['conciergePhone'] ?? '',
+                  'conciergeEmail': _appointmentData['conciergeEmail'] ?? '',
+                },
+                messageType: 'minister_arrived',
+              );
+            }
+            if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+              await notificationService.createNotification(
+                title: 'You Have Arrived',
+                body: 'Welcome to your appointment. Concierge: ${_appointmentData['conciergeName'] ?? ''}',
+                data: {
+                  'appointmentId': appointmentId,
+                  'notificationType': 'minister_arrived',
+                  'conciergeName': _appointmentData['conciergeName'] ?? '',
+                  'conciergePhone': _appointmentData['conciergePhone'] ?? '',
+                  'conciergeEmail': _appointmentData['conciergeEmail'] ?? '',
+                },
+                role: 'minister',
+                assignedToId: _appointmentData['ministerId'],
+                notificationType: 'minister_arrived',
+              );
+            }
+            _updateLocalFields({'conciergeSessionStarted': true});
           }
-          // Consultant: do not auto-set session started; only set after consultant clicks
           if (role == 'consultant') {
-            // No local update here. Consultant must click their own Start Session.
+            // Notify minister and concierge
+            if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+              await notificationService.createNotification(
+                title: 'Consultant Session Started',
+                body: 'Your consultant session has started.',
+                data: {
+                  'appointmentId': appointmentId,
+                  'notificationType': 'consultant_session_started',
+                  'consultantName': _appointmentData['consultantName'] ?? '',
+                  'consultantPhone': _appointmentData['consultantPhone'] ?? '',
+                  'consultantEmail': _appointmentData['consultantEmail'] ?? '',
+                },
+                role: 'minister',
+                assignedToId: _appointmentData['ministerId'],
+                notificationType: 'consultant_session_started',
+              );
+            }
+            if (_appointmentData['conciergeId'] != null && _appointmentData['conciergeId'].toString().isNotEmpty) {
+              await notificationService.createNotification(
+                title: 'Consultant Session Started',
+                body: 'Consultant has started the session.',
+                data: {
+                  'appointmentId': appointmentId,
+                  'notificationType': 'consultant_session_started',
+                  'consultantName': _appointmentData['consultantName'] ?? '',
+                  'consultantPhone': _appointmentData['consultantPhone'] ?? '',
+                  'consultantEmail': _appointmentData['consultantEmail'] ?? '',
+                },
+                role: 'concierge',
+                assignedToId: _appointmentData['conciergeId'],
+                notificationType: 'consultant_session_started',
+              );
+            }
+            _updateLocalFields({'consultantSessionStarted': true});
           }
         } else {
           // End session logic
@@ -577,6 +612,13 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     final consultantSessionEnded = appointmentData['consultantSessionEnded'] == true;
     final conciergeSessionStarted = appointmentData['conciergeSessionStarted'] == true;
     final conciergeSessionEnded = appointmentData['conciergeSessionEnded'] == true;
+
+    // Debug prints
+    print('consultantSessionStarted: $consultantSessionStarted');
+    print('consultantSessionEnded: $consultantSessionEnded');
+    print('_hideConsultantSessionButton: $_hideConsultantSessionButton');
+    print('viewOnly: ${widget.viewOnly}');
+    print('statusValue: ${appointmentData['status']}');
 
     // Hide both buttons if session ended for this role
     final sessionEnded = (isConsultant && consultantSessionEnded) || (isConcierge && conciergeSessionEnded);
@@ -858,6 +900,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                               ? null
                               : (newStatus) async {
                                   await _updateStatus(context, newStatus);
+                                  await _fetchSessionStateFromFirestore();
                                 },
                           items: _consultantStatusOptions.map((option) {
                             return DropdownMenuItem<String>(
@@ -905,11 +948,15 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                         setState(() {
                           _appointmentData['consultantSessionStarted'] = true;
                         });
+                        await _handleStartSession(context, _appointmentData);
+                        await _fetchSessionStateFromFirestore();
                       } else if (_appointmentData['consultantSessionStarted'] == true && _appointmentData['consultantSessionEnded'] != true) {
                         setState(() {
                           _appointmentData['consultantSessionEnded'] = true;
                           _hideConsultantSessionButton = true;
                         });
+                        await _handleStartSession(context, _appointmentData);
+                        await _fetchSessionStateFromFirestore();
                       }
                     } else if (widget.role == 'concierge') {
                       if (_appointmentData['conciergeSessionStarted'] != true) {
@@ -949,7 +996,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                     foregroundColor: Colors.white,
                   ),
                   child: Text(
-                    (widget.role == 'concierge' && _conciergeButtonDisabled)
+                    false
                         ? 'End Session'
                         : (_appointmentData['${widget.role}SessionStarted'] == true && _appointmentData['${widget.role}SessionEnded'] != true
                             ? 'End Session'

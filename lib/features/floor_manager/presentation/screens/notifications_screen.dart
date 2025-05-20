@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/providers/app_auth_provider.dart';
 import '../../../../core/models/app_user.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/notification_item.dart';
 import '../../../minister/presentation/screens/minister_home_screen.dart';
+import '../../../minister/presentation/screens/minister_chat_dialog.dart';
 import 'appointment_details_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -158,17 +160,31 @@ class NotificationsScreen extends StatelessWidget {
                       return;
                     }
                     // Allow all other roles to open their assignment notifications
-                    if ((notificationType == 'new_appointment' || notificationType == 'booking_made' || notificationType == 'appointment' || notificationType == 'staff_assigned') && resolvedAppointmentId.isNotEmpty) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => AppointmentDetailsScreen(appointmentId: resolvedAppointmentId),
-                        ),
-                      );
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No details available for this notification')),
-                    );
+                    if ((notificationType == 'chat' || notificationType == 'message') && resolvedAppointmentId.isNotEmpty) {
+                       // Fetch appointment and open chat dialog directly
+                       final appointmentDoc = await FirebaseFirestore.instance.collection('appointments').doc(resolvedAppointmentId).get();
+                       final appointmentData = appointmentDoc.data() ?? {};
+                       appointmentData['id'] = resolvedAppointmentId;
+                       showDialog(
+                         context: context,
+                         barrierDismissible: false,
+                         builder: (BuildContext dialogContext) {
+                           return MinisterChatDialog(appointment: appointmentData);
+                         },
+                       );
+                       return;
+                     }
+                     if ((notificationType == 'new_appointment' || notificationType == 'booking_made' || notificationType == 'appointment' || notificationType == 'staff_assigned') && resolvedAppointmentId.isNotEmpty) {
+                       Navigator.of(context).push(
+                         MaterialPageRoute(
+                           builder: (context) => AppointmentDetailsScreen(appointmentId: resolvedAppointmentId),
+                         ),
+                       );
+                       return;
+                     }
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('No details available for this notification')),
+                     );
                   },
                   onDismissCallback: () async {
                     await FirebaseFirestore.instance
@@ -254,30 +270,86 @@ void _showStaffAssignmentDetails(BuildContext context, Map<String, dynamic> noti
             
             // Consultant details with chat option
             if (consultantName.isNotEmpty)
-              _buildStaffDetailWithChat(
-                context,
-                'Consultant',
-                consultantName,
-                consultantId,
-                appointmentId,
-                Colors.blue,
-                appointmentTimeDisplay,
-                serviceName,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStaffDetailWithChat(
+                    context,
+                    'Consultant',
+                    consultantName,
+                    consultantId,
+                    appointmentId,
+                    Colors.blue,
+                    appointmentTimeDisplay,
+                    serviceName,
+                  ),
+                  const SizedBox(height: 4),
+                  if ((notificationData['consultantPhone'] ?? '').toString().isNotEmpty)
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri(scheme: 'tel', path: notificationData['consultantPhone']);
+                        await launchUrl(uri);
+                      },
+                      child: Text(
+                        notificationData['consultantPhone'],
+                        style: const TextStyle(color: Colors.lightBlueAccent, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  if ((notificationData['consultantEmail'] ?? '').toString().isNotEmpty)
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri(scheme: 'mailto', path: notificationData['consultantEmail']);
+                        await launchUrl(uri);
+                      },
+                      child: Text(
+                        notificationData['consultantEmail'],
+                        style: const TextStyle(color: Colors.lightBlueAccent, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                ],
               ),
               
             SizedBox(height: 8),
             
             // Concierge details with chat option
             if (conciergeName.isNotEmpty)
-              _buildStaffDetailWithChat(
-                context,
-                'Concierge',
-                conciergeName,
-                conciergeId,
-                appointmentId,
-                Colors.purple,
-                appointmentTimeDisplay,
-                serviceName,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStaffDetailWithChat(
+                    context,
+                    'Concierge',
+                    conciergeName,
+                    conciergeId,
+                    appointmentId,
+                    Colors.purple,
+                    appointmentTimeDisplay,
+                    serviceName,
+                  ),
+                  const SizedBox(height: 4),
+                  if ((notificationData['conciergePhone'] ?? '').toString().isNotEmpty)
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri(scheme: 'tel', path: notificationData['conciergePhone']);
+                        await launchUrl(uri);
+                      },
+                      child: Text(
+                        notificationData['conciergePhone'],
+                        style: const TextStyle(color: Colors.lightBlueAccent, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  if ((notificationData['conciergeEmail'] ?? '').toString().isNotEmpty)
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri(scheme: 'mailto', path: notificationData['conciergeEmail']);
+                        await launchUrl(uri);
+                      },
+                      child: Text(
+                        notificationData['conciergeEmail'],
+                        style: const TextStyle(color: Colors.lightBlueAccent, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                ],
               ),
               
             SizedBox(height: 8),

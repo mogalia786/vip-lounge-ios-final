@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:vip_lounge/features/staff_query_badge.dart';
+import 'package:vip_lounge/features/staff_query_list_screen.dart';
+import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -1755,6 +1758,8 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
   Widget build(BuildContext context) {
     final currentUser = Provider.of<AppAuthProvider>(context).appUser;
     final userName = currentUser != null ? currentUser.name ?? 'Floor Manager' : 'Floor Manager';
+    final floorManagerId = currentUser?.uid;
+    final floorManagerName = currentUser?.name ?? 'Floor Manager';
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -2123,7 +2128,17 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 MaterialPageRoute(builder: (context) => NotificationsScreen()),
               );
               break;
-            case 3: // Employee Registration
+            case 3: // Query Inbox
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StaffQueryInboxScreen(
+                    currentStaffUid: _floorManagerId,
+                  ),
+                ),
+              );
+              break;
+            case 4: // Employee Registration
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => EmployeeRegistrationScreen()),
@@ -2150,6 +2165,10 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
               child: Icon(Icons.notifications),
             ),
             label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inbox),
+            label: 'Inbox',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_add),

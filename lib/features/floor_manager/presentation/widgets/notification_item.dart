@@ -1,4 +1,10 @@
+import 'package:vip_lounge/features/minister/presentation/screens/minister_home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/minister/presentation/screens/minister_chat_dialog.dart';
+import 'package:vip_lounge/features/consultant/presentation/widgets/consultant_appointment_widget.dart';
+import 'package:vip_lounge/features/concierge/presentation/widgets/concierge_appointment_widget.dart';
+import 'package:vip_lounge/features/consultant/presentation/widgets/consultant_appointment_widget.dart';
+import 'package:vip_lounge/features/concierge/presentation/widgets/concierge_appointment_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -59,9 +65,17 @@ class NotificationItem extends StatelessWidget {
     final DateTime? createdAt = (notification['createdAt'] as Timestamp?)?.toDate();
     final DateTime? timestamp = (notification['timestamp'] as Timestamp?)?.toDate();
     final notificationType = notification['type'] ?? notification['notificationType'] ?? '';
-    final String title = notification['title'] ?? data['title'] ?? '';
-    final String body = notification['body'] ?? data['body'] ?? '';
+    // Fallback for missing title/body for concierge and other roles
+    String title = notification['title'] ?? data['title'] ?? '';
+    String body = notification['body'] ?? data['body'] ?? '';
     final String appointmentId = notification['appointmentId'] ?? data['appointmentId'] ?? '';
+    // If still blank and this is a concierge notification, provide defaults
+    if (title.isEmpty && (notification['role'] == 'concierge' || data['role'] == 'concierge')) {
+      title = 'Concierge Notification';
+    }
+    if (body.isEmpty && (notification['role'] == 'concierge' || data['role'] == 'concierge')) {
+      body = 'You have a new notification.';
+    }
 
     // Color coding by type
     Color leftBarColor;
@@ -126,7 +140,8 @@ class NotificationItem extends StatelessWidget {
     } else if ((notification['userName'] ?? data['userName'])?.toString().isNotEmpty == true) {
       displayName = (notification['userName'] ?? data['userName']).toString();
     }
-    String displayTitle = displayName.isNotEmpty ? displayName : title;
+    // Ensure displayTitle is never blank
+    String displayTitle = displayName.isNotEmpty ? displayName : (title.isNotEmpty ? title : 'Notification');
 
     // Extract more appointment and staff info for rich card
     String serviceName = data['serviceName']?.toString() ?? '';
@@ -318,7 +333,58 @@ class NotificationItem extends StatelessWidget {
               final senderId = notification['senderId'] ?? '';
               final senderRoleVal = notification['senderRole'] ?? '';
               final senderNameVal = notification['senderName'] ?? '';
-              _openChatFromNotification(context, notification['appointmentId'], senderRoleVal, senderId, senderNameVal);
+              // Consultant chat notifications should open consultant dialog, not minister home
+              final userRole = Provider.of<AppAuthProvider>(context, listen: false).appUser?.role;
+              if (userRole == 'consultant') {
+                FirebaseFirestore.instance
+                    .collection('appointments')
+                    .doc(notification['appointmentId'])
+                    .get()
+                    .then((appointmentDoc) {
+                  if (appointmentDoc.exists) {
+                    final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+                    appointmentData['id'] = notification['appointmentId'];
+                    Navigator.pushNamed(context, '/consultant/home').then((_) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ConsultantAppointmentWidget(
+                            appointment: appointmentData,
+                            isEvenCard: false,
+                          ),
+                        );
+                      });
+                    });
+                  }
+                });
+                // Prevent any fallthrough to default/minster navigation for consultant role
+                return;
+              } else if (userRole == 'concierge') {
+                FirebaseFirestore.instance
+                    .collection('appointments')
+                    .doc(notification['appointmentId'])
+                    .get()
+                    .then((appointmentDoc) {
+                  if (appointmentDoc.exists) {
+                    final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+                    appointmentData['id'] = notification['appointmentId'];
+                    Navigator.pushNamed(context, '/concierge/home').then((_) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ConciergeAppointmentWidget(
+                            appointment: appointmentData,
+                            isEvenCard: false,
+                          ),
+                        );
+                      });
+                    });
+                  }
+                });
+                return;
+              } else {
+                _openChatFromNotification(context, notification['appointmentId'], senderRoleVal, senderId, senderNameVal);
+              }
             }
           },
           child: Container(
@@ -339,7 +405,7 @@ class NotificationItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Flexible(
                             child: Text(
@@ -353,13 +419,16 @@ class NotificationItem extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (createdAt != null)
-                            Text(
-                              DateFormat('MMM d, h:mm a').format(createdAt),
-                              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                            ),
                         ],
                       ),
+                      if (createdAt != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2.0, bottom: 2.0),
+                          child: Text(
+                            DateFormat('MMM d, h:mm a').format(createdAt),
+                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          ),
+                        ),
                       if (body.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4.0, bottom: 2.0),
@@ -394,6 +463,87 @@ class NotificationItem extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 6.0, bottom: 2.0),
                           child: ministerRow,
+                        ),
+                      // Show consultant and concierge contact info if present
+                      if ((data['consultantPhone'] != null && data['consultantPhone'].toString().isNotEmpty) ||
+                          (data['consultantEmail'] != null && data['consultantEmail'].toString().isNotEmpty) ||
+                          (data['conciergePhone'] != null && data['conciergePhone'].toString().isNotEmpty) ||
+                          (data['conciergeEmail'] != null && data['conciergeEmail'].toString().isNotEmpty))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (data['consultantPhone'] != null && data['consultantPhone'].toString().isNotEmpty)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final uri = Uri(scheme: 'tel', path: data['consultantPhone'].toString());
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.phone, color: AppColors.gold, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Consultant Phone: ', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      Expanded(child: Text(data['consultantPhone'].toString(), style: const TextStyle(color: Colors.white, fontSize: 13, decoration: TextDecoration.underline))),
+                                    ],
+                                  ),
+                                ),
+                              if (data['consultantEmail'] != null && data['consultantEmail'].toString().isNotEmpty)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final uri = Uri(scheme: 'mailto', path: data['consultantEmail'].toString());
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.email, color: AppColors.gold, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Consultant Email: ', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      Expanded(child: Text(data['consultantEmail'].toString(), style: const TextStyle(color: Colors.white, fontSize: 13, decoration: TextDecoration.underline))),
+                                    ],
+                                  ),
+                                ),
+                              if (data['conciergePhone'] != null && data['conciergePhone'].toString().isNotEmpty)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final uri = Uri(scheme: 'tel', path: data['conciergePhone'].toString());
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.phone, color: AppColors.gold, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Concierge Phone: ', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      Expanded(child: Text(data['conciergePhone'].toString(), style: const TextStyle(color: Colors.white, fontSize: 13, decoration: TextDecoration.underline))),
+                                    ],
+                                  ),
+                                ),
+                              if (data['conciergeEmail'] != null && data['conciergeEmail'].toString().isNotEmpty)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final uri = Uri(scheme: 'mailto', path: data['conciergeEmail'].toString());
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.email, color: AppColors.gold, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Concierge Email: ', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      Expanded(child: Text(data['conciergeEmail'].toString(), style: const TextStyle(color: Colors.white, fontSize: 13, decoration: TextDecoration.underline))),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       if (details.isNotEmpty)
                         Padding(
@@ -463,35 +613,44 @@ class NotificationItem extends StatelessWidget {
   
   // Open chat dialog for minister
   void _openMinisterChatDialog(BuildContext context, Map<String, dynamic> appointment, 
-                            String? senderRole, String? senderId, String? senderName) {
-    // Navigate to the minister home screen and open the chat
-    Navigator.pushNamed(context, '/minister/home').then((_) {
-      // After navigation, find the page state and open chat dialog
-      // Note: This is a simplified version - in a real app we would use a more robust method
-      // to open the chat dialog, possibly by using a global key or a provider
+                            String? senderRole, String? senderId, String? senderName) async {
+    final appointmentId = appointment['id'] ?? appointment['appointmentId'];
+    // If already on minister home, open dialog directly; otherwise, navigate and let home screen handle
+    bool isMinisterHome = ModalRoute.of(context)?.settings.name == '/minister/home';
+    // Always fetch latest appointment data and open chat dialog directly
+    final appointmentDoc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
+    final appointmentData = appointmentDoc.data() ?? {};
+    appointmentData['id'] = appointmentId;
+    if (senderRole != null) appointmentData['selectedRole'] = senderRole;
+    if (senderId != null) appointmentData['selectedStaffId'] = senderId;
+    if (senderName != null) appointmentData['selectedStaffName'] = senderName;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return MinisterChatDialog(appointment: appointmentData);
+      },
+    );
+  }
+  
+  // Open chat dialog for consultant
+  void _openConsultantChatDialog(BuildContext context, Map<String, dynamic> appointment) {
+    Navigator.pushNamed(context, '/consultant/home').then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: Colors.black,
-            title: Text('Chat with $senderName', style: TextStyle(color: AppColors.gold)),
-            content: Text('Please use the chat button in the appointment card to chat with $senderName.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK', style: TextStyle(color: AppColors.gold)),
-              ),
-            ],
+          builder: (context) => MinisterChatDialog(
+            appointment: appointment,
           ),
         );
       });
     });
   }
-  
-  // Open chat dialog for consultant
-  void _openConsultantChatDialog(BuildContext context, Map<String, dynamic> appointment) {
-    // Navigate to consultant home and show a message
-    Navigator.pushNamed(context, '/consultant/home').then((_) {
+
+  // Open chat dialog for concierge
+  void _openConciergeChatDialog(BuildContext context, Map<String, dynamic> appointment) {
+    // Navigate to concierge home and show a message
+    Navigator.pushNamed(context, '/concierge/home').then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
           context: context,

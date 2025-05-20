@@ -5,12 +5,13 @@ import 'package:provider/provider.dart';
 import '../../features/floor_manager/presentation/widgets/notification_item.dart';
 import 'package:vip_lounge/core/widgets/unified_appointment_card.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vip_lounge/core/widgets/unified_appointment_card.dart';
 
 /// A uniform notification list widget for all roles (minister, floor manager, consultant, etc)
 /// Queries notifications by assignedToId and displays them using NotificationItem.
 class RoleNotificationList extends StatelessWidget {
   // Returns the full English month name for a given month number (1-12)
-  String _monthName(int month) {
+  static String _monthName(int month) {
     const months = [
       '', // 0-index unused
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -425,7 +426,7 @@ return Column(
       ),
     );
   }
-
+}
   /// Helper to build notification body with clickable phone numbers for consultant/concierge
   Widget _buildNotificationBody(BuildContext context, Map<String, dynamic> data, {String? consultantPhone, String? conciergePhone, bool showAssignmentDetails = false, Color? textColor}) {
     // Gather all possible emails and phones
@@ -647,6 +648,115 @@ return Column(
         ),
       ]));
     }
+    // Compute date/time string from timestamp or createdAt
+    final timestamp = data['timestamp'] ?? data['createdAt'];
+    DateTime? notifDate;
+    if (timestamp is Timestamp) {
+      notifDate = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      notifDate = timestamp;
+    } else if (timestamp is String) {
+      notifDate = DateTime.tryParse(timestamp);
+    }
+    String notifDateTimeStr = notifDate != null
+        ? '${notifDate.day.toString().padLeft(2, '0')} ${RoleNotificationList._monthName(notifDate.month)} ${notifDate.year} • '
+          + '${notifDate.hour.toString().padLeft(2, '0')}:${notifDate.minute.toString().padLeft(2, '0')}'
+        : '';
+    if (notifDateTimeStr.isNotEmpty) {
+      phoneWidgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4.0),
+          child: Text(
+            notifDateTimeStr,
+            style: TextStyle(fontSize: 12, color: (textColor ?? Colors.white).withOpacity(0.75)),
+          ),
+        ),
+      );
+    }
+    // Add clickable consultant/concierge contact for staff_assignment/assignment
+    final type = (data['type'] ?? data['notificationType'] ?? '').toString().toLowerCase();
+    if (type.contains('assignment') || type.contains('staff_assignment')) {
+      final cPhone = data['consultantPhone'] ?? data['consultant_phone'] ?? '';
+      final cEmail = data['consultantEmail'] ?? '';
+      final gPhone = data['conciergePhone'] ?? data['concierge_phone'] ?? '';
+      final gEmail = data['conciergeEmail'] ?? '';
+      if (cPhone.toString().isNotEmpty) {
+        phoneWidgets.add(Row(children: [
+          Icon(Icons.phone, color: Colors.blueAccent, size: 18),
+          SizedBox(width: 6),
+          GestureDetector(
+            onTap: () async {
+              final url = 'tel:$cPhone';
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not launch $cPhone')),
+                );
+              }
+            },
+            child: Text('Consultant: $cPhone', style: TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline)),
+          ),
+        ]));
+      }
+      if (cEmail.toString().isNotEmpty) {
+        phoneWidgets.add(Row(children: [
+          Icon(Icons.email, color: Colors.blueAccent, size: 18),
+          SizedBox(width: 6),
+          GestureDetector(
+            onTap: () async {
+              final url = 'mailto:$cEmail';
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not launch mailto:$cEmail')),
+                );
+              }
+            },
+            child: Text('Consultant: $cEmail', style: TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline)),
+          ),
+        ]));
+      }
+      if (gPhone.toString().isNotEmpty) {
+        phoneWidgets.add(Row(children: [
+          Icon(Icons.phone, color: Colors.tealAccent, size: 18),
+          SizedBox(width: 6),
+          GestureDetector(
+            onTap: () async {
+              final url = 'tel:$gPhone';
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not launch $gPhone')),
+                );
+              }
+            },
+            child: Text('Concierge: $gPhone', style: TextStyle(color: Colors.tealAccent, decoration: TextDecoration.underline)),
+          ),
+        ]));
+      }
+      if (gEmail.toString().isNotEmpty) {
+        phoneWidgets.add(Row(children: [
+          Icon(Icons.email, color: Colors.tealAccent, size: 18),
+          SizedBox(width: 6),
+          GestureDetector(
+            onTap: () async {
+              final url = 'mailto:$gEmail';
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not launch mailto:$gEmail')),
+                );
+              }
+            },
+            child: Text('Concierge: $gEmail', style: TextStyle(color: Colors.tealAccent, decoration: TextDecoration.underline)),
+          ),
+        ]));
+      }
+    }
     phoneWidgets.add(SelectableText(
       bodyText,
       style: const TextStyle(color: Colors.white),
@@ -656,5 +766,3 @@ return Column(
       children: phoneWidgets,
     );
   }
-}
-

@@ -504,6 +504,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   }
 
   Future<void> _loadAppointmentsForDate(DateTime date) async {
+  print('[DEBUG] _loadAppointmentsForDate called for date: ' + date.toString());
     if (_consultantId.isEmpty) return;
     setState(() {
       _isLoading = true;
@@ -537,10 +538,14 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
           'docId': doc.id,
         });
       }
-      setState(() {
-        _appointments = appointments;
-        _isLoading = false;
-      });
+      print('[DEBUG] Appointments loaded: count = [33m${appointments.length}[0m');
+    for (final appt in appointments) {
+      print('[DEBUG] Appointment loaded: id=${appt['id']} status=${appt['status']} consultantSessionStarted=${appt['consultantSessionStarted']} consultantSessionEnded=${appt['consultantSessionEnded']}');
+    }
+    setState(() {
+      _appointments = appointments;
+      _isLoading = false;
+    });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -692,6 +697,10 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   );
 }
   Widget _buildDashboardContent() {
+  print('[DEBUG] _buildDashboardContent: _appointments.length = [32m${_appointments.length}[0m');
+  for (final appt in _appointments) {
+    print('[DEBUG] Rendering card for appointmentId=${appt['id']} status=${appt['status']} consultantSessionStarted=${appt['consultantSessionStarted']} consultantSessionEnded=${appt['consultantSessionEnded']}');
+  }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -740,7 +749,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                       : null,
               time: null,
               ministerId: appt['ministerId'],
-              disableStartSession: !_canStartSession(appt),
+              disableStartSession: !_shouldEnableStartSession(appt),
             );
           },
         ),
@@ -1024,9 +1033,32 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
     );
   }
 
-  bool _canStartSession(Map<String, dynamic> appt) {
-    // Enable if status is 'minister_arrived' or conciergeSessionStarted is true
-    return appt['status'] == 'minister_arrived' || appt['conciergeSessionStarted'] == true;
+  bool _shouldEnableStartSession(Map<String, dynamic> appt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime apptTime;
+    final raw = appt['appointmentTime'];
+    if (raw is Timestamp) {
+      apptTime = raw.toDate();
+    } else if (raw is DateTime) {
+      apptTime = raw;
+    } else if (raw is String) {
+      apptTime = DateTime.tryParse(raw) ?? now;
+    } else {
+      apptTime = now;
+    }
+    final bool isFuture = apptTime.isAfter(today);
+    final bool consultantStarted = appt['consultantSessionStarted'] == true;
+    final bool consultantEnded = appt['consultantSessionEnded'] == true;
+    if (isFuture) {
+      // Allow consultant to start future appointments regardless of concierge
+      return !consultantStarted && !consultantEnded;
+    }
+    // Original logic for today/past
+    bool isLegacy = apptTime.isBefore(today);
+    final bool conciergeStarted = appt['conciergeSessionStarted'] == true;
+    final bool conciergeMissing = !appt.containsKey('conciergeSessionStarted');
+    return ((conciergeStarted || (conciergeMissing && isLegacy)) && !consultantStarted && !consultantEnded);
   }
 
   void _chatWithMinister(Map<String, dynamic> appointment) async {

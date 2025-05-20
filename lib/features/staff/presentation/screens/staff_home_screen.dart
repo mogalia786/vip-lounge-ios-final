@@ -16,6 +16,9 @@ import '../widgets/staff_performance_metrics_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vip_lounge/features/staff/presentation/screens/_staff_performance_indicator.dart' show StaffPerformanceIndicator;
 import '../../../../core/widgets/staff_performance_widget.dart';
+import 'package:vip_lounge/features/staff_query_badge.dart';
+import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
+import 'package:vip_lounge/features/staff_query_all_screen.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   const StaffHomeScreen({Key? key}) : super(key: key);
@@ -30,10 +33,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   void _onNavTap(int idx) {
     setState(() => _selectedIndex = idx);
-  }
-
-  void _onDateChange(DateTime d) {
-    setState(() => _selectedDate = d);
+    if (idx == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StaffQueryInboxScreen(currentStaffUid: _userId ?? ''),
+        ),
+      );
+    }
   }
 
   Future<void> _handleLogout(BuildContext context) async {
@@ -100,6 +107,27 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   String? _name;
   String? _role;
 
+  Future<void> assignQueryToStaff(String queryId, String staffUid, String staffName) async {
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('queries').doc(queryId).update({
+      'assignedTo': staffUid,
+      'assignedToName': staffName,
+      'status': 'being_attended',
+      'statusHistory': FieldValue.arrayUnion([
+        {
+          'status': 'being_attended',
+          'by': staffUid,
+          'byName': staffName,
+          'timestamp': Timestamp.now(),
+          'note': 'Staff took initiative to attend',
+        }
+      ]),
+    });
+  }
+
+  void _onDateChange(DateTime d) {
+    setState(() => _selectedDate = d);
+  }
 
   @override
   void didChangeDependencies() {
@@ -159,14 +187,16 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
                             margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                             decoration: BoxDecoration(
-                              color: isSelected ? Colors.white : Colors.transparent,
+                              gradient: isSelected
+                                ? LinearGradient(colors: [Colors.amber.shade400, Colors.orange.shade700])
+                                : LinearGradient(colors: [Colors.black87, Colors.grey.shade800]),
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: isSelected
-                                  ? [BoxShadow(color: Colors.amber.withOpacity(0.18), blurRadius: 10, offset: Offset(0, 2))]
-                                  : [],
-                              border: isSelected ? Border.all(color: Colors.amber, width: 3) : null,
+                                ? [BoxShadow(color: Colors.amber.withOpacity(0.25), blurRadius: 12, offset: Offset(0, 2))]
+                                : [],
+                              border: isSelected ? Border.all(color: Colors.deepOrange, width: 3) : null,
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -174,7 +204,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                 Text(
                                   DateFormat('EEE').format(date),
                                   style: TextStyle(
-                                    color: isSelected ? Colors.amber[900] : Colors.amber[200],
+                                    color: isSelected ? Colors.deepOrange : Colors.amber.shade200,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -252,13 +282,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Staff Dashboard',
+          'Staff Dashboards',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -267,6 +296,29 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         backgroundColor: AppColors.black,
         foregroundColor: AppColors.gold,
         actions: [
+          StaffQueryBadge(
+            currentStaffUid: _userId ?? '',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StaffQueryAllScreen(
+                    currentStaffUid: _userId ?? '',
+                    onAttend: (query) async {
+                      final staffName = Provider.of<AppAuthProvider>(context, listen: false).appUser?.fullName ?? 'Staff';
+                      await assignQueryToStaff(query['id'], _userId ?? '', staffName);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StaffQueryInboxScreen(currentStaffUid: _userId ?? ''),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart, color: AppColors.gold),
             tooltip: 'View Monthly Performance',
@@ -298,6 +350,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home, color: AppColors.gold), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt, color: AppColors.gold), label: 'My Daily Activities'),
           BottomNavigationBarItem(icon: Icon(Icons.event_note, color: AppColors.gold), label: 'My Scheduled Activities'),
+          BottomNavigationBarItem(icon: Icon(Icons.inbox, color: AppColors.gold), label: 'Inbox'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart, color: AppColors.gold), label: 'Performance'),
         ],
       ),

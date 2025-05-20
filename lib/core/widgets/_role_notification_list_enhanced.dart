@@ -162,6 +162,9 @@ class RoleNotificationListEnhanced extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_appointmentData == null || _appointmentData.isEmpty) {
+    return Center(child: Text('No appointment data'));
+    }
     final effectiveUserId = userId ?? Provider.of<AppAuthProvider>(context).appUser?.uid;
     final effectiveUserRole = userRole ?? Provider.of<AppAuthProvider>(context).appUser?.role;
 

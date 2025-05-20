@@ -20,7 +20,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
 class MinisterHomeScreen extends StatefulWidget {
   final String? initialChatAppointmentId;
-  
+
+
   const MinisterHomeScreen({
     super.key,
     this.initialChatAppointmentId,
@@ -1144,18 +1145,13 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           }
         }
 
-        // --- SORT: Place all bookings with unread messages at the top ---
-        final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
-        sortedDocs.sort((a, b) {
-          final aId = a.id;
-          final bId = b.id;
-          final aUnread = _unreadMessageCounts[aId] ?? 0;
-          final bUnread = _unreadMessageCounts[bId] ?? 0;
-          if (aUnread > 0 && bUnread == 0) return -1;
-          if (bUnread > 0 && aUnread == 0) return 1;
-          // If both have unread or both have none, keep original order
-          return 0;
-        });
+        // --- STRICT DESCENDING ORDER BY appointmentTime ---
+      final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
+      sortedDocs.sort((a, b) {
+        final aTime = (a['appointmentTime'] as Timestamp).toDate();
+        final bTime = (b['appointmentTime'] as Timestamp).toDate();
+        return bTime.compareTo(aTime); // Descending
+      });
 
         return ListView.builder(
           itemCount: sortedDocs.length,

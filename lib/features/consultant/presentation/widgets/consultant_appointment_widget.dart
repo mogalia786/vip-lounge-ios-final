@@ -39,24 +39,24 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
 
   @override
   Widget build(BuildContext context) {
-    final appointmentTime = appointment['appointmentTime'] is DateTime
-        ? appointment['appointmentTime'] as DateTime
-        : (appointment['appointmentTime'] is Timestamp)
-            ? (appointment['appointmentTime'] as Timestamp).toDate()
+    final appointmentTime = widget.appointment['appointmentTime'] is DateTime
+        ? widget.appointment['appointmentTime'] as DateTime
+        : (widget.appointment['appointmentTime'] is Timestamp)
+            ? (widget.appointment['appointmentTime'] as Timestamp).toDate()
             : DateTime.now();
     final formattedDate = DateFormat('EEEE, MMMM d').format(appointmentTime);
     final formattedTime = DateFormat('h:mm a').format(appointmentTime);
-    final ministerName = appointment['ministerName'] ?? 'Unknown Minister';
-    final serviceName = appointment['serviceName'] ?? 'Unknown Service';
-    final venue = appointment['venue'] ?? appointment['venueName'] ?? 'Unknown Venue';
-    final ministerPhone = appointment['ministerPhone'] ?? '';
-    final ministerEmail = appointment['ministerEmail'] ?? '';
-    final notes = appointment['notes'] ?? '';
-    final isCompleted = appointment['status'] == 'completed';
-    final hasStarted = appointment['status'] == 'in-progress' || appointment['status'] == 'in_progress';
+    final ministerName = widget.appointment['ministerName'] ?? 'Unknown Minister';
+    final serviceName = widget.appointment['serviceName'] ?? 'Unknown Service';
+    final venue = widget.appointment['venue'] ?? widget.appointment['venueName'] ?? 'Unknown Venue';
+    final ministerPhone = widget.appointment['ministerPhone'] ?? '';
+    final ministerEmail = widget.appointment['ministerEmail'] ?? '';
+    final notes = widget.appointment['notes'] ?? '';
+    final isCompleted = widget.appointment['status'] == 'completed';
+    final hasStarted = widget.appointment['status'] == 'in-progress' || widget.appointment['status'] == 'in_progress';
 
     return Card(
-      color: isEvenCard ? Colors.grey[900] : Colors.black,
+      color: widget.isEvenCard ? Colors.grey[900] : Colors.black,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -106,11 +106,11 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
                       }
                     },
                   ),
-                if (onChatWithMinister != null)
+                if (widget.onChatWithMinister != null)
                   IconButton(
                     icon: const Icon(Icons.message, color: AppColors.gold),
                     tooltip: 'Chat with Minister',
-                    onPressed: onChatWithMinister,
+                    onPressed: widget.onChatWithMinister,
                   ),
               ],
             ),
@@ -138,7 +138,7 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
                         backgroundColor: Colors.green[900],
                         side: const BorderSide(color: Colors.green),
                       ),
-                      onPressed: disableStartSession ? null : onStartSession,
+                      onPressed: widget.disableStartSession ? null : widget.onStartSession,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -152,7 +152,7 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
                       ),
                       onPressed: _endSessionButtonDisabled ? null : () async {
   setState(() { _endSessionButtonDisabled = true; });
-  if (widget.onEndSession != null) await widget.onEndSession!();
+  if (widget.onEndSession != null) widget.onEndSession!();
 }
                     ),
                   ),
@@ -170,7 +170,7 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
                       backgroundColor: Colors.black,
                       side: const BorderSide(color: AppColors.gold),
                     ),
-                    onPressed: onAddNotes,
+                    onPressed: widget.onAddNotes,
                   ),
                 ),
               ],
@@ -184,23 +184,23 @@ class _ConsultantAppointmentWidgetState extends State<ConsultantAppointmentWidge
                 ),
               ),
             const SizedBox(height: 8),
-            if ((statusOptions?.isNotEmpty ?? false))
+            if ((widget.statusOptions?.isNotEmpty ?? false))
               Builder(
                 builder: (context) {
-                  final optionValues = statusOptions!.map((o) => o['value']).whereType<String>().toList();
-                  final safeStatus = (status != null && optionValues.contains(status))
-                      ? status
+                  final optionValues = widget.statusOptions!.map((o) => o['value']).whereType<String>().toList();
+                  final safeStatus = (widget.status != null && optionValues.contains(widget.status))
+                      ? widget.status
                       : (optionValues.isNotEmpty ? optionValues.first : null);
                   return DropdownButton<String>(
                     value: safeStatus,
                     items: optionValues.map((value) {
-                      final label = statusOptions!.firstWhere((o) => o['value'] == value)['label'] ?? value;
+                      final label = widget.statusOptions!.firstWhere((o) => o['value'] == value)['label'] ?? value;
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(label),
                       );
                     }).toList(),
-                    onChanged: onChangeStatus,
+                    onChanged: widget.onChangeStatus,
                   );
                 },
               ),
