@@ -19,6 +19,7 @@ import 'core/services/fcm_service.dart';
 import 'core/services/vip_notification_service.dart';
 import 'features/floor_manager/presentation/screens/appointment_details_screen.dart';
 import 'core/services/vip_messaging_service.dart';
+import 'core/widgets/unified_appointment_search_screen.dart';
 
 class App extends StatefulWidget {
   final bool isLoggedIn;
@@ -213,6 +214,8 @@ class _AppState extends State<App> {
             } else {
               return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
             }
+          case '/unified_appointment_search':
+            return MaterialPageRoute(builder: (_) => UnifiedAppointmentSearchScreen());
           default:
             return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
         }

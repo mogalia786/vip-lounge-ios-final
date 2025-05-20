@@ -205,102 +205,65 @@ class DailySchedule extends StatelessWidget {
                                 ),
                               ),
                             
-                            // Staff assignment buttons
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Row(
-                                children: [
-                                  // Consultant button
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-  showDialog(
-    context: context,
-    builder: (context) => StaffAssignmentDialog(
-      appointment: {
-        ...appointment,
-        'id': appointmentId,
-      },
-    ),
-  );
-},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: consultantAssigned ? Colors.green : AppColors.gold,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                        padding: const EdgeInsets.symmetric(vertical: 0),
-                                        minimumSize: Size(0, 28),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        consultantAssigned ? (appointment['assignedConsultantName'] ?? 'Reassign') : 'Consultant',
-                                        style: const TextStyle(color: Colors.black, fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  
-                                  // Cleaner button
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-  showDialog(
-    context: context,
-    builder: (context) => StaffAssignmentDialog(
-      appointment: {
-        ...appointment,
-        'id': appointmentId,
-      },
-    ),
-  );
-},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: cleanerAssigned ? Colors.green : AppColors.gold,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                        padding: const EdgeInsets.symmetric(vertical: 0),
-                                        minimumSize: Size(0, 28),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        cleanerAssigned ? (appointment['assignedCleanerName'] ?? 'Reassign') : 'Cleaner',
-                                        style: const TextStyle(color: Colors.black, fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  
-                                  // Concierge button
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-  showDialog(
-    context: context,
-    builder: (context) => StaffAssignmentDialog(
-      appointment: {
-        ...appointment,
-        'id': appointmentId,
-      },
-    ),
-  );
-},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: conciergeAssigned ? Colors.green : AppColors.gold,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                        padding: const EdgeInsets.symmetric(vertical: 0),
-                                        minimumSize: Size(0, 28),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        conciergeAssigned ? (appointment['assignedConciergeName'] ?? 'Reassign') : 'Concierge',
-                                        style: const TextStyle(color: Colors.black, fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            // Staff assignment display (read-only)
+Padding(
+  padding: const EdgeInsets.only(top: 8.0),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(Icons.person, color: AppColors.gold, size: 16),
+          SizedBox(width: 5),
+          Text(
+            'Consultant: ',
+            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            appointment['consultantName'] != null && appointment['consultantName'].toString().isNotEmpty
+              ? appointment['consultantName']
+              : 'Not assigned',
+            style: TextStyle(color: Colors.white, fontSize: 13),
+          ),
+        ],
+      ),
+      SizedBox(height: 2),
+      Row(
+        children: [
+          Icon(Icons.cleaning_services, color: AppColors.gold, size: 16),
+          SizedBox(width: 5),
+          Text(
+            'Cleaner: ',
+            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            appointment['cleanerName'] != null && appointment['cleanerName'].toString().isNotEmpty
+              ? appointment['cleanerName']
+              : 'Not assigned',
+            style: TextStyle(color: Colors.white, fontSize: 13),
+          ),
+        ],
+      ),
+      SizedBox(height: 2),
+      Row(
+        children: [
+          Icon(Icons.room_service, color: AppColors.gold, size: 16),
+          SizedBox(width: 5),
+          Text(
+            'Concierge: ',
+            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            appointment['conciergeName'] != null && appointment['conciergeName'].toString().isNotEmpty
+              ? appointment['conciergeName']
+              : 'Not assigned',
+            style: TextStyle(color: Colors.white, fontSize: 13),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
                           ],
                         ),
                       ),

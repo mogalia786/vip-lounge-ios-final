@@ -1786,6 +1786,12 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Navigator.pushNamed(context, '/unified_appointment_search');
+            },
+          ),
           // Icons: Set Business Location, Set Business Hours, Register, Set Closed Days
           IconButton(
             icon: Icon(Icons.location_on, color: Colors.blue),
