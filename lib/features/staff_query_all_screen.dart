@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/providers/app_auth_provider.dart';
+import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 
 class StaffQueryAllScreen extends StatelessWidget {
   final String currentStaffUid;
@@ -9,7 +12,7 @@ class StaffQueryAllScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('All Minister Queries')),
+      appBar: AppBar(title: const Text('All Queries')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('queries')
@@ -43,9 +46,9 @@ class StaffQueryAllScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Date: ' + (createdAt != null ? createdAt.toLocal().toString() : ''), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Ref: $refNum', style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text('Minister: $ministerName'),
-                          Text('Subject: $subject'),
+                          Text('Query: ' + (data['query'] ?? ''), style: const TextStyle(fontStyle: FontStyle.italic)),
                         ],
                       ),
                     ),
@@ -73,8 +76,40 @@ class StaffQueryAllScreen extends StatelessWidget {
                           ),
                           if (status == 'pending')
                             TextButton(
-                              onPressed: () {
-                                onAttend?.call({...data, 'id': docs[index].id});
+                              onPressed: () async {
+                                final staffUid = currentStaffUid;
+                                String staffName = '';
+                                try {
+                                  // Try to get staff name from Provider if available
+                                  final provider = Provider.of<AppAuthProvider?>(context, listen: false);
+                                  staffName = provider?.appUser?.fullName ?? '';
+                                } catch (_) {}
+                                if (staffName.isEmpty) staffName = 'Staff';
+                                final queryId = docs[index].id;
+                                await FirebaseFirestore.instance.collection('queries').doc(queryId).update({
+                                  'assignedTo': staffUid,
+                                  'assignedToName': staffName,
+                                  'status': 'being_attended',
+                                  'statusHistory': FieldValue.arrayUnion([
+                                    {
+                                      'status': 'being_attended',
+                                      'by': staffUid,
+                                      'byName': staffName,
+                                      'timestamp': Timestamp.now(),
+                                      'note': 'Staff took initiative to attend',
+                                    }
+                                  ]),
+                                });
+                                if (onAttend != null) {
+  onAttend!({...data, 'id': queryId});
+} else {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => StaffQueryInboxScreen(currentStaffUid: staffUid),
+    ),
+  );
+}
                               },
                               child: const Text('Attend', style: TextStyle(color: Colors.green)),
                             ),

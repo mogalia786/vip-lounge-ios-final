@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/providers/app_auth_provider.dart';
-import '../../../../core/services/vip_query_service.dart';
+import 'package:vip_lounge/core/services/vip_query_service.dart';
+import 'package:vip_lounge/core/services/vip_notification_service.dart';
 
 class QueryScreen extends StatefulWidget {
   const QueryScreen({super.key});
@@ -41,7 +42,7 @@ class _QueryScreenState extends State<QueryScreen> {
       final ministerPhone = ministerData['phoneNumber'] ?? '';
       final subject = 'General Query';
       final queryText = _queryController.text.trim();
-      await VipQueryService().submitMinisterQuery(
+      final refNumber = await VipQueryService().submitMinisterQuery(
         ministerId: ministerId,
         ministerFirstName: ministerFirstName,
         ministerLastName: ministerLastName,
@@ -49,6 +50,19 @@ class _QueryScreenState extends State<QueryScreen> {
         ministerPhone: ministerPhone,
         subject: subject,
         queryText: queryText,
+      );
+      // Send notification to minister
+      await VipNotificationService().createNotification(
+        title: 'Query Received',
+        body: 'Your query ($refNumber) has been received. We will get back to you shortly.',
+        data: {
+          'referenceNumber': refNumber,
+          'query': queryText,
+          'status': 'pending',
+        },
+        role: 'minister',
+        assignedToId: ministerId,
+        notificationType: 'query_acknowledgement',
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

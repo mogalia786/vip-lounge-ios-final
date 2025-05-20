@@ -13,7 +13,7 @@ class VipQueryService {
   }
 
   /// Submits a new minister query to Firestore and notifies the floor manager.
-  Future<void> submitMinisterQuery({
+  Future<String> submitMinisterQuery({
     required String ministerId,
     required String ministerFirstName,
     required String ministerLastName,
@@ -76,6 +76,7 @@ class VipQueryService {
         notificationType: 'minister_query',
       );
     }
+    return refNumber;
   }
 
   /// Updates the status of a query and notifies the minister.
