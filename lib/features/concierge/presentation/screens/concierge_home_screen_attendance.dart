@@ -517,13 +517,32 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         );
       }
 
-      // Send thank you notification to minister
+      // Send thank you notification to minister with consultant name and contact details
+      final consultantName = consultantDetails['firstName'] != null && consultantDetails['lastName'] != null
+          ? (consultantDetails['firstName'] + ' ' + consultantDetails['lastName']).trim()
+          : (appointmentData['consultantName'] ?? 'Consultant');
+      final consultantPhone = consultantDetails['phone'] ?? appointmentData['consultantPhone'] ?? '';
+      final consultantEmail = consultantDetails['email'] ?? appointmentData['consultantEmail'] ?? '';
+      final appointmentTime = appointmentData['appointmentTime'] is DateTime
+          ? appointmentData['appointmentTime']
+          : (appointmentData['appointmentTime'] is Timestamp)
+              ? (appointmentData['appointmentTime'] as Timestamp).toDate()
+              : appointmentData['appointmentTime'];
+      final formattedTime = appointmentTime is DateTime
+          ? DateFormat('yyyy-MM-dd HH:mm').format(appointmentTime)
+          : appointmentTime?.toString() ?? '';
+      Map<String, dynamic> fullThankYouDetails = {
+        ...fullDetails,
+        'appointmentTimeFormatted': formattedTime,
+        'consultantPhone': consultantPhone,
+        'consultantEmail': consultantEmail,
+      };
       if (ministerId != null && ministerId.toString().isNotEmpty) {
         await _notificationService.createNotification(
           title: 'Thank You',
-          body: 'Thank you for attending your appointment and we look forward to seeing you in the future. Please be safe, from Concierge',
+          body: '$consultantName thanks you for visiting. If you have questions, contact me at $consultantPhone or $consultantEmail.',
           data: {
-            ...fullDetails,
+            ...fullThankYouDetails,
             'notificationType': 'thank_you',
           },
           role: 'minister',

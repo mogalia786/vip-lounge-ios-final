@@ -271,6 +271,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           ],
         );
       case 3:
+        return StaffQueryInboxScreen(currentStaffUid: _userId ?? '');
+      case 4:
         return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
@@ -320,15 +322,25 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.bar_chart, color: AppColors.gold),
-            tooltip: 'View Monthly Performance',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => StaffPerformanceWidget(),
-                ),
+            icon: const Icon(Icons.calendar_today, color: AppColors.gold),
+            tooltip: 'Select Month',
+            onPressed: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime(_selectedDate.year, _selectedDate.month, 1),
+                firstDate: DateTime(now.year - 5, 1),
+                lastDate: DateTime(now.year + 1, 12),
+                initialEntryMode: DatePickerEntryMode.calendarOnly,
+                selectableDayPredicate: (day) => day.day == 1,
+                helpText: 'Select Month',
               );
+              if (picked != null) {
+                setState(() {
+                  _selectedDate = DateTime(picked.year, picked.month, 1);
+                  _selectedIndex = 4; // Switch to Performance tab
+                });
+              }
             },
           ),
           IconButton(

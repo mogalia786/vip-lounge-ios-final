@@ -717,17 +717,15 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
 
     // Use the possibly overridden appointmentTime
     final dynamic rawAppointmentTime = appointmentData['appointmentTime'] ?? widget.date ?? DateTime.now();
-    DateTime appointmentTime;
+    DateTime? appointmentTime;
     if (rawAppointmentTime is Timestamp) {
       appointmentTime = rawAppointmentTime.toDate();
     } else if (rawAppointmentTime is DateTime) {
       appointmentTime = rawAppointmentTime;
     } else if (rawAppointmentTime is String) {
-      // Attempt to parse ISO8601 string
-      appointmentTime = DateTime.tryParse(rawAppointmentTime) ?? DateTime.now();
-    } else {
-      appointmentTime = DateTime.now();
+      appointmentTime = DateTime.tryParse(rawAppointmentTime);
     }
+    appointmentTime ??= DateTime.now();
     final formattedDate = DateFormat('EEEE, MMMM d, yyyy').format(appointmentTime);
     final formattedTime = DateFormat('h:mm a').format(appointmentTime);
     final safeMinisterName = extractMinisterName(appointmentData);

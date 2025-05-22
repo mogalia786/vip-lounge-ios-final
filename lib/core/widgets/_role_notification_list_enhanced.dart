@@ -114,7 +114,13 @@ class RoleNotificationListEnhanced extends StatelessWidget {
               date: appointment['appointmentTime'] is DateTime
                   ? appointment['appointmentTime']
                   : (appointment['appointmentTime'] is Timestamp)
-                      ? (appointment['appointmentTime'] as Timestamp).toDate()
+                      ? (appointment['appointmentTime'] is Timestamp)
+    ? (appointment['appointmentTime'] as Timestamp).toDate()
+    : (appointment['appointmentTime'] is DateTime)
+        ? (appointment['appointmentTime'] as DateTime)
+        : (appointment['appointmentTime'] is String)
+            ? DateTime.tryParse(appointment['appointmentTime'])
+            : null
                       : null,
               viewOnly: true,
             ),
@@ -140,7 +146,13 @@ class RoleNotificationListEnhanced extends StatelessWidget {
                   date: apptMap['appointmentTime'] is DateTime
                       ? apptMap['appointmentTime']
                       : (apptMap['appointmentTime'] is Timestamp)
-                          ? (apptMap['appointmentTime'] as Timestamp).toDate()
+                          ? (apptMap['appointmentTime'] is Timestamp)
+    ? (apptMap['appointmentTime'] as Timestamp).toDate()
+    : (apptMap['appointmentTime'] is DateTime)
+        ? (apptMap['appointmentTime'] as DateTime)
+        : (apptMap['appointmentTime'] is String)
+            ? DateTime.tryParse(apptMap['appointmentTime'])
+            : null
                           : null,
                   viewOnly: true,
                 ),

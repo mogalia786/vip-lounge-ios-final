@@ -16,6 +16,7 @@ import 'appointments_screen_fixed.dart';
 import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
 import 'employee_registration_screen.dart';
+import 'floor_manager_query_inbox_screen.dart';
 import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import '../../widgets/attendance_actions_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2138,9 +2139,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => StaffQueryInboxScreen(
-                    currentStaffUid: _floorManagerId,
-                  ),
+                  builder: (context) => FloorManagerQueryInboxScreen(),
                 ),
               );
               break;

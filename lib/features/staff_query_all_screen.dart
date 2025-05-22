@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/providers/app_auth_provider.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
+import 'package:vip_lounge/core/services/vip_notification_service.dart';
+import 'package:vip_lounge/features/auth/data/services/user_service.dart';
 
 class StaffQueryAllScreen extends StatelessWidget {
   final String currentStaffUid;
@@ -100,16 +102,50 @@ class StaffQueryAllScreen extends StatelessWidget {
                                     }
                                   ]),
                                 });
+                                // --- Notify Minister (local + FCM) ---
+                                try {
+                                  final ministerId = data['ministerId'] ?? '';
+                                  final refNum = data['referenceNumber'] ?? '';
+                                  final UserService userService = UserService();
+                                  final staffDetails = await userService.getUserById(staffUid);
+                                  final staffPhone = staffDetails?['phoneNumber'] ?? '';
+                                  final staffEmail = staffDetails?['email'] ?? '';
+                                  final staffContact = (staffPhone != null && staffPhone.toString().isNotEmpty)
+                                      ? 'Phone: $staffPhone'
+                                      : '';
+                                  final staffContactEmail = (staffEmail != null && staffEmail.toString().isNotEmpty)
+                                      ? 'Email: $staffEmail'
+                                      : '';
+                                  final staffContactInfo = [staffContact, staffContactEmail].where((e) => e.isNotEmpty).join(' | ');
+                                  await VipNotificationService().createNotification(
+                                    title: 'Query Attended',
+                                    body: 'Your query with ref number $refNum has been attended to by $staffName. $staffContactInfo',
+                                    data: {
+                                      'referenceNumber': refNum,
+                                      'staffName': staffName,
+                                      'staffPhone': staffPhone,
+                                      'staffEmail': staffEmail,
+                                      'staffUid': staffUid,
+                                      'queryId': queryId,
+                                      'notificationType': 'query_attended',
+                                    },
+                                    role: 'minister',
+                                    assignedToId: ministerId,
+                                    notificationType: 'query_attended',
+                                  );
+                                } catch (e) {
+                                  print('[NOTIFY] Failed to notify minister of attended query: $e');
+                                }
                                 if (onAttend != null) {
-  onAttend!({...data, 'id': queryId});
-} else {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => StaffQueryInboxScreen(currentStaffUid: staffUid),
-    ),
-  );
-}
+                                  onAttend!({...data, 'id': queryId});
+                                } else {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => StaffQueryInboxScreen(currentStaffUid: staffUid),
+                                    ),
+                                  );
+                                }
                               },
                               child: const Text('Attend', style: TextStyle(color: Colors.green)),
                             ),

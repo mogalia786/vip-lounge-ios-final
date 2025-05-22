@@ -1233,14 +1233,55 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
         appointment['status'] = 'completed';
         appointment['consultantSessionEnded'] = true;
       });
-      // Send thank you notification to minister
+      // Send thank you notification to minister with consultant name and contact details
       final ministerId = appointment['ministerId'] ?? appointment['ministerUid'];
+      final consultantId = appointment['consultantId'] ?? appointment['assignedConsultantId'];
+      final conciergeId = appointment['conciergeId'] ?? appointment['assignedConciergeId'];
+      // Fetch user details for enrichment
+      Future<Map<String, dynamic>> getUserDetails(String? userId) async {
+        if (userId == null || userId.isEmpty) return {};
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        if (!userDoc.exists) return {};
+        final data = userDoc.data() ?? {};
+        return {
+          'id': userId,
+          'firstName': data['firstName'] ?? '',
+          'lastName': data['lastName'] ?? '',
+          'phone': data['phone'] ?? data['phoneNumber'] ?? '',
+          'email': data['email'] ?? '',
+        };
+      }
+      final ministerDetails = await getUserDetails(ministerId?.toString());
+      final consultantDetails = await getUserDetails(consultantId?.toString());
+      final conciergeDetails = await getUserDetails(conciergeId?.toString());
+      // Compose consultant name and contact info
+      final consultantName = consultantDetails['firstName'] != null && consultantDetails['lastName'] != null
+          ? (consultantDetails['firstName'] + ' ' + consultantDetails['lastName']).trim()
+          : (appointment['consultantName'] ?? 'Consultant');
+      final consultantPhone = consultantDetails['phone'] ?? appointment['consultantPhone'] ?? '';
+      final consultantEmail = consultantDetails['email'] ?? appointment['consultantEmail'] ?? '';
+      final appointmentTime = appointment['appointmentTime'] is DateTime
+          ? appointment['appointmentTime']
+          : (appointment['appointmentTime'] is Timestamp)
+              ? (appointment['appointmentTime'] as Timestamp).toDate()
+              : appointment['appointmentTime'];
+      final formattedTime = appointmentTime is DateTime
+          ? DateFormat('yyyy-MM-dd HH:mm').format(appointmentTime)
+          : appointmentTime?.toString() ?? '';
+      Map<String, dynamic> fullDetails = {
+        ...appointment,
+        'appointmentId': appointment['id'],
+        'appointmentTimeFormatted': formattedTime,
+        'minister': ministerDetails,
+        'consultant': consultantDetails,
+        'concierge': conciergeDetails,
+      };
       if (ministerId != null && ministerId.toString().isNotEmpty) {
         await VipNotificationService().createNotification(
           title: 'Thank You',
-          body: 'Thank you for attending your appointment and we look forward to seeing you in the future. Please be safe, from Consultant',
+          body: '$consultantName thanks you for visiting. If you have questions, contact me at $consultantPhone or $consultantEmail.',
           data: {
-            'appointmentId': appointment['id'],
+            ...fullDetails,
             'notificationType': 'thank_you',
           },
           role: 'minister',

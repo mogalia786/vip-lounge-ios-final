@@ -1,14 +1,57 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'package:vip_lounge/core/providers/app_auth_provider.dart';
 
-Future<void> sendNotificationToMinister(String ministerUidOrEmail, String ministerName, String refNum, String query, String newStatus) async {
-  // Professional notification message
-  final message =
-      'Dear $ministerName,\nYour query (Ref: $refNum, "$query") status has been updated to: $newStatus.';
-  // ignore: avoid_print
-  print(message);
+import 'package:vip_lounge/core/services/vip_notification_service.dart';
+import 'package:vip_lounge/features/auth/data/services/user_service.dart';
+
+Future<void> sendNotificationToMinister({
+  required String ministerId,
+  required String ministerName,
+  required String refNum,
+  required String query,
+  required String newStatus,
+  required String staffUid,
+  required String staffName,
+}) async {
+  try {
+    final UserService userService = UserService();
+    final staffDetails = await userService.getUserById(staffUid);
+    final staffPhone = staffDetails?['phoneNumber'] ?? '';
+    final staffEmail = staffDetails?['email'] ?? '';
+    final staffContact = (staffPhone != null && staffPhone.toString().isNotEmpty)
+        ? 'Phone: $staffPhone'
+        : '';
+    final staffContactEmail = (staffEmail != null && staffEmail.toString().isNotEmpty)
+        ? 'Email: $staffEmail'
+        : '';
+    final staffContactInfo = [staffContact, staffContactEmail].where((e) => e.isNotEmpty).join(' | ');
+    final body = 'Dear $ministerName,\nYour query (Ref: $refNum, "$query") status has been updated to: $newStatus.\nHandled by: $staffName. $staffContactInfo';
+    await VipNotificationService().createNotification(
+      title: 'Query Status Updated',
+      body: body,
+      data: {
+        'referenceNumber': refNum,
+        'ministerName': ministerName,
+        'query': query,
+        'status': newStatus,
+        'staffName': staffName,
+        'staffPhone': staffPhone,
+        'staffEmail': staffEmail,
+        'staffUid': staffUid,
+        'notificationType': 'query_status_update',
+      },
+      role: 'minister',
+      assignedToId: ministerId,
+      notificationType: 'query_status_update',
+    );
+  } catch (e) {
+    print('[NOTIFY] Failed to notify minister of query status update: $e');
+  }
 }
+
 
 class StaffQueryInboxScreen extends StatelessWidget {
   final String currentStaffUid;
@@ -141,23 +184,39 @@ class StaffQueryInboxScreen extends StatelessWidget {
                               );
                             }).toList(),
                             onChanged: (String? newValue) async {
-                              if (newValue != null && newValue != status) {
-                                final queryId = docs[index].id;
-                                await FirebaseFirestore.instance
-                                    .collection('queries')
-                                    .doc(queryId)
-                                    .update({'status': newValue});
-                                // Send notification to minister (placeholder)
-                                final ministerUid = data['ministerUid'] ?? data['ministerEmail'] ?? '';
-                                final refNumForNotif = data['referenceNumber'] ?? '';
-                                final queryTextForNotif = data['query'] ?? '';
-                                final ministerNameForNotif = data['ministerName'] ?? data['ministerFullName'] ?? data['minister'] ?? '';
-                                await sendNotificationToMinister(ministerUid, ministerNameForNotif, refNumForNotif, queryTextForNotif, newValue);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Query status updated to $newValue')),
-                                );
-                              }
-                            },
+  if (newValue != null && newValue != status) {
+    final queryId = docs[index].id;
+    await FirebaseFirestore.instance
+        .collection('queries')
+        .doc(queryId)
+        .update({'status': newValue});
+    // Send notification to minister (real)
+    final ministerId = data['ministerId'] ?? data['ministerUid'] ?? data['ministerEmail'] ?? '';
+    final refNumForNotif = data['referenceNumber'] ?? '';
+    final queryTextForNotif = data['query'] ?? '';
+    final ministerNameForNotif = ((data['ministerFirstName'] ?? '').toString().isNotEmpty || (data['ministerLastName'] ?? '').toString().isNotEmpty)
+        ? ((data['ministerFirstName'] ?? '') + ' ' + (data['ministerLastName'] ?? '')).trim()
+        : (data['ministerName'] ?? data['ministerFullName'] ?? data['minister'] ?? '');
+    String staffName = '';
+    try {
+      final provider = Provider.of<AppAuthProvider?>(context, listen: false);
+      staffName = provider?.appUser?.fullName ?? '';
+    } catch (_) {}
+    if (staffName.isEmpty) staffName = 'Staff';
+    await sendNotificationToMinister(
+      ministerId: ministerId,
+      ministerName: ministerNameForNotif,
+      refNum: refNumForNotif,
+      query: queryTextForNotif,
+      newStatus: newValue,
+      staffUid: currentStaffUid,
+      staffName: staffName,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Query status updated to $newValue')),
+    );
+  }
+},
                           ),
                         ],
                       ),

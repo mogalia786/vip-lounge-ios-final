@@ -16,11 +16,9 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
   DateTime? _toDate;
   bool _showAllDates = false;
   String? _selectedMinister;
-  String? _selectedRole;
   String? _selectedStatus;
   bool _loading = false;
   List<Map<String, dynamic>> _results = [];
-  final List<String> _roleOptions = ['consultant', 'concierge', 'cleaner'];
   final List<String> _statusOptions = ['completed', 'pending', 'cancelled'];
   List<String> _ministerOptions = [];
 
@@ -43,7 +41,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
   Future<void> _performSearch() async {
     setState(() { _loading = true; });
     Query query = FirebaseFirestore.instance.collection('appointments');
-    // Date filter
+    // Date filter (always applied if not show all)
     if (!_showAllDates && _fromDate != null && _toDate != null) {
       final start = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day);
       final end = DateTime(_toDate!.year, _toDate!.month, _toDate!.day).add(const Duration(days: 1));
@@ -53,10 +51,6 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
     // Minister filter
     if (_selectedMinister != null && _selectedMinister!.isNotEmpty) {
       query = query.where('ministerName', isEqualTo: _selectedMinister);
-    }
-    // Role filter
-    if (_selectedRole != null && _selectedRole!.isNotEmpty) {
-      query = query.where('role', isEqualTo: _selectedRole);
     }
     // Status filter
     if (_selectedStatus != null && _selectedStatus!.isNotEmpty) {
@@ -68,6 +62,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
         query = query.where('status', whereNotIn: ['completed', 'cancelled']);
       }
     }
+    // Always order by appointmentTime descending
     query = query.orderBy('appointmentTime', descending: true);
     final snapshot = await query.get();
     final results = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
@@ -179,30 +174,6 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
               onChanged: (val) => setState(() => _selectedMinister = val),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.grey[850],
-                border: OutlineInputBorder(),
-              ),
-              dropdownColor: Colors.white,
-            ),
-            SizedBox(height: 16),
-            // Role Dropdown
-            Text('By Role:', style: TextStyle(color: Colors.white)),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: _selectedRole,
-              items: _roleOptions.map((role) => DropdownMenuItem(
-                value: role,
-                child: Text(role[0].toUpperCase() + role.substring(1), style: TextStyle(color: Colors.black)),
-              )).toList(),
-              onChanged: (val) => setState(() => _selectedRole = val),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey[850],
-                border: OutlineInputBorder(),
-              ),
-              dropdownColor: Colors.white,
-            ),
-            SizedBox(height: 16),
             // Status Dropdown
             Text('By Status:', style: TextStyle(color: Colors.white)),
             SizedBox(height: 4),

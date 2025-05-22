@@ -11,6 +11,7 @@ import 'appointments_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/concierge_closed_day_helper.dart';
 import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
+import 'floor_manager_query_inbox_screen.dart';
 import '../widgets/staff_assignment_dialog.dart';
 
 class FloorManagerHomeScreen extends StatefulWidget {
@@ -1745,6 +1746,10 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
             icon: Icon(Icons.people),
             label: 'Staff',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inbox),
+            label: 'Inbox',
+          ),
         ],
         currentIndex: 0,
         onTap: (index) {
@@ -1758,9 +1763,15 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
               context,
               MaterialPageRoute(builder: (context) => StaffManagementScreen()),
             );
+          } else if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => FloorManagerQueryInboxScreen()),
+            );
           }
         },
       ),
+
     );
   }
 }
