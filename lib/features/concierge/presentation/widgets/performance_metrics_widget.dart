@@ -113,7 +113,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
   (appt['minister'] != null && appt['minister']['name'] != null ? appt['minister']['name'] : null) ??
   (((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim().isNotEmpty
     ? ((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim()
-    : 'Unknown Minister');
+    : 'Unknown VIP');
         ministerMap.putIfAbsent(ministerName, () => []).add(appt);
       }
       setState(() {
@@ -166,7 +166,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
     );
   }
 
-  Widget _buildMinisterSection(String ministerName, List<Map<String, dynamic>> appts) {
+  Widget _buildMinisterSection(String ministerName, List<Map<String, dynamic>> appts) { // UI label: VIP
     return Card(
       color: Colors.grey[900],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
@@ -232,7 +232,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Performance Breakdown by Minister',
+              'Performance Breakdown by VIP',
               style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
@@ -315,14 +315,14 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
     );
   }
 
-  Map<String, List<Map<String, dynamic>>> _groupFutureAppointmentsByMinister() {
+  Map<String, List<Map<String, dynamic>>> _groupFutureAppointmentsByMinister() { // UI label: VIP
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final appt in _futureAppointments) {
       String ministerName = appt['ministerName'] ??
         (appt['minister'] != null && appt['minister']['name'] != null ? appt['minister']['name'] : null) ??
         (((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim().isNotEmpty
           ? ((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim()
-          : 'Unknown Minister');
+          : 'Unknown VIP');
       grouped.putIfAbsent(ministerName, () => []).add(appt);
     }
     return grouped;

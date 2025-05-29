@@ -49,7 +49,7 @@ class StaffQueryAllScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Ref: $refNum', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text('Minister: $ministerName'),
+                          Text('VIP: $ministerName'),
                           Text('Query: ' + (data['query'] ?? ''), style: const TextStyle(fontStyle: FontStyle.italic)),
                         ],
                       ),

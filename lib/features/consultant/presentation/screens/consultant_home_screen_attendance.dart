@@ -902,20 +902,17 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
       if (ministerId.isNotEmpty) {
         await _notificationService.createNotification(
           title: 'Appointment Status Changed',
-          body: 'Your appointment status is now "$status"',
-          data: notificationData,
+          body: 'Your appointment status is now "$status". Please rate your experience.',
+          data: {
+            ...appointment,
+            'appointmentId': docId,
+            'status': status,
+            'notificationType': status == 'completed' ? 'appointment_completed' : 'status_changed',
+            'showRating': status == 'completed',
+          },
           role: 'minister',
           assignedToId: ministerId,
-          notificationType: 'Status Changed',
-        );
-        await _notificationService.sendMessageNotification(
-          senderId: _consultantId,
-          senderName: _consultantName,
-          senderRole: 'consultant',
-          recipientId: ministerId,
-          recipientRole: 'minister',
-          message: 'Your appointment status is now "$status"',
-          appointmentId: docId,
+          notificationType: status == 'completed' ? 'appointment_completed' : 'status_changed',
         );
       } else {
         print('[WARN] Minister ID missing, skipping notification.');
@@ -1233,11 +1230,10 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
         appointment['status'] = 'completed';
         appointment['consultantSessionEnded'] = true;
       });
-      // Send thank you notification to minister with consultant name and contact details
+      // Send thank you notification to minister with consultant name and contact details and status, and trigger rating dialog
       final ministerId = appointment['ministerId'] ?? appointment['ministerUid'];
       final consultantId = appointment['consultantId'] ?? appointment['assignedConsultantId'];
       final conciergeId = appointment['conciergeId'] ?? appointment['assignedConciergeId'];
-      // Fetch user details for enrichment
       Future<Map<String, dynamic>> getUserDetails(String? userId) async {
         if (userId == null || userId.isEmpty) return {};
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
@@ -1254,7 +1250,6 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
       final ministerDetails = await getUserDetails(ministerId?.toString());
       final consultantDetails = await getUserDetails(consultantId?.toString());
       final conciergeDetails = await getUserDetails(conciergeId?.toString());
-      // Compose consultant name and contact info
       final consultantName = consultantDetails['firstName'] != null && consultantDetails['lastName'] != null
           ? (consultantDetails['firstName'] + ' ' + consultantDetails['lastName']).trim()
           : (appointment['consultantName'] ?? 'Consultant');
@@ -1279,14 +1274,16 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
       if (ministerId != null && ministerId.toString().isNotEmpty) {
         await VipNotificationService().createNotification(
           title: 'Thank You',
-          body: '$consultantName thanks you for visiting. If you have questions, contact me at $consultantPhone or $consultantEmail.',
+          body: 'Thank you, VIP, for visiting the VIP Lounge.\n\nAppointment Status: ${appointment['status']}.\n\nWe hope you had a pleasant experience.\n\nPlease rate your experience using the link below.\n\nIf you have questions, contact your consultant at $consultantPhone or $consultantEmail.',
           data: {
             ...fullDetails,
-            'notificationType': 'thank_you',
+            'notificationType': 'appointment_completed',
+            'status': appointment['status'],
+            'showRating': true,
           },
           role: 'minister',
           assignedToId: ministerId,
-          notificationType: 'thank_you',
+          notificationType: 'appointment_completed',
         );
       }
       ScaffoldMessenger.of(context).showSnackBar(

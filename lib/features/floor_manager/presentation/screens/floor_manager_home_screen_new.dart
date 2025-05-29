@@ -350,7 +350,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
   void _showChatDialogWithData(BuildContext context, String appointmentId, 
       Map<String, dynamic> appointment, String ministerId, TextEditingController messageController) {
     // Get minister name from various possible fields
-    String ministerName = 'Minister';
+    String ministerName = 'VIP';
     if (appointment.containsKey('ministerName') && appointment['ministerName'] != null && appointment['ministerName'].toString().trim().isNotEmpty) {
       ministerName = appointment['ministerName'];
     } else if (appointment.containsKey('ministerFirstName') && appointment['ministerFirstName'] != null && appointment['ministerFirstName'].toString().trim().isNotEmpty) {
@@ -1175,7 +1175,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           ministerName = ministerName.trim();
         }
         if (ministerName.isEmpty) {
-          ministerName = 'Minister';
+          ministerName = 'VIP';
         }
 
         final serviceName = appointment['serviceName'] ?? 'Unknown Service';
@@ -1586,7 +1586,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           if (appointmentDoc.exists) {
             final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
             final ministerPhone = appointmentData['ministerPhone'] ?? '';
-            final ministerName = appointmentData['ministerName'] ?? 'Minister';
+            final ministerName = appointmentData['ministerName'] ?? 'VIP';
 
             final message = "I apologize, but all consultants are booked for this time slot. Could you please select a different date or time for your appointment?";
 

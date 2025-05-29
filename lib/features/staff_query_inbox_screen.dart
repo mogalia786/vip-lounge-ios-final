@@ -15,6 +15,7 @@ Future<void> sendNotificationToMinister({
   required String newStatus,
   required String staffUid,
   required String staffName,
+  bool showDialog = true,
 }) async {
   try {
     final UserService userService = UserService();
@@ -42,6 +43,7 @@ Future<void> sendNotificationToMinister({
         'staffEmail': staffEmail,
         'staffUid': staffUid,
         'notificationType': 'query_status_update',
+        'showRating': true, // Always show rating for any status
       },
       role: 'minister',
       assignedToId: ministerId,
@@ -59,8 +61,8 @@ class StaffQueryInboxScreen extends StatelessWidget {
 
   static const statusOptions = [
     'Assigned',
-    'Minister Called',
-    'Minister Emailed',
+    'VIP Called',
+    'VIP Emailed',
     'Awaiting Info',
     'Resolved',
   ];
@@ -68,7 +70,15 @@ class StaffQueryInboxScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Query Inbox')),
+      appBar: AppBar(
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: const Text('My Query Inbox'),
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -136,7 +146,7 @@ class StaffQueryInboxScreen extends StatelessWidget {
                       Text('Ref: $refNum', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
                       const SizedBox(height: 8),
                       Text(
-  'Minister: ${ministerName.isNotEmpty ? ministerName : '(not provided)'}',
+  'VIP: ${ministerName.isNotEmpty ? ministerName : '(not provided)'}',
   style: const TextStyle(
     color: Colors.deepOrange,
     fontWeight: FontWeight.w600,
@@ -211,6 +221,7 @@ class StaffQueryInboxScreen extends StatelessWidget {
       newStatus: newValue,
       staffUid: currentStaffUid,
       staffName: staffName,
+      showDialog: true,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Query status updated to $newValue')),

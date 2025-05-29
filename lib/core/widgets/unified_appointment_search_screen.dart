@@ -13,7 +13,7 @@ class UnifiedAppointmentSearchScreen extends StatefulWidget {
 
 class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearchScreen> {
   DateTime? _selectedDate;
-  String? _selectedMinister;
+  String? _selectedVIP;
   // Removed role filter",
   String? _selectedStatus;
   String? _selectedConsultant;
@@ -27,11 +27,11 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
   @override
   void initState() {
     super.initState();
-    _fetchMinisters();
+    _fetchVIPs();
     _fetchConsultants();
   }
 
-  Future<void> _fetchMinisters() async {
+  Future<void> _fetchVIPs() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'minister').get();
     setState(() {
       _ministerOptions = snapshot.docs.map((doc) {
@@ -98,9 +98,9 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
           return dateStr == selectedDateStr;
         }).toList();
       }
-      if (_selectedMinister != null && _selectedMinister!.isNotEmpty) {
+      if (_selectedVIP != null && _selectedVIP!.isNotEmpty) {
         results = results.where((item) =>
-          ((item['ministerFirstName'] ?? '').toString().trim() + ' ' + (item['ministerLastName'] ?? '').toString().trim()).trim() == _selectedMinister
+          ((item['ministerFirstName'] ?? '').toString().trim() + ' ' + (item['ministerLastName'] ?? '').toString().trim()).trim() == _selectedVIP
         ).toList();
       }
       if (_selectedStatus == 'pending') {
@@ -153,14 +153,14 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: _selectedMinister,
+                    value: _selectedVIP,
                     items: _ministerOptions.map((name) => DropdownMenuItem(
                       value: name,
                       child: Text(name, style: const TextStyle(color: Colors.black)),
                     )).toList(),
-                    onChanged: (val) => setState(() => _selectedMinister = val),
+                    onChanged: (val) => setState(() => _selectedVIP = val),
                     decoration: const InputDecoration(
-                      labelText: 'Minister',
+                      labelText: 'VIP',
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(),

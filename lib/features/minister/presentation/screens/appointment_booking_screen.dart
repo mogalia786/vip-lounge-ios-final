@@ -240,7 +240,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
             ),
             if (authProvider.ministerData != null)
               Text(
-                'Welcome, Minister ${authProvider.ministerData!['firstName']} ${authProvider.ministerData!['lastName']}',
+                'Welcome, VIP ${authProvider.ministerData!['firstName']} ${authProvider.ministerData!['lastName']}',
                 style: TextStyle(color: AppColors.gold, fontSize: 14),
               ),
           ],

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
+import 'package:vip_lounge/core/widgets/app_bottom_nav_bar.dart';
+import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/role_notification_list.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -13,14 +15,16 @@ import 'query_screen.dart';
 import 'consultant_rating_screen.dart';
 import '../../../floor_manager/presentation/screens/notifications_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
+import 'minister_chat_dialog.dart';
 import 'package:vip_lounge/features/marketing_agent/models/social_feed_post_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/widgets/notification_item.dart';
+
 class MinisterHomeScreen extends StatefulWidget {
   final String? initialChatAppointmentId;
-
 
   const MinisterHomeScreen({
     super.key,
@@ -441,17 +445,23 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           for (var doc in snapshot.docs) {
             doc.reference.update({'isRead': true});
           }
+          // Open chat dialog for appointment
+          _openChatDialog(appointmentData);
         });
       }
-      
-      // Open chat dialog
-      _openChatDialog({...appointmentData, 'id': appointmentId});
     } catch (e) {
       print('Error opening chat for appointment: $e');
     }
   }
 
-  // Open the consultant rating screen
+  void _openChatDialog(Map<String, dynamic> appointment) {
+    showDialog(
+      context: context,
+      builder: (context) => MinisterChatDialog(appointment: appointment),
+    );
+  }
+
+  // Method to handle opening consultant rating screen
   void _openConsultantRatingScreen(Map<String, dynamic> appointmentData) {
     Navigator.push(
       context,
@@ -480,6 +490,37 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Bookings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.question_answer),
+            label: 'Query',
+          ),
+          BottomNavigationBarItem(
+            icon: Builder(
+              builder: (context) {
+                final userId = Provider.of<AppAuthProvider>(context, listen: false).appUser?.uid ?? '';
+                return NotificationBellBadge(userId: userId);
+              },
+            ),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.campaign),
+            label: 'Marketing',
+          ),
+        ],
+      ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Column(
@@ -491,7 +532,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             ),
             if (ministerData != null)
               Text(
-                'Welcome, Minister ${ministerData['firstName']} ${ministerData['lastName']}',
+                'Welcome, VIP ${ministerData['firstName']} ${ministerData['lastName']}',
                 style: TextStyle(color: AppColors.gold, fontSize: 14),
               ),
           ],
@@ -562,10 +603,8 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       body: _selectedIndex == 3 
         ? _buildNotificationsView() 
         : _selectedIndex == 4 
-          ? MarketingTabSocialFeed() 
-          : Column(
+          ? MarketingTabSocialFeed()           : Column(
               children: [
-                
                 // Tab controller for Marketing and Bookings
                 Expanded(
                   child: DefaultTabController(
@@ -586,417 +625,17 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             children: [
                               // Marketing tab
                               MarketingTabSocialFeed(),
-                              
                               // Bookings tab
                               _buildBookingsTab(),
                             ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
+                    ), // <-- closes Column
+                  ), // <-- closes DefaultTabController
+                ), // <-- closes Expanded
               ],
-            ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.gold,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.black,
-        type: BottomNavigationBarType.fixed,
-        onTap: _onItemTapped,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Book',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.question_answer),
-            label: 'Query',
-          ),
-          BottomNavigationBarItem(
-            icon: _buildNotificationIcon(),
-            label: 'Notifications',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Marketing',
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Function to open chat dialog with consultant
-  void _openChatDialog(Map<String, dynamic> appointment) {
-    // Get required info from appointment
-    final appointmentId = appointment['id'] as String? ?? '';
-    late final String recipientId;
-    late final String recipientName;
-    late final String recipientRole;
-    
-    // If a specific role is selected, use that first
-    if (appointment.containsKey('selectedRole') && appointment['selectedRole'] != null) {
-      final selectedRole = appointment['selectedRole'];
-      
-      switch (selectedRole) {
-        case 'consultant':
-          if (appointment.containsKey('consultantId') && appointment['consultantId'] != null) {
-            recipientId = appointment['consultantId'];
-            recipientName = appointment['consultantName'] ?? 'Consultant';
-            recipientRole = 'consultant';
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No consultant assigned to this booking')),
-            );
-            return;
-          }
-          break;
-          
-        case 'concierge':
-          if (appointment.containsKey('conciergeId') && appointment['conciergeId'] != null) {
-            recipientId = appointment['conciergeId'];
-            recipientName = appointment['conciergeName'] ?? 'Concierge';
-            recipientRole = 'concierge';
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No concierge assigned to this booking')),
-            );
-            return;
-          }
-          break;
-          
-        case 'floor_manager':
-          if (appointment.containsKey('floorManagerId') && appointment['floorManagerId'] != null) {
-            recipientId = appointment['floorManagerId'];
-            recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
-            recipientRole = 'floor_manager';
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No floor manager assigned to this booking')),
-            );
-            return;
-          }
-          break;
-          
-        default:
-          // Fall back to the old logic for unknown roles
-          if (appointment.containsKey('floorManagerId') && appointment['floorManagerId'] != null) {
-            recipientId = appointment['floorManagerId'];
-            recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
-            recipientRole = 'floor_manager';
-          } else if (appointment.containsKey('consultantId') && appointment['consultantId'] != null) {
-            recipientId = appointment['consultantId'];
-            recipientName = appointment['consultantName'] ?? 'Consultant';
-            recipientRole = 'consultant';
-          } else if (appointment.containsKey('conciergeId') && appointment['conciergeId'] != null) {
-            recipientId = appointment['conciergeId'];
-            recipientName = appointment['conciergeName'] ?? 'Concierge';
-            recipientRole = 'concierge';
-          } else {
-            // No valid recipient found
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No assigned staff found for chat')),
-            );
-            return;
-          }
-      }
-    } else {
-      // No specific role selected, fallback to the old logic
-      if (appointment.containsKey('floorManagerId') && appointment['floorManagerId'] != null) {
-        recipientId = appointment['floorManagerId'];
-        recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
-        recipientRole = 'floor_manager';
-      } else if (appointment.containsKey('consultantId') && appointment['consultantId'] != null) {
-        recipientId = appointment['consultantId'];
-        recipientName = appointment['consultantName'] ?? 'Consultant';
-        recipientRole = 'consultant';
-      } else if (appointment.containsKey('conciergeId') && appointment['conciergeId'] != null) {
-        recipientId = appointment['conciergeId'];
-        recipientName = appointment['conciergeName'] ?? 'Concierge';
-        recipientRole = 'concierge';
-      } else {
-        // No valid recipient found
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No assigned staff found for chat')),
-        );
-        return;
-      }
-    }
-    
-    // Color based on role
-    final Color roleColor = {
-      'floor_manager': Colors.red,
-      'consultant': Colors.blue,
-      'concierge': Colors.green,
-      'cleaner': Colors.orange,
-      'default': Colors.grey,
-    }[recipientRole] ?? Colors.grey;
-
-    // Define a simple text controller
-    final TextEditingController textController = TextEditingController();
-    String messageText = '';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              appBar: AppBar(
-                backgroundColor: Colors.black,
-                title: Text(
-                  'Chat with ${_getRoleTitle(recipientRole)} $recipientName',
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: AppColors.gold),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-              body: Column(
-                children: [
-                  
-                  // Messages list
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('messages')
-                          .where('appointmentId', isEqualTo: appointmentId)
-                          .orderBy('timestamp', descending: true)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        
-                        final messages = snapshot.data?.docs ?? [];
-                        final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
-                        
-                        if (user == null) {
-                          return const Center(
-                            child: Text('User not authenticated', style: TextStyle(color: Colors.red)),
-                          );
-                        }
-                        
-                        if (messages.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No messages yet. Start the conversation!',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          );
-                        }
-                        
-                        return ListView.builder(
-                          reverse: true,
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final message = messages[index].data() as Map<String, dynamic>;
-                            final senderId = message['senderId'];
-                            final senderName = message['senderName'];
-                            final senderRole = message['senderRole'] ?? recipientRole; // Get role from message or use recipient role
-                            final messageContent = message['message'];
-                            final timestamp = message['timestamp'] as Timestamp?;
-                            final isSentByCurrentUser = senderId == user.uid;
-                            
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                              child: Row(
-                                mainAxisAlignment: isSentByCurrentUser
-                                    ? MainAxisAlignment.end
-                                    : MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (!isSentByCurrentUser)
-                                    CircleAvatar(
-                                      backgroundColor: roleColor,
-                                      radius: 16,
-                                      child: Text(
-                                        senderName?.isNotEmpty == true
-                                            ? senderName[0].toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    
-                                  if (!isSentByCurrentUser)
-                                    const SizedBox(width: 8),
-                                    
-                                  Flexible(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: isSentByCurrentUser
-                                            ? AppColors.gold.withOpacity(0.2)
-                                            : Colors.grey[800],
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          if (!isSentByCurrentUser)
-                                            Padding(
-                                              padding: const EdgeInsets.only(bottom: 4.0),
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    senderName ?? 'Unknown',
-                                                    style: TextStyle(
-                                                      color: roleColor,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                    decoration: BoxDecoration(
-                                                      color: roleColor.withOpacity(0.2),
-                                                      borderRadius: BorderRadius.circular(8),
-                                                    ),
-                                                    child: Text(
-                                                      _getRoleTitle(senderRole),
-                                                      style: TextStyle(
-                                                        color: roleColor,
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            
-                                          Text(
-                                            messageContent ?? 'No message content',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          
-                                          if (timestamp != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 4),
-                                              child: Text(
-                                                DateFormat('MMM d, yyyy · hh:mm a').format(timestamp.toDate()),
-                                                style: TextStyle(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  
-                                  if (isSentByCurrentUser)
-                                    const SizedBox(width: 8),
-                                    
-                                  if (isSentByCurrentUser)
-                                    CircleAvatar(
-                                      backgroundColor: AppColors.gold,
-                                      radius: 16,
-                                      child: Text(
-                                        user.name?.isNotEmpty == true
-                                            ? user.name!.characters.first.toUpperCase()
-                                            : 'M',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  
-                  // Simple message input area
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.withOpacity(0.3)),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Text field using a simple approach
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: TextField(
-                              controller: textController,
-                              onChanged: (value) {
-                                messageText = value;
-                              },
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                hintText: 'Type a message...',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(vertical: 10),
-                              ),
-                            ),
-                          ),
-                        ),
-                        
-                        // Send button
-                        IconButton(
-                          icon: Icon(Icons.send, color: AppColors.gold),
-                          onPressed: () {
-                            String text = textController.text.trim();
-                            if (text.isNotEmpty) {
-                              // Close dialog first
-                              Navigator.pop(context);
-                              
-                              // Then send message
-                              _sendDirectMessage(
-                                appointmentId: appointmentId,
-                                text: text,
-                                recipientId: recipientId,
-                                recipientRole: recipientRole,
-                                recipientName: recipientName,
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+            )
     );
   }
 
@@ -2148,150 +1787,42 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
 
   Widget _buildNotificationsView() {
     final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
-    return RoleNotificationList(
-      userId: user?.uid,
-      userRole: 'minister',
-      showTitle: true,
-    );
-  
-    // Sort so chat notifications are at the top
-    final sortedNotifications = List<Map<String, dynamic>>.from(_unreadNotificationsList);
-    sortedNotifications.sort((a, b) {
-      final aIsChat = (a['notificationType'] == 'message') ? 1 : 0;
-      final bIsChat = (b['notificationType'] == 'message') ? 1 : 0;
-      return bIsChat - aIsChat; // Chats first
-    });
-    return ListView.builder(
-      itemCount: sortedNotifications.length,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (context, index) {
-        final notification = sortedNotifications[index];
-        final notificationType = notification['notificationType'] as String? ?? 'general';
-        final appointmentId = notification['appointmentId'] as String? ?? '';
-        
-        // Determine color based on notification type
-        Color notificationColor;
-        if (notificationType == 'message') {
-          notificationColor = Colors.red;
-        } else if (notificationType.contains('appointment') || 
-                notificationType == 'service_started' || 
-                notificationType == 'service_completed' ||
-                notificationType == 'rating_request' ||
-                notificationType == 'staff_assigned') {
-          notificationColor = AppColors.gold;
-        } else {
-          notificationColor = Colors.blue;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('assignedToId', isEqualTo: user?.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.gold));
         }
-        
-        // Visually indicate read notifications (e.g., faded background or icon)
-        final isRead = notification['isRead'] == true;
-        return Card(
-          elevation: 4,
-          color: isRead ? Colors.grey[850] : Colors.grey[900],
-          margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: notificationColor.withOpacity(0.5), width: 1),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isRead)
-                  Row(
-                    children: [
-                      Icon(Icons.done_all, color: Colors.grey, size: 16),
-                      SizedBox(width: 4),
-                      Text('Read', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    ],
-                  ),
-                // Notification title
-                Text(
-                  notification['title'] ?? 'Unknown Notification',
-                  style: TextStyle(
-                    color: notificationColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Notification body
-                Text(
-                  notification['body'] ?? 'No notification body',
-                  style: const TextStyle(color: Colors.white),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Notification actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 100),
-                      child: OutlinedButton(
-                        onPressed: () {
-                          // If chat notification, open chat dialog directly
-                        if (notificationType == 'message' && appointmentId.isNotEmpty) {
-                          FirebaseFirestore.instance
-                              .collection('appointments')
-                              .doc(appointmentId)
-                              .get()
-                              .then((snapshot) {
-                                if (snapshot.exists) {
-                                  final appointmentData = snapshot.data()!;
-                                  appointmentData['id'] = appointmentId;
-                                  setState(() {
-                                    _selectedIndex = 1;
-                                  });
-                                  _openChatDialog({...appointmentData, 'id': appointmentId});
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Appointment not found')),
-                                  );
-                                }
-                              })
-                              .catchError((error) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error retrieving appointment: $error')),
-                                );
-                              });
-                        } else {
-                          _handleNotificationTap(notification);
-                        }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: notificationColor),
-                        ),
-                        child: Text(
-                          'View',
-                          style: TextStyle(color: notificationColor),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('No notifications', style: TextStyle(color: Colors.white70)));
+        }
+        final notifications = snapshot.data!.docs;
+        return ListView.builder(
+          itemCount: notifications.length,
+          itemBuilder: (context, index) {
+            final doc = notifications[index];
+            final data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id;
+            return NotificationItem(
+              notification: data,
+              onTapCallback: () {},
+              onDismissCallback: () {},
+            );
+          },
         );
       },
     );
   }
 
-  // --- BEGIN: Ensure each role's session start/end time is recorded in its own field without overwriting the main appointment time ---
-  // When sessions are started/ended, record timestamps in role-specific fields
   Future<void> _startConsultantSession(String appointmentId) async {
     final now = DateTime.now();
     await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
       'consultantSessionStart': now,
     });
-    // ...existing logic...
   }
 
   Future<void> _endConsultantSession(String appointmentId) async {
@@ -2299,7 +1830,6 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
       'consultantSessionEnd': now,
     });
-    // ...existing logic...
   }
 
   Future<void> _startConciergeSession(String appointmentId) async {
@@ -2307,7 +1837,6 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
       'conciergeSessionStart': now,
     });
-    // ...existing logic...
   }
 
   Future<void> _endConciergeSession(String appointmentId) async {
@@ -2315,14 +1844,10 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
       'conciergeSessionEnd': now,
     });
-    // ...existing logic...
   }
-  // --- END: Ensure each role's session start/end time is recorded in its own field without overwriting the main appointment time ---
 
-  // Fetch appointment data and open chat
   Future<void> _fetchAppointmentAndOpenChat(String appointmentId) async {
     try {
-      // Get appointment details
       final appointmentDoc = await FirebaseFirestore.instance
           .collection('appointments')
           .doc(appointmentId)
@@ -2335,14 +1860,12 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       
       final data = appointmentDoc.data()!;
       
-      // Open chat dialog with this appointment
       openChatForAppointment(appointmentId);
     } catch (e) {
       print('Error fetching appointment for chat: $e');
     }
   }
   
-  // Fetch appointment data and highlight it
   Future<void> _fetchAndHighlightAppointment(String appointmentId) async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -2357,7 +1880,6 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       
       final data = doc.data()!;
       
-      // Highlight this appointment (you would need a way to show it as highlighted in your UI)
       setState(() {
         _highlightedAppointmentId = appointmentId;
       });
@@ -2374,6 +1896,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
 class _AddCommentBox extends StatefulWidget {
   final String postId;
   const _AddCommentBox({required this.postId});
+
   @override
   State<_AddCommentBox> createState() => _AddCommentBoxState();
 }

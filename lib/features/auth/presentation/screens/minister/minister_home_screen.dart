@@ -7,7 +7,7 @@ class MinisterHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Minister Home Screen'),
+        child: Text('VIP Home Screen'),
       ),
     );
   }

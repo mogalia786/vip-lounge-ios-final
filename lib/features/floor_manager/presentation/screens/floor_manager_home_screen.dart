@@ -1272,7 +1272,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.redAccent : Colors.yellow.withOpacity(0.2),
+                    color: isSelected ? Colors.redAccent : Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.blue),
                   ),

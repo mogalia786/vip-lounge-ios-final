@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -45,7 +46,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber[700]!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -56,7 +57,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
               children: [
                 const Icon(Icons.add_task, color: Colors.amber),
                 const SizedBox(width: 8),
-                Text('Add Activity', style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('Add Activity', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             const SizedBox(height: 12),
@@ -124,7 +125,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
                     onPressed: _isLoading || disable ? null : _addActivity,
                     icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.add, color: Colors.black),
                     label: const Text('Add Activity', style: TextStyle(color: Colors.black)),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700]),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
                   ),
                 );
               },

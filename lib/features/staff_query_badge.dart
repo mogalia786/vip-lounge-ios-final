@@ -18,6 +18,7 @@ class StaffQueryBadge extends StatelessWidget {
             final data = doc.data() as Map<String, dynamic>;
             final status = data['status'] ?? '';
             final assignedTo = data['assignedTo'];
+            // Only count queries that are still pending or being attended by this staff
             if (status == 'pending' || (status == 'being_attended' && assignedTo == currentStaffUid)) {
               count++;
             }
@@ -28,7 +29,7 @@ class StaffQueryBadge extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.question_answer_outlined),
-              tooltip: 'Minister Queries',
+              tooltip: 'VIP Queries',
               onPressed: onTap,
             ),
             if (count > 0)

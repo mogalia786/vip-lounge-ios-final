@@ -60,7 +60,7 @@ class StaffPerformanceIndicator extends StatelessWidget {
                 const SizedBox(height: 10),
                 Container(
                   width: double.infinity,
-                  color: Colors.amber[900],
+                  color: AppColors.gold,
                   padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
                   child: const Text(
                     'Revenue Activities',

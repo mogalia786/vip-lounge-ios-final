@@ -70,6 +70,10 @@ class VipNotificationService {
     try {
       // Fetch appointment and minister/user info if appointmentId is present and not already included
       Map<String, dynamic> enrichedData = Map<String, dynamic>.from(data);
+// Always default showRating to true for VIP rating on every step
+if (!enrichedData.containsKey('showRating')) {
+  enrichedData['showRating'] = true;
+}
       // Always ensure appointmentId is present and correct
       final appointmentId = data['appointmentId'] ?? data['id'];
       if (appointmentId != null && appointmentId.toString().isNotEmpty) {
@@ -112,7 +116,10 @@ class VipNotificationService {
           }
         }
       }
-      // Continue with notification creation as before
+      // Ensure showRating is always true for minister notifications
+      if (role == 'minister') {
+        enrichedData['showRating'] = true;
+      }
       final notificationData = {
         'title': title,
         'body': body,
@@ -145,7 +152,7 @@ class VipNotificationService {
         await sendFCMToUser(
           userId: assignedToId,
           title: title,
-          body: body,
+          body: 'Please rate my service.',
           data: convertToStringMap(enrichedData),
           messageType: notificationType ?? 'general',
         );
@@ -692,7 +699,7 @@ class VipNotificationService {
         
         await createNotification(
           title: 'Appointment Started',
-          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with Minister $ministerName at $formattedTime',
+          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with VIP $ministerName at $formattedTime',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -709,7 +716,7 @@ class VipNotificationService {
         await sendFCMToUser(
           userId: floorManagerId,
           title: 'Appointment Started',
-          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with Minister $ministerName at $formattedTime',
+          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with VIP $ministerName at $formattedTime',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -732,8 +739,8 @@ class VipNotificationService {
         final consultantName = '${consultantData['firstName'] ?? ''} ${consultantData['lastName'] ?? ''}';
         
         await createNotification(
-          title: 'Minister Has Arrived',
-          body: 'Minister $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
+          title: 'VIP Has Arrived',
+          body: 'VIP $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -748,8 +755,8 @@ class VipNotificationService {
         
         await sendFCMToUser(
           userId: consultantId,
-          title: 'Minister Has Arrived',
-          body: 'Minister $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
+          title: 'VIP Has Arrived',
+          body: 'VIP $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -887,17 +894,14 @@ class VipNotificationService {
           continue;
         }
         
+        // Ensure showRating is always true for minister notifications
+        if (role == 'minister') {
+          appointmentData['showRating'] = true;
+        }
         await createNotification(
           title: 'Appointment Completed',
           body: 'The $serviceName with $ministerName on $formattedTime has been completed by ${_getRoleTitle(staffRole)}.',
-          data: {
-            ...appointmentData,
-            'id': appointmentId,
-            'completedBy': staffId,
-            'completedByName': staffName,
-            'completedByRole': staffRole,
-            'completionTime': Timestamp.fromDate(now),
-          },
+          data: appointmentData,
           role: role,
           assignedToId: roleId,
           notificationType: 'appointment_completed',
@@ -907,14 +911,7 @@ class VipNotificationService {
           userId: roleId,
           title: 'Appointment Completed',
           body: 'The $serviceName with $ministerName on $formattedTime has been completed by ${_getRoleTitle(staffRole)}.',
-          data: {
-            ...appointmentData,
-            'id': appointmentId,
-            'completedBy': staffId,
-            'completedByName': staffName,
-            'completedByRole': staffRole,
-            'completionTime': Timestamp.fromDate(now),
-          },
+          data: appointmentData,
           messageType: 'appointment_completed',
         );
       }
@@ -924,7 +921,7 @@ class VipNotificationService {
         final conciergeId = appointmentData['conciergeId'];
         final consultantName = staffName;
         await createNotification(
-          title: 'Minister Has Arrived',
+          title: 'VIP Has Arrived',
           body: 'Minister $ministerName has arrived for the appointment. Please receive and assist.',
           data: {
             ...appointmentData,
@@ -939,7 +936,7 @@ class VipNotificationService {
         );
         await sendFCMToUser(
           userId: conciergeId,
-          title: 'Minister Has Arrived',
+          title: 'VIP Has Arrived',
           body: 'Minister $ministerName has arrived for the appointment. Please receive and assist.',
           data: convertToStringMap({
             ...appointmentData,
@@ -1076,6 +1073,10 @@ class VipNotificationService {
         'type': 'message',
       };
       
+      // Ensure showRating is always true for minister notifications
+      if (recipientRole == 'minister') {
+        notificationData['showRating'] = true;
+      }
       // Create a notification in Firestore
       await createNotification(
         title: 'Message from ${_getRoleTitle(senderRole)}: $senderName',
@@ -1141,6 +1142,10 @@ class VipNotificationService {
         'completedById': staffId,
       };
       
+      // Ensure showRating is always true for minister notifications
+      if (staffRole == 'minister') {
+        notificationData['showRating'] = true;
+      }
       // 1. Notify the minister
       final ministerId = appointmentData['ministerId'];
       if (ministerId != null) {
@@ -1208,6 +1213,10 @@ class VipNotificationService {
           continue;
         }
         
+        // Ensure showRating is always true for minister notifications
+        if (role == 'minister') {
+          notificationData['showRating'] = true;
+        }
         await createNotification(
           title: 'Appointment Completed',
           body: 'The $serviceName with $ministerName on $formattedDate at $formattedTime has been completed by ${_getRoleTitle(staffRole)}.',

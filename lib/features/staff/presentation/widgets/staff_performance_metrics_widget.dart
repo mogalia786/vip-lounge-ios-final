@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -11,7 +12,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber[700]!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -22,7 +23,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
               children: [
                 const Icon(Icons.bar_chart, color: Colors.amber),
                 const SizedBox(width: 8),
-                Text('Performance', style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('VIP Performance', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             const SizedBox(height: 12),
@@ -143,7 +144,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                     // Summary Card at End
                     Card(
                       color: Colors.black87,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.amber[700]!, width: 1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: AppColors.gold!, width: 1)),
                       margin: const EdgeInsets.only(top: 16),
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),

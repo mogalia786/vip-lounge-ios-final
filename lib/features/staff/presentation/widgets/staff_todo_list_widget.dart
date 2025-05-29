@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -39,7 +40,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber[700]!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -53,7 +54,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                 Expanded(
                   child: Text(
                     'To-Do List',
-                    style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -80,7 +81,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _addTask,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700]),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
                   child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.add, color: Colors.black),
                 ),
               ],

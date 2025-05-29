@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +14,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
     final end = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.amber[700]!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -27,7 +28,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'My Scheduled Activities',
-                    style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -91,7 +92,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 16, color: Colors.amber[700]),
+                                Icon(Icons.calendar_today, size: 16, color: AppColors.gold),
                                 const SizedBox(width: 6),
                                 Text(
                                   (() {

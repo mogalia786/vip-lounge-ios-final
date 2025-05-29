@@ -181,6 +181,10 @@ class NotificationService {
   }) async {
     try {
       final type = notificationType ?? data['notificationType'] ?? 'general';
+      // Ensure showRating is always true for minister notifications
+      if (role == 'minister') {
+        data['showRating'] = true;
+      }
       final generatedBody = body ?? buildNotificationBody(
         notificationType: type,
         data: data,

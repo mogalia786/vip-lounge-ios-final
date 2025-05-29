@@ -19,6 +19,7 @@ import '../../../../core/widgets/staff_performance_widget.dart';
 import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 import 'package:vip_lounge/features/staff_query_all_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/notifications_screen.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   const StaffHomeScreen({Key? key}) : super(key: key);
@@ -190,7 +191,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                             decoration: BoxDecoration(
                               gradient: isSelected
-                                ? LinearGradient(colors: [Colors.amber.shade400, Colors.orange.shade700])
+                                ? LinearGradient(colors: [AppColors.gold, Colors.orange.shade700])
                                 : LinearGradient(colors: [Colors.black87, Colors.grey.shade800]),
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: isSelected
@@ -204,7 +205,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                 Text(
                                   DateFormat('EEE').format(date),
                                   style: TextStyle(
-                                    color: isSelected ? Colors.deepOrange : Colors.amber.shade200,
+                                    color: isSelected ? Colors.deepOrange : AppColors.gold,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -298,25 +299,64 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         backgroundColor: AppColors.black,
         foregroundColor: AppColors.gold,
         actions: [
-          StaffQueryBadge(
-            currentStaffUid: _userId ?? '',
-            onTap: () async {
-              await Navigator.push(
+          // Notification bell icon with badge
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.notifications, color: AppColors.gold),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 14,
+                      minHeight: 14,
+                    ),
+                    child: const Text(
+                      '!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            tooltip: 'Notifications',
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => StaffQueryAllScreen(
+                  builder: (_) => NotificationsScreen(userRole: 'staff', userId: _userId ?? ''),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.inbox, color: AppColors.gold),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: StaffQueryBadge(
                     currentStaffUid: _userId ?? '',
-                    onAttend: (query) async {
-                      final staffName = Provider.of<AppAuthProvider>(context, listen: false).appUser?.fullName ?? 'Staff';
-                      await assignQueryToStaff(query['id'], _userId ?? '', staffName);
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => StaffQueryInboxScreen(currentStaffUid: _userId ?? ''),
-                        ),
-                      );
-                    },
                   ),
+                ),
+              ],
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StaffQueryAllScreen(currentStaffUid: _userId ?? ''),
                 ),
               );
             },

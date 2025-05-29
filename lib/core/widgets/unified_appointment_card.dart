@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/vip_notification_service.dart';
+import 'rating_utils.dart';
 
 class UnifiedAppointmentCard extends StatefulWidget {
   final String role;
@@ -139,7 +140,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
         appointment['minister']?['name'] ??
         ((appointment['ministerFirstName'] ?? '') + ' ' + (appointment['ministerLastName'] ?? '')).trim().isNotEmpty
             ? ((appointment['ministerFirstName'] ?? '') + ' ' + (appointment['ministerLastName'] ?? '')).trim()
-            : 'Unknown Minister';
+            : 'Unknown VIP';
   }
 
   static const List<Map<String, String>> _consultantStatusOptions = [
@@ -253,8 +254,8 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             // Notify consultant and minister
             if (_appointmentData['consultantId'] != null && _appointmentData['consultantId'].toString().isNotEmpty) {
               await notificationService.createNotification(
-                title: 'Minister Arrived',
-                body: 'The minister has arrived for the appointment.',
+                title: 'VIP Has Arrived',
+                body: 'The VIP has arrived for the appointment.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_arrived',
@@ -272,12 +273,12 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 },
                 role: 'consultant',
                 assignedToId: _appointmentData['consultantId'],
-                notificationType: 'minister_arrived',
+                notificationType: 'vip_arrived',
               );
               await notificationService.sendFCMToUser(
                 userId: _appointmentData['consultantId'],
-                title: 'Minister Arrived',
-                body: 'The minister has arrived for the appointment.',
+                title: 'VIP Has Arrived',
+                body: 'The VIP has arrived for the appointment.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_arrived',
@@ -293,7 +294,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   'conciergePhone': _appointmentData['conciergePhone'] ?? '',
                   'conciergeEmail': _appointmentData['conciergeEmail'] ?? '',
                 },
-                messageType: 'minister_arrived',
+                messageType: 'vip_arrived',
               );
             }
             if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
@@ -309,7 +310,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 },
                 role: 'minister',
                 assignedToId: _appointmentData['ministerId'],
-                notificationType: 'minister_arrived',
+                notificationType: 'vip_arrived',
               );
             }
             _updateLocalFields({'conciergeSessionStarted': true});
@@ -373,23 +374,25 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             // 1. Notify concierge to escort minister out
             if (appointmentData['conciergeId'] != null && appointmentData['conciergeId'].toString().isNotEmpty) {
               await notificationService.createNotification(
-                title: 'Minister Session Ended',
-                body: 'Please escort Minister ${appointmentData['ministerName'] ?? ''} out of the lounge.',
+                title: 'VIP Session Ended',
+                body: 'Please escort VIP ${appointmentData['ministerName'] ?? ''} out of the lounge. Status: ${_statusLabel(appointmentData['status'] ?? '')}.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'escort_minister_out',
                   'ministerName': appointmentData['ministerName'] ?? '',
                   'serviceName': appointmentData['serviceName'] ?? '',
                   'enableConciergeEndSession': true,
+                  'status': appointmentData['status'] ?? '',
+                  'showRating': true,
                 },
                 role: 'concierge',
                 assignedToId: appointmentData['conciergeId'],
-                notificationType: 'escort_minister_out',
+                notificationType: 'escort_vip_out',
               );
               await notificationService.sendFCMToUser(
                 userId: appointmentData['conciergeId'],
-                title: 'Minister Session Ended',
-                body: 'Please escort Minister ${appointmentData['ministerName'] ?? ''} out of the lounge.',
+                title: 'VIP Session Ended',
+                body: 'Please escort VIP ${appointmentData['ministerName'] ?? ''} out of the lounge.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'escort_minister_out',
@@ -397,7 +400,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   'serviceName': appointmentData['serviceName'] ?? '',
                   'enableConciergeEndSession': true,
                 },
-                messageType: 'escort_minister_out',
+                messageType: 'escort_vip_out',
               );
               // Concierge: enable End Session after consultant ends
               await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'enableConciergeEndSession': true});
@@ -407,7 +410,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             if (appointmentData['ministerId'] != null && appointmentData['ministerId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'Thank You for Attending',
-                body: 'Thank you for attending your appointment. You were assigned to consultant: '
+                body: 'Thank you for attending your appointment. Status: ${_statusLabel(appointmentData['status'] ?? '')}. You were assigned to consultant: '
                     '${appointmentData['consultantName'] ?? ''} at ${appointmentData['venueName'] ?? ''} on '
                     '${appointmentData['appointmentTime'] != null ? DateFormat('yyyy-MM-dd – kk:mm').format((appointmentData['appointmentTime'] is Timestamp)
                         ? (appointmentData['appointmentTime'] as Timestamp).toDate()
@@ -422,6 +425,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   'consultantPhone': appointmentData['consultantPhone'] ?? '',
                   'consultantEmail': appointmentData['consultantEmail'] ?? '',
                   'status': appointmentData['status'] ?? '',
+                  'showRating': true,
                 },
                 role: 'minister',
                 assignedToId: appointmentData['ministerId'],
@@ -453,12 +457,14 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             if (appointmentData['floorManagerId'] != null && appointmentData['floorManagerId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'Minister Session Completed',
-                body: 'Minister ${appointmentData['ministerName'] ?? ''}\'s session has been completed.',
+                body: 'Minister ${appointmentData['ministerName'] ?? ''}\'s session has been completed. Status: ${_statusLabel(appointmentData['status'] ?? '')}.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_session_completed',
                   'ministerName': appointmentData['ministerName'] ?? '',
                   'serviceName': appointmentData['serviceName'] ?? '',
+                  'status': appointmentData['status'] ?? '',
+                  'showRating': true,
                 },
                 role: 'floor_manager',
                 assignedToId: appointmentData['floorManagerId'],
@@ -481,12 +487,14 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             if (appointmentData['consultantId'] != null && appointmentData['consultantId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'Minister Has Left',
-                body: 'Minister ${appointmentData['ministerName'] ?? ''} has left the lounge. Thank you for your service.',
+                body: 'Minister ${appointmentData['ministerName'] ?? ''} has left the lounge. Status: ${_statusLabel(appointmentData['status'] ?? '')}. Thank you for your service.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_left',
                   'ministerName': appointmentData['ministerName'] ?? '',
                   'serviceName': appointmentData['serviceName'] ?? '',
+                  'status': appointmentData['status'] ?? '',
+                  'showRating': true,
                 },
                 role: 'consultant',
                 assignedToId: appointmentData['consultantId'],
@@ -509,12 +517,14 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             if (appointmentData['ministerId'] != null && appointmentData['ministerId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'Thank You for Visiting',
-                body: 'Thank you, Minister ${appointmentData['ministerName'] ?? ''}, for visiting the VIP lounge. We hope you had a pleasant experience.',
+                body: 'Thank you, VIP ${appointmentData['ministerName'] ?? ''}, for visiting the VIP lounge.\nStatus: ${_statusLabel(appointmentData['status'] ?? '')}. We hope you had a pleasant experience.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'thank_minister_final',
                   'ministerName': appointmentData['ministerName'] ?? '',
                   'serviceName': appointmentData['serviceName'] ?? '',
+                  'status': appointmentData['status'] ?? '',
+                  'showRating': true,
                 },
                 role: 'minister',
                 assignedToId: appointmentData['ministerId'],
@@ -523,7 +533,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
               await notificationService.sendFCMToUser(
                 userId: appointmentData['ministerId'],
                 title: 'Thank You for Visiting',
-                body: 'Thank you, Minister ${appointmentData['ministerName'] ?? ''}, for visiting the VIP lounge. We hope you had a pleasant experience.',
+                body: 'Thank you, Minister ${appointmentData['ministerName'] ?? ''}, for visiting the VIP lounge. We hope you had a pleasant experience.\n\nPlease rate your experience using the link below.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'thank_minister_final',
@@ -752,6 +762,75 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     // Logic for role-based controls
     final bool showStartSession = (widget.role == 'concierge' || widget.role == 'cleaner' || widget.role == 'consultant') && !widget.viewOnly;
 
+    // --- REVIEW LABELS ---
+    List<Widget> reviewLabels = [];
+    final appointmentId = appointmentData['appointmentId'] ?? safeAppointmentId;
+    final queryId = appointmentData['queryId'] ?? '';
+    // For appointments: show for each assigned staff (consultant, concierge, cleaner) ONLY IF session ended for that role
+    final staffRoles = ['consultant', 'concierge', 'cleaner'];
+    final sessionEndedByRole = <String, bool>{
+      'consultant': appointmentData['consultantSessionEnded'] == true,
+      'concierge': appointmentData['conciergeSessionEnded'] == true,
+      'cleaner': appointmentData['cleanerSessionEnded'] == true,
+    };
+    for (final role in staffRoles) {
+      final staffName = appointmentData['${role}Name'] ?? '';
+      final staffId = appointmentData['${role}Id'] ?? '';
+      if (staffId.toString().isNotEmpty && sessionEndedByRole[role] == true) {
+        reviewLabels.add(
+          FutureBuilder<double?>(
+            future: fetchAverageRatingForStaff(
+              appointmentId: appointmentId,
+              queryId: queryId,
+              senderId: staffName.toString(), // Use staffName as senderId fallback
+            ),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
+              final avg = snapshot.data!;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0, bottom: 2),
+                child: Chip(
+                  backgroundColor: Colors.amber.shade700,
+                  label: Text(
+                    '$role review: ${avg.toStringAsFixed(1)}',
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+    }
+    // For queries: show for staff (senderId in ratings) ONLY IF status is resolved or closed
+    if (queryId.isNotEmpty && appointmentData['staffName'] != null && (appointmentData['status'] == 'resolved' || appointmentData['status'] == 'closed')) {
+      final staffName = appointmentData['staffName'];
+      reviewLabels.add(
+        FutureBuilder<double?>(
+          future: fetchAverageRatingForStaff(
+            appointmentId: '',
+            queryId: queryId,
+            senderId: staffName.toString(),
+          ),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
+            final avg = snapshot.data!;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0, bottom: 2),
+              child: Chip(
+                backgroundColor: Colors.amber.shade700,
+                label: Text(
+                  'review: ${avg.toStringAsFixed(1)}',
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+    // --- END REVIEW LABELS ---
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
@@ -790,6 +869,12 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (reviewLabels.isNotEmpty)
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 2,
+                    children: reviewLabels,
+                  ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -871,7 +956,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 ),
                 const SizedBox(height: 8),
                 // Info rows: make value take all available space and not wrap unnecessarily
-                _infoRow(context, 'ID', safeAppointmentId, accentColor, textColor: Colors.amber[600]!, valueFlex: 3),
+                _infoRow(context, 'ID', safeAppointmentId, accentColor, textColor: Colors.orange, valueFlex: 3),
                 _infoRow(context, 'Service', serviceName, accentColor, textColor: textColor, valueFlex: 3),
                 _infoRow(context, 'Venue', venue, accentColor, textColor: textColor, valueFlex: 3),
                 if (ministerPhone != '')
