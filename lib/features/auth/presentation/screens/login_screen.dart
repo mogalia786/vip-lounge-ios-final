@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
+import 'package:vip_lounge/features/staff/presentation/screens/staff_home_screen_test.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/user_service.dart';
 
@@ -78,7 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'cleaner') {
           Navigator.pushReplacementNamed(context, '/cleaner/home', arguments: routeArgs);
         } else {
-          Navigator.pushReplacementNamed(context, '/staff/home', arguments: routeArgs);
+          // TEST: Route staff to the new StaffHomeScreenTest for safe testing
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => StaffHomeScreenTest()),
+          );
         }
       } catch (e) {
         if (!mounted) return;
@@ -152,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'VIP LOUNGE',
+                  'PRIMIER LOUNGE',
                   style: TextStyle(
                     color: ministerNameColor,
                     fontSize: 32,
