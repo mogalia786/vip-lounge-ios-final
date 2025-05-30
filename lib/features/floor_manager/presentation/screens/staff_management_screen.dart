@@ -193,13 +193,47 @@ class StaffCard extends StatelessWidget {
                         role[0].toUpperCase() + role.substring(1),
                         style: TextStyle(color: _getRoleColor(role), fontWeight: FontWeight.w500, fontSize: 15),
                       ),
+                      const SizedBox(height: 4),
+                      FutureBuilder<QuerySnapshot>(
+                        future: FirebaseFirestore.instance.collection('ratings').where('userId', isEqualTo: staffId).get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Text('Loading rating...', style: TextStyle(color: Colors.grey[400], fontSize: 13));
+                          }
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return Text('No Ratings', style: TextStyle(color: Colors.grey[400], fontSize: 13));
+                          }
+                          final docs = snapshot.data!.docs;
+                          double avg = 0;
+                          int count = 0;
+                          for (var doc in docs) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            if (data['rating'] != null) {
+                              avg += (data['rating'] as num).toDouble();
+                              count++;
+                            }
+                          }
+                          if (count == 0) {
+                            return Text('No Ratings', style: TextStyle(color: Colors.grey[400], fontSize: 13));
+                          }
+                          avg /= count;
+                          return Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber, size: 16),
+                              SizedBox(width: 4),
+                              Text(avg.toStringAsFixed(1), style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                              SizedBox(width: 4),
+                              Text('($count)', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            // --- Always show status widget directly below name/role ---
             statusWidget,
             const SizedBox(height: 10),
             Row(

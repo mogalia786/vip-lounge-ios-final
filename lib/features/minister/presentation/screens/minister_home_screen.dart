@@ -481,6 +481,189 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     });
   }
 
+  void _showRatingDialog(BuildContext context, Map<String, dynamic> appointment, String role) {
+    final staffId = role == 'consultant' ? appointment['consultantId'] : appointment['conciergeId'];
+    final staffName = role == 'consultant' ? appointment['consultantName'] : appointment['conciergeName'];
+    int _selectedRating = 0;
+    String _notes = '';
+    bool _isSubmitting = false;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.black,
+              title: Text(
+                'Rate service rendered by $staffName',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(5, (index) {
+                          final starValue = index + 1;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 1.0),
+                            child: IconButton(
+                              icon: Icon(
+                                starValue <= _selectedRating ? Icons.star : Icons.star_border,
+                                color: starValue <= _selectedRating ? AppColors.gold : Colors.grey,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedRating = starValue;
+                                });
+                              },
+                              iconSize: 25,
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    minLines: 2,
+                    maxLines: 4,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Add notes (optional)',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey[900],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.gold),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      _notes = val;
+                    },
+                  ),
+                  SizedBox(height: 8),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.black,
+                  ),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () async {
+                          if (_selectedRating == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Please select a rating')),
+                            );
+                            return;
+                          }
+                          setState(() => _isSubmitting = true);
+                          try {
+                            final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+                            if (user == null) throw Exception('User not authenticated');
+                            final appointmentId = appointment['id'] != null && appointment['id'].toString().isNotEmpty
+      ? appointment['id'].toString()
+      : null; // Only use the Firestore doc id
+  print('[DEBUG] appointment map in _showRatingDialog: ' + appointment.toString());
+                            print('[DEBUG] Using appointmentId for rating: $appointmentId');
+                            // Write to ratings collection ONLY
+                            try {
+                              final ratingData = {
+                                'appointmentId': appointmentId,
+                                'staffId': staffId,
+                                'staffName': staffName,
+                                'role': role,
+                                'rating': _selectedRating,
+                                'notes': _notes,
+                                'timestamp': FieldValue.serverTimestamp(),
+                                'ministerId': user.uid,
+                                'ministerName': user.name,
+                                'type': 'Appointment Rating',
+                              };
+                              print('[DEBUG] Attempting to write rating: ' + ratingData.toString());
+                              await FirebaseFirestore.instance.collection('ratings').add(ratingData);
+                              print('[DEBUG] Rating written to ratings collection for $role, appointmentId: $appointmentId');
+                            } catch (e) {
+                              print('[ERROR] Failed to write rating to ratings collection: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error writing rating: $e')),
+                              );
+                              setState(() => _isSubmitting = false);
+                              return;
+                            }
+                            // Send notification and FCM to staff
+                            final notifService = VipNotificationService();
+                            final notifTitle = 'You received a rating';
+                            final notifBody = 'You received a rating from the minister: $_selectedRating stars. Notes: $_notes';
+                            final notifData = {
+                              'appointmentId': appointmentId,
+                              'staffId': staffId,
+                              'staffName': staffName,
+                              'role': role,
+                              'rating': _selectedRating,
+                              'notes': _notes,
+                              'ministerId': user.uid,
+                              'ministerName': user.name,
+                              'type': 'Appointment Rating',
+                            };
+                            await notifService.createNotification(
+                              title: notifTitle,
+                              body: notifBody,
+                              data: notifData,
+                              role: role,
+                              assignedToId: staffId,
+                              notificationType: 'rating',
+                            );
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Rating submitted successfully')),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error submitting rating: $e')),
+                            );
+                          } finally {
+                            setState(() => _isSubmitting = false);
+                          }
+                        },
+                  child: _isSubmitting
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold))
+                      : const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AppAuthProvider>(context);
@@ -524,16 +707,24 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'VIP Lounge',
-              style: TextStyle(color: AppColors.gold),
+              'Premier Lounge',
+              style: TextStyle(
+                color: AppColors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             if (ministerData != null)
               Text(
-                'Welcome, VIP ${ministerData['firstName']} ${ministerData['lastName']}',
+                '${ministerData['firstName']} ${ministerData['lastName']}',
                 style: TextStyle(color: AppColors.gold, fontSize: 14),
+                textAlign: TextAlign.center,
               ),
           ],
         ),
@@ -805,18 +996,15 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             // Determine booking status
             String bookingStatus;
             Color statusColor;
-            if (status == 'assigned') {
-              bookingStatus = 'Assigned';
-              statusColor = Colors.blueAccent;
-            } else if (status == 'cancelled') {
-              bookingStatus = 'Cancelled';
-              statusColor = Colors.red;
-            } else if (status == 'completed') {
+            if (status.toLowerCase() == 'completed') {
               bookingStatus = 'Completed';
               statusColor = Colors.green;
-            } else if (status == 'Did Not Attend') {
-              bookingStatus = 'Did Not Attend';
-              statusColor = Colors.redAccent;
+            } else if (status.toLowerCase() == 'cancelled') {
+              bookingStatus = 'Cancelled';
+              statusColor = Colors.red;
+            } else if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'in progress') {
+              bookingStatus = 'In Progress';
+              statusColor = AppColors.gold;
             } else if (appointmentTime.day == now.day &&
                 appointmentTime.month == now.month &&
                 appointmentTime.year == now.year) {
@@ -868,6 +1056,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             ),
                           ),
                         ),
+                        Icon(Icons.check_circle, color: Colors.green, size: 24), // TICK ICON FOR DEBUGGING
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -944,6 +1133,62 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                       child: Divider(color: Colors.grey),
                     ),
                     if (appointmentData['consultantId'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0, bottom: 2.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            final Map<String, dynamic> consultantAppointment = Map<String, dynamic>.from(appointmentData);
+                            consultantAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
+                            _showRatingDialog(context, consultantAppointment, 'consultant');
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Icon(Icons.star_border, color: AppColors.gold, size: 20),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Rate Consultant',
+                                style: TextStyle(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  decoration: TextDecoration.underline,
+                                  shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (appointmentData['conciergeId'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0, bottom: 4.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            final Map<String, dynamic> conciergeAppointment = Map<String, dynamic>.from(appointmentData);
+                            conciergeAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
+                            _showRatingDialog(context, conciergeAppointment, 'concierge');
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Icon(Icons.star_border, color: AppColors.gold, size: 20),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Rate Concierge',
+                                style: TextStyle(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  decoration: TextDecoration.underline,
+                                  shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (appointmentData['consultantId'] != null)
                       Row(
                         children: [
                           Expanded(
@@ -983,6 +1228,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                   _openChatDialog(chatData);
                                 },
                               ),
+                              // Bell with count for consultant messages
                               if (_unreadNotificationsList.any((notif) =>
                                   notif['appointmentId'] == appointmentId &&
                                   notif['type'] == 'message' &&
@@ -990,14 +1236,36 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                 Positioned(
                                   right: 0,
                                   top: 0,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 1),
-                                    ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(Icons.notifications, color: Colors.orange, size: 16),
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(1),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 1),
+                                          ),
+                                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                          child: Text(
+                                            _unreadNotificationsList.where((notif) =>
+                                                notif['appointmentId'] == appointmentId &&
+                                                notif['type'] == 'message' &&
+                                                notif['senderRole'] == 'consultant').length.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                             ],
@@ -1046,6 +1314,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                   _openChatDialog(chatData);
                                 },
                               ),
+                              // Bell with count for concierge messages
                               if (_unreadNotificationsList.any((notif) =>
                                   notif['appointmentId'] == appointmentId &&
                                   notif['type'] == 'message' &&
@@ -1053,14 +1322,36 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                 Positioned(
                                   right: 0,
                                   top: 0,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 1),
-                                    ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(Icons.notifications, color: Colors.orange, size: 16),
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(1),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 1),
+                                          ),
+                                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                          child: Text(
+                                            _unreadNotificationsList.where((notif) =>
+                                                notif['appointmentId'] == appointmentId &&
+                                                notif['type'] == 'message' &&
+                                                notif['senderRole'] == 'concierge').length.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                             ],
@@ -1260,7 +1551,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       case 'floor_manager':
         return 'Floor Manager';
       case 'consultant':
-        return 'Consultant';
+        return 'Consultants';
       case 'concierge':
         return 'Concierge';
       case 'cleaner':
@@ -1295,6 +1586,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     
     // Format date and time for display
     final formattedDate = DateFormat('EEEE, MMMM d').format(appointmentDate);
+    final bool isCompleted = (appointment['status']?.toString()?.toLowerCase() == 'completed');
     final formattedTime = DateFormat('h:mm a').format(appointmentDate);
     
     // Check booking status
@@ -1381,15 +1673,20 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
               // Date and time info
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[400]),
+                  Icon(Icons.calendar_today, color: AppColors.gold, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     formattedDate,
                     style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  if (isCompleted) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                  ],
                 ],
               ),
               
@@ -1460,8 +1757,72 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
               const SizedBox(height: 8),
               
               // Build staff rows with individual chat functionality
-              _buildStaffRow('Consultant', consultantName, consultantId, appointmentId, appointment),
-              _buildStaffRow('Concierge', conciergeName, conciergeId, appointmentId, appointment),
+               _buildStaffRow('Consultant', consultantName, consultantId, appointmentId, appointment),
+               if (status.toLowerCase() == 'completed' && consultantId != null && consultantId.isNotEmpty)
+                 Padding(
+                   padding: const EdgeInsets.only(left: 32.0, top: 2.0, bottom: 2.0),
+                   child: GestureDetector(
+                     onTap: () {
+  final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointment);
+  appointmentWithId['id'] = appointment['id'] ?? appointmentId;
+  _showRatingDialog(context, appointmentWithId, 'consultant');
+},
+                     child: Flexible(
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Icon(Icons.star_border, color: AppColors.gold, size: 18),
+                           const SizedBox(width: 6),
+                           Flexible(
+                             child: Text(
+                               'Rate Experience',
+                               style: TextStyle(
+                                 color: AppColors.gold,
+                                 decoration: TextDecoration.underline,
+                                 fontWeight: FontWeight.w600,
+                               ),
+                               overflow: TextOverflow.ellipsis,
+                               maxLines: 1,
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
+                   ),
+                 ),
+               _buildStaffRow('Concierge', conciergeName, conciergeId, appointmentId, appointment),
+               if (status.toLowerCase() == 'completed' && conciergeId != null && conciergeId.isNotEmpty)
+                 Padding(
+                   padding: const EdgeInsets.only(left: 32.0, top: 2.0, bottom: 2.0),
+                   child: GestureDetector(
+                     onTap: () {
+  final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointment);
+  appointmentWithId['id'] = appointment['id'] ?? appointmentId;
+  _showRatingDialog(context, appointmentWithId, 'concierge');
+},
+                     child: Flexible(
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Icon(Icons.star_border, color: AppColors.gold, size: 18),
+                           const SizedBox(width: 6),
+                           Flexible(
+                             child: Text(
+                               'Rate Experience',
+                               style: TextStyle(
+                                 color: AppColors.gold,
+                                 decoration: TextDecoration.underline,
+                                 fontWeight: FontWeight.w600,
+                               ),
+                               overflow: TextOverflow.ellipsis,
+                               maxLines: 1,
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
+                   ),
+                 ),
               _buildStaffRow('Cleaner', cleanerName, cleanerId, appointmentId, appointment),
               
               // Actions section for pending appointments
@@ -1545,8 +1906,16 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
               setState(() {
                 _selectedIndex = 1;
               });
-              // Open the chat dialog directly for this appointment
-              _openChatDialog({...appointmentData, 'id': appointmentId});
+              // Open the rating screen if notification is rating
+              if ((notification['notificationType'] == 'rating' || (notification['data']?['showRating'] == true))) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ConsultantRatingScreen(appointmentData: appointmentData),
+                  ),
+                );
+              } else {
+                _openChatDialog({...appointmentData, 'id': appointmentId});
+              }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Appointment not found')),
@@ -1645,7 +2014,6 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
               ),
             ],
           ),
-          
           // Chat button below the name if staff is eligible for chat
           if (showChat)
             Padding(
@@ -1672,7 +2040,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                     },
                   ),
                   if (_unreadNotificationsList.any((notif) => 
-                      notif['appointmentId'] == appointmentId && notif['type'] == 'message' && notif['senderRole'] == role.toLowerCase()))
+                      notif['appointmentId'] == appointmentId && notif['type'] == 'message' && notif['senderRole'] == role.toLowerCase() && notif['recipientRole'] == 'minister'))
                     Positioned(
                       right: 0,
                       top: 0,
@@ -1687,6 +2055,62 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                       ),
                     ),
                 ],
+              ),
+            ),
+          // Rate Experience button for consultant/concierge
+          if (role.toLowerCase() == 'consultant' || role.toLowerCase() == 'concierge')
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0, left: 24.0),
+              child: GestureDetector(
+                onTap: () async {
+                  try {
+                    final appointmentDoc = await FirebaseFirestore.instance
+                        .collection('appointments')
+                        .doc(appointmentId)
+                        .get();
+                    if (!appointmentDoc.exists) {
+                      print('[ERROR] Appointment not found: ' + appointmentId);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Error: Appointment not found. Cannot submit rating.')),
+                      );
+                      return;
+                    }
+                    final appointmentData = appointmentDoc.data()!;
+                    final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointmentData);
+                    appointmentWithId['id'] = appointmentDoc.id;
+                    print('[DEBUG] appointmentData passed to _showRatingDialog: ' + appointmentWithId.toString());
+                    if (!(appointmentWithId['id'] != null && appointmentWithId['id'].toString().isNotEmpty)) {
+                      if (appointmentWithId['appointmentId'] != null && appointmentWithId['appointmentId'].toString().isNotEmpty) {
+                        appointmentWithId['id'] = appointmentWithId['appointmentId'];
+                      }
+                    }
+                    _showRatingDialog(context, appointmentWithId, role.toLowerCase());
+                  } catch (e) {
+                    print('[ERROR] Failed to fetch appointment for rating: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: Failed to fetch appointment for rating.')),
+                    );
+                  }
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star_border, color: AppColors.gold, size: 18),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Rate Experience',
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

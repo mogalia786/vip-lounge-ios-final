@@ -49,34 +49,16 @@ class MinisterChatDialog extends StatelessWidget {
           recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
           recipientRole = 'floor_manager';
           break;
+        case 'cleaner':
+          recipientId = appointment['cleanerId'] ?? '';
+          recipientName = appointment['cleanerName'] ?? 'Cleaner';
+          recipientRole = 'cleaner';
+          break;
         default:
-          if (appointment.containsKey('floorManagerId') && appointment['floorManagerId'] != null) {
-            recipientId = appointment['floorManagerId'];
-            recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
-            recipientRole = 'floor_manager';
-          } else if (appointment.containsKey('consultantId') && appointment['consultantId'] != null) {
-            recipientId = appointment['consultantId'];
-            recipientName = appointment['consultantName'] ?? 'Consultant';
-            recipientRole = 'consultant';
-          } else if (appointment.containsKey('conciergeId') && appointment['conciergeId'] != null) {
-            recipientId = appointment['conciergeId'];
-            recipientName = appointment['conciergeName'] ?? 'Concierge';
-            recipientRole = 'concierge';
-          }
-      }
-    } else {
-      if (appointment.containsKey('floorManagerId') && appointment['floorManagerId'] != null) {
-        recipientId = appointment['floorManagerId'];
-        recipientName = appointment['floorManagerName'] ?? 'Floor Manager';
-        recipientRole = 'floor_manager';
-      } else if (appointment.containsKey('consultantId') && appointment['consultantId'] != null) {
-        recipientId = appointment['consultantId'];
-        recipientName = appointment['consultantName'] ?? 'Consultant';
-        recipientRole = 'consultant';
-      } else if (appointment.containsKey('conciergeId') && appointment['conciergeId'] != null) {
-        recipientId = appointment['conciergeId'];
-        recipientName = appointment['conciergeName'] ?? 'Concierge';
-        recipientRole = 'concierge';
+          recipientId = '';
+          recipientName = 'Staff';
+          recipientRole = 'staff';
+          break;
       }
     }
 
@@ -116,6 +98,7 @@ class MinisterChatDialog extends StatelessWidget {
             ),
             body: Column(
               children: [
+
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
