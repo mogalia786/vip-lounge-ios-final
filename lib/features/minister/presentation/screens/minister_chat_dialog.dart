@@ -133,6 +133,7 @@ class MinisterChatDialog extends StatelessWidget {
                           final senderId = message['senderId'];
                           final senderName = message['senderName'];
                           final senderRole = message['senderRole'] ?? recipientRole;
+final displaySenderRole = senderRole == 'VIP Client' ? 'VIP Client' : _getRoleTitle(senderRole);
                           final messageContent = message['message'];
                           final timestamp = message['timestamp'] as Timestamp?;
                           final isSentByCurrentUser = senderId == user.uid;
@@ -150,8 +151,8 @@ class MinisterChatDialog extends StatelessWidget {
                                     radius: 16,
                                     child: Text(
                                       senderName?.isNotEmpty == true
-                                          ? senderName[0].toUpperCase()
-                                          : '?',
+                                          ? (senderRole == 'VIP Client' ? 'V' : senderName[0].toUpperCase())
+                                          : (senderRole == 'VIP Client' ? 'V' : '?'),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -178,7 +179,7 @@ class MinisterChatDialog extends StatelessWidget {
                                             child: Row(
                                               children: [
                                                 Text(
-                                                  senderName ?? 'Unknown',
+                                                  (senderRole == 'VIP Client' ? 'VIP Client' : senderName ?? 'Unknown'),
                                                   style: TextStyle(
                                                     color: roleColor,
                                                     fontWeight: FontWeight.bold,
@@ -193,7 +194,7 @@ class MinisterChatDialog extends StatelessWidget {
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                   child: Text(
-                                                    _getRoleTitle(senderRole),
+                                                    displaySenderRole,
                                                     style: TextStyle(
                                                       color: roleColor,
                                                       fontSize: 10,
@@ -282,12 +283,52 @@ class MinisterChatDialog extends StatelessWidget {
                       ),
                       IconButton(
                         icon: Icon(Icons.send, color: AppColors.gold),
-                        onPressed: () {
+                        onPressed: () async {
                           String text = textController.text.trim();
                           if (text.isNotEmpty) {
-                            Navigator.pop(context);
-                            // The parent should handle sending the message after closing the dialog
-                            // You may want to use a callback or event for this
+                            final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Unable to send message: Not authenticated.')),
+                              );
+                              return;
+                            }
+                            try {
+                              await FirebaseFirestore.instance.collection('messages').add({
+                                'appointmentId': appointmentId,
+                                'senderId': user.uid,
+                                'senderName': user.name ?? 'VIP Client',
+                                'senderRole': 'VIP Client',
+                                'recipientId': recipientId,
+                                'recipientName': recipientName,
+                                'recipientRole': recipientRole,
+                                'message': text,
+                                'timestamp': FieldValue.serverTimestamp(),
+                                'isRead': false,
+                              });
+                              // Badge update logic: create or update a notification for the recipient
+                              await FirebaseFirestore.instance.collection('notifications').add({
+                                'assignedToId': recipientId,
+                                'receiverId': recipientId,
+                                'appointmentId': appointmentId,
+                                'notificationType': 'message',
+                                'type': 'message',
+                                'title': 'New message from VIP Client',
+                                'body': text,
+                                'timestamp': FieldValue.serverTimestamp(),
+                                'isRead': false,
+                              });
+                              // Optionally, also create a notification for the VIP Client when they receive a message for a booking
+                              // Clear the text field and update UI
+                              textController.clear();
+                              setState(() {
+                                messageText = '';
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to send message: $e')),
+                              );
+                            }
                           }
                         },
                       ),
