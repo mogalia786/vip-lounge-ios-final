@@ -564,26 +564,30 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
         }
         final appointments = snapshot.data!.docs;
         return ListView.builder(
-          itemCount: appointments.length,
-          itemBuilder: (context, index) {
-            final appt = appointments[index].data() as Map<String, dynamic>;
-            return UnifiedAppointmentCard(
-              role: 'consultant',
-              isConsultant: true,
-              ministerName: appt['ministerName'] ?? '',
-              appointmentId: appointments[index].id,
-              appointmentInfo: appt,
-              date: appt['appointmentTime'] is Timestamp
-                  ? (appt['appointmentTime'] as Timestamp).toDate()
-                  : (appt['appointmentTime'] is DateTime)
-                      ? appt['appointmentTime']
-                      : null,
-              time: null,
-              ministerId: appt['ministerId'],
-              disableStartSession: false,
-            );
-          },
-        );
+  key: ValueKey(_selectedDate), // force rebuild on date change
+  itemCount: appointments.length,
+  itemBuilder: (context, index) {
+    final appt = appointments[index].data() as Map<String, dynamic>;
+    final apptId = appointments[index].id;
+    // Use a unique key to force UnifiedAppointmentCard to refresh when session state changes
+    return UnifiedAppointmentCard(
+      key: ValueKey('${apptId}_${appt['consultantSessionStarted']}_${appt['consultantSessionEnded']}'),
+      role: 'consultant',
+      isConsultant: true,
+      ministerName: appt['ministerName'] ?? '',
+      appointmentId: apptId,
+      appointmentInfo: appt,
+      date: appt['appointmentTime'] is Timestamp
+          ? (appt['appointmentTime'] as Timestamp).toDate()
+          : (appt['appointmentTime'] is DateTime)
+              ? appt['appointmentTime']
+              : null,
+      time: null,
+      ministerId: appt['ministerId'],
+      disableStartSession: false,
+    );
+  },
+);
       },
     );
   }

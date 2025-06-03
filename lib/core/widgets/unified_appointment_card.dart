@@ -92,41 +92,18 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   @override
   void didUpdateWidget(covariant UnifiedAppointmentCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update local state if new appointmentInfo is actually different
+    // Always update local state with latest widget.appointmentInfo, including session fields
     final Map<String, dynamic> newInfo = Map<String, dynamic>.from(widget.appointmentInfo);
-    bool hasChanged = false;
-    for (final key in newInfo.keys) {
-      if (_appointmentData[key] != newInfo[key]) {
-        hasChanged = true;
-        break;
-      }
+    for (final entry in newInfo.entries) {
+      _appointmentData[entry.key] = entry.value;
     }
-    if (hasChanged) {
-      // --- Only update fields that are NOT session state fields, to preserve local UI state ---
-      for (final entry in newInfo.entries) {
-        final key = entry.key;
-        // Do not overwrite session state fields if already set locally
-        if (key.endsWith('SessionStarted') || key.endsWith('SessionEnded') || key.endsWith('StartTime') || key.endsWith('EndTime')) {
-          // If the local value is not null/undefined, keep it
-          if (_appointmentData[key] != null) continue;
-        }
-        _appointmentData[key] = entry.value;
-      }
-      // Always override appointmentTime with widget.date if provided
-      if (widget.date != null) {
-        _appointmentData['appointmentTime'] = widget.date;
-      }
-      setState(() {
-        _updateSessionButtonStateFromData(_appointmentData);
-      });
-    } else if (widget.date != null && widget.date != oldWidget.date) {
-      // Only the date changed, update just appointmentTime
-      _updateLocalFields({'appointmentTime': widget.date});
-      setState(() {
-        _updateSessionButtonStateFromData(_appointmentData);
-      });
+    // Always override appointmentTime with widget.date if provided
+    if (widget.date != null) {
+      _appointmentData['appointmentTime'] = widget.date;
     }
-    // This logic ensures session state fields are only set by direct user actions, not by upstream prop changes.
+    setState(() {
+      _updateSessionButtonStateFromData(_appointmentData);
+    });
   }
 
   void _updateLocalFields(Map<String, dynamic> fields) {
@@ -162,6 +139,22 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Status updated to: ${_statusLabel(newStatus)}')),
       );
+
+      // Send notification to VIP (Minister) with thank you and rating prompt
+      if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+        await VipNotificationService().createNotification(
+          title: 'Thank you for visiting',
+          body: 'Thank you for attending your appointment. Please rate our service.',
+          data: {
+            'appointmentId': widget.appointmentId,
+            'notificationType': 'thank_you',
+            'showRating': true,
+          },
+          role: 'minister',
+          assignedToId: _appointmentData['ministerId'],
+          notificationType: 'thank_you',
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating status: $e')),
@@ -698,6 +691,21 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Session ended.')),
                   );
+                  // Send thank you notification with rating link to VIP
+                  if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+                    await VipNotificationService().createNotification(
+                      title: 'Thank you for visiting',
+                      body: 'Thank you for attending your appointment. Please rate our service.',
+                      data: {
+                        'appointmentId': widget.appointmentId,
+                        'notificationType': 'thank_you',
+                        'showRating': true,
+                      },
+                      role: 'minister',
+                      assignedToId: _appointmentData['ministerId'],
+                      notificationType: 'thank_you',
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('You must start the session first or session already ended.')),
@@ -712,9 +720,24 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Session ended.')),
                   );
+                  // Send thank you notification with rating link to VIP
+                  if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+                    await VipNotificationService().createNotification(
+                      title: 'Thank you for visiting',
+                      body: 'Thank you for attending your appointment. Please rate our service.',
+                      data: {
+                        'appointmentId': widget.appointmentId,
+                        'notificationType': 'thank_you',
+                        'showRating': true,
+                      },
+                      role: 'minister',
+                      assignedToId: _appointmentData['ministerId'],
+                      notificationType: 'thank_you',
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Consultant must end session first or session already ended.')),
+                    const SnackBar(content: Text('Consultant must end session before you can end session.')),
                   );
                 }
               }
@@ -760,7 +783,11 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     }
 
     // Logic for role-based controls
-    final bool showStartSession = (widget.role == 'concierge' || widget.role == 'cleaner' || widget.role == 'consultant') && !widget.viewOnly;
+    // Expanded: Allow session logic for all staff roles except 'minister' and 'vip'
+final List<String> sessionStaffRoles = [
+  'consultant', 'concierge', 'cleaner', 'marketingAgent', 'marketing_agent', 'staff', 'generalStaff', 'general_staff', 'floorManager', 'floor_manager'
+];
+final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget.viewOnly;
 
     // --- REVIEW LABELS ---
     List<Widget> reviewLabels = [];
@@ -782,7 +809,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             future: fetchAverageRatingForStaff(
               appointmentId: appointmentId,
               queryId: queryId,
-              senderId: staffName.toString(), // Use staffName as senderId fallback
+              staffId: staffName.toString(), // Use staffName as senderId fallback
             ),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
@@ -810,7 +837,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           future: fetchAverageRatingForStaff(
             appointmentId: '',
             queryId: queryId,
-            senderId: staffName.toString(),
+            staffId: staffName.toString(),
           ),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
@@ -1018,80 +1045,119 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                       _showNotesDialog(context, _appointmentData);
                     },
                   ),
-              ],
-              const SizedBox(height: 10),
+                ],
+                const SizedBox(height: 10),
 
-              // Session button for consultant or concierge
-              if (statusValue != 'completed' && ((widget.role == 'consultant' && !_hideConsultantSessionButton) ||
-                  (widget.role == 'concierge' && !_hideConciergeSessionButton)))
-                ElevatedButton(
-                  onPressed: () async {
-                    if (widget.role == 'consultant') {
-                      if (_appointmentData['consultantSessionStarted'] != true) {
-                        setState(() {
-                          _appointmentData['consultantSessionStarted'] = true;
-                        });
-                        await _handleStartSession(context, _appointmentData);
-                        await _fetchSessionStateFromFirestore();
-                      } else if (_appointmentData['consultantSessionStarted'] == true && _appointmentData['consultantSessionEnded'] != true) {
-                        setState(() {
-                          _appointmentData['consultantSessionEnded'] = true;
-                          _hideConsultantSessionButton = true;
-                        });
-                        await _handleStartSession(context, _appointmentData);
-                        await _fetchSessionStateFromFirestore();
+                // Session button for all staff roles (except minister/vip)
+                if (statusValue != 'completed' && sessionStaffRoles.contains(widget.role))
+                  ElevatedButton(
+                    onPressed: () async {
+                    final String role = widget.role;
+                    final String startField = '${role}SessionStarted';
+                    final String endField = '${role}SessionEnded';
+                    final String startTimeField = '${role}StartTime';
+                    final String endTimeField = '${role}EndTime';
+                    final appointmentId = widget.appointmentId;
+                    try {
+                      final doc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
+                      final data = doc.data();
+                      if (data == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Appointment not found.')),
+                        );
+                        return;
                       }
-                    } else if (widget.role == 'concierge') {
-                      if (_appointmentData['conciergeSessionStarted'] != true) {
-                        setState(() {
-                          _appointmentData['conciergeSessionStarted'] = true;
+                      // Start Session
+                      if (_appointmentData[startField] != true && _appointmentData[endField] != true) {
+                        await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
+                          startField: true,
+                          startTimeField: DateTime.now(),
+                          'status': 'in-progress',
                         });
-                        await _handleStartSession(context, _appointmentData);
-                      } else if (_appointmentData['conciergeSessionStarted'] == true && _appointmentData['conciergeSessionEnded'] != true) {
-                        // Always fetch latest consultantSessionEnded from Firestore before allowing end session
-                        final doc = await FirebaseFirestore.instance.collection('appointments').doc(widget.appointmentId).get();
-                        final data = doc.data();
-                        final consultantSessionEnded = data != null && data['consultantSessionEnded'] == true;
-                        if (consultantSessionEnded) {
-                          setState(() {
-                            _appointmentData['conciergeSessionEnded'] = true;
-                            _hideConciergeSessionButton = true;
-                          });
-                          await _handleStartSession(context, _appointmentData);
-                          await _fetchSessionStateFromFirestore();
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Consultant must end session before you can end session.')),
-                          );
+                        setState(() {
+                          _appointmentData[startField] = true;
+                          _appointmentData['status'] = 'in-progress';
+                          _appointmentData[startTimeField] = DateTime.now();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Session started.')),
+                        );
+                      } 
+                      // End Session
+                      else if (_appointmentData[startField] == true && _appointmentData[endField] != true) {
+                        await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
+                          endField: true,
+                          endTimeField: DateTime.now(),
+                          'status': 'completed',
+                        });
+                        setState(() {
+                          _appointmentData[endField] = true;
+                          _appointmentData['status'] = 'completed';
+                          _appointmentData[endTimeField] = DateTime.now();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Session ended.')),
+                        );
+                        // Send thank you notification with rating prompt to VIP (Minister)
+                        final ministerId = _appointmentData['ministerId'] ?? _appointmentData['ministerUID'] ?? _appointmentData['ministerUid'];
+                        if (ministerId != null && ministerId.toString().isNotEmpty) {
+                          try {
+                            await VipNotificationService().createNotification(
+                              title: 'Thank you for visiting',
+                              body: 'Thank you for attending your appointment. Please rate our service.',
+                              data: {
+                                'appointmentId': appointmentId,
+                                'notificationType': 'thank_you',
+                                'showRating': true,
+                                'endedByRole': role,
+                              },
+                              role: 'minister',
+                              assignedToId: ministerId,
+                              notificationType: 'thank_you',
+                            );
+                            // Debug log
+                            // ignore: avoid_print
+                            print('[DEBUG] Notification sent to minister ($ministerId) for role $role session end.');
+                          } catch (e) {
+                            // ignore: avoid_print
+                            print('[ERROR] Failed to send notification to minister on session end for role $role: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error sending notification: $e')),
+                            );
+                          }
                         }
                       }
+                    } catch (e) {
+                      // ignore: avoid_print
+                      print('[ERROR] Session logic error for role $role: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Session error: $e')),
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: (widget.role == 'concierge')
-                        ? _appointmentData['conciergeSessionStarted'] == true ? Colors.red[900] : Colors.green[900]
-                        : _appointmentData['consultantSessionStarted'] == true && _appointmentData['consultantSessionEnded'] != true ? Colors.red[900] : Colors.green[900],
+                    backgroundColor: (_appointmentData['${widget.role}SessionStarted'] == true && _appointmentData['${widget.role}SessionEnded'] != true)
+                        ? Colors.red[900]
+                        : Colors.green[900],
                     side: BorderSide(
-                      color: (widget.role == 'concierge')
-                          ? _appointmentData['conciergeSessionStarted'] == true ? Colors.red : Colors.green
-                          : _appointmentData['consultantSessionStarted'] == true && _appointmentData['consultantSessionEnded'] != true ? Colors.red : Colors.green,
+                      color: (_appointmentData['${widget.role}SessionStarted'] == true && _appointmentData['${widget.role}SessionEnded'] != true)
+                          ? Colors.red
+                          : Colors.green,
                     ),
                     foregroundColor: Colors.white,
                   ),
                   child: Text(
-                    false
+                    (_appointmentData['${widget.role}SessionStarted'] == true && _appointmentData['${widget.role}SessionEnded'] != true)
                         ? 'End Session'
-                        : (_appointmentData['${widget.role}SessionStarted'] == true && _appointmentData['${widget.role}SessionEnded'] != true
-                            ? 'End Session'
-                            : 'Start Session'),
+                        : 'Start Session',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+              ], // End of Column children
+            ), // End of Column
+          ), // End of Padding
+        ), // End of SizedBox
+      ), // End of Dialog
+    ); // End of Container
   }
 }

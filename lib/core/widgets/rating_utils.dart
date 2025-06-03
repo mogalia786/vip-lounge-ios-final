@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 Future<double?> fetchAverageRatingForStaff({
   String? appointmentId,
   String? queryId,
-  required String senderId,
+  required String staffId,
 }) async {
   Query ratingsQuery = FirebaseFirestore.instance.collection('ratings');
   if (appointmentId != null && appointmentId.isNotEmpty) {
@@ -13,7 +13,7 @@ Future<double?> fetchAverageRatingForStaff({
   if (queryId != null && queryId.isNotEmpty) {
     ratingsQuery = ratingsQuery.where('queryId', isEqualTo: queryId);
   }
-  ratingsQuery = ratingsQuery.where('senderId', isEqualTo: senderId);
+  ratingsQuery = ratingsQuery.where('staffId', isEqualTo: staffId);
   final snapshot = await ratingsQuery.get();
   if (snapshot.docs.isEmpty) return null;
   double total = 0;
@@ -32,7 +32,7 @@ Future<double?> fetchAverageRatingForStaff({
 Future<int?> fetchLatestRatingForStaff({
   String? appointmentId,
   String? queryId,
-  required String senderId,
+  required String staffId,
 }) async {
   Query ratingsQuery = FirebaseFirestore.instance.collection('ratings');
   if (appointmentId != null && appointmentId.isNotEmpty) {
@@ -41,7 +41,7 @@ Future<int?> fetchLatestRatingForStaff({
   if (queryId != null && queryId.isNotEmpty) {
     ratingsQuery = ratingsQuery.where('queryId', isEqualTo: queryId);
   }
-  ratingsQuery = ratingsQuery.where('senderId', isEqualTo: senderId).orderBy('timestamp', descending: true).limit(1);
+  ratingsQuery = ratingsQuery.where('staffId', isEqualTo: staffId).orderBy('timestamp', descending: true).limit(1);
   final snapshot = await ratingsQuery.get();
   if (snapshot.docs.isEmpty) return null;
   final latest = snapshot.docs.first['rating'];

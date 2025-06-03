@@ -26,6 +26,7 @@ class _MinisterNotificationItemState extends State<MinisterNotificationItem> {
     final appointmentId = notification['appointmentId'] ?? data['appointmentId'];
     String senderName = '';
     String senderId = '';
+    String staffRole = '';
     String header = (notification['title'] ?? notification['body'] ?? '').toString().toLowerCase();
     if (appointmentId != null && appointmentId.toString().isNotEmpty) {
       try {
@@ -35,23 +36,35 @@ class _MinisterNotificationItemState extends State<MinisterNotificationItem> {
           if (header.contains('concierge')) {
             senderId = appointmentData['conciergeId'] ?? '';
             senderName = appointmentData['conciergeName'] ?? '';
+            staffRole = appointmentData['conciergeRole'] ?? appointmentData['role'] ?? notification['role'] ?? 'concierge';
           } else if (header.contains('consultant')) {
             senderId = appointmentData['consultantId'] ?? '';
             senderName = appointmentData['consultantName'] ?? '';
+            staffRole = appointmentData['consultantRole'] ?? appointmentData['role'] ?? notification['role'] ?? 'consultant';
           } else if (header.contains('assignedstaff') || header.contains('assigned staff')) {
             senderId = appointmentData['assignedStaffId'] ?? '';
             senderName = appointmentData['assignedStaffName'] ?? '';
+            staffRole = appointmentData['assignedStaffRole'] ?? appointmentData['role'] ?? notification['role'] ?? 'staff';
           } else {
             // Fallback: prefer consultant, then concierge, then assignedStaff
             senderId = appointmentData['consultantId'] ?? appointmentData['conciergeId'] ?? appointmentData['assignedStaffId'] ?? '';
             senderName = appointmentData['consultantName'] ?? appointmentData['conciergeName'] ?? appointmentData['assignedStaffName'] ?? '';
+            staffRole = appointmentData['consultantRole'] ?? appointmentData['conciergeRole'] ?? appointmentData['assignedStaffRole'] ?? appointmentData['role'] ?? notification['role'] ?? 'consultant';
           }
+        } else {
+          // No appointment data found, fallback to notification
+          staffRole = notification['role'] ?? data['role'] ?? 'consultant';
         }
       } catch (e) {
         debugPrint('ERROR: _likeIsAppointment failed: $e');
+        staffRole = notification['role'] ?? data['role'] ?? 'consultant';
       }
+    } else {
+      // No appointmentId, fallback to notification
+      staffRole = notification['role'] ?? data['role'] ?? 'consultant';
     }
-    return {'senderId': senderId, 'senderName': senderName};
+    debugPrint('DEBUG: _likeIsAppointment returning role: ' + staffRole);
+    return {'senderId': senderId, 'senderName': senderName, 'role': staffRole};
   }
 
   @override
@@ -290,9 +303,13 @@ class _RatingDialogState extends State<_RatingDialog> {
     final data = notification['data'] ?? {};
     final queryId = notification['queryId'] ?? data['queryId'] ?? data['referenceNumber'] ?? data['query'];
     final appointmentId = notification['appointmentId'] ?? data['appointmentId'];
-    // Always fetch notification doc to get sender info
-    String senderName = widget.senderName;
-    String senderId = widget.senderId;
+
+    // Fetch sender info AND role
+    final senderInfo = await _likeIsAppointment(notification);
+    String senderName = senderInfo['senderName'] ?? widget.senderName;
+    String senderId = senderInfo['senderId'] ?? widget.senderId;
+    String staffRole = senderInfo['role'] ?? 'consultant';
+
     final notificationId = notification['id'];
     final now = DateTime.now();
     if ((senderName.isEmpty || senderId.isEmpty)) {
@@ -303,9 +320,11 @@ class _RatingDialogState extends State<_RatingDialog> {
       return;
     }
     try {
+      debugPrint('DEBUG: _submitRating writing role: ' + staffRole);
       await FirebaseFirestore.instance.collection('ratings').add({
         'senderName': senderName,
         'senderId': senderId,
+        'role': staffRole,
         'rating': _rating,
         'comment': _comment,
         'createdAt': now,

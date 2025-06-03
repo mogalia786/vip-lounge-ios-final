@@ -88,16 +88,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       return;
     }
     if (staffType == 'consultant') {
-      final consultants = await FirebaseFirestore.instance
+      // Fetch both consultants and staff with role 'staff'
+      final consultantsQuery = FirebaseFirestore.instance
           .collection('users')
-          .where('role', isEqualTo: 'consultant')
+          .where('role', whereIn: ['consultant', 'staff'])
           .get();
+      final consultantsSnapshot = await consultantsQuery;
       List<DocumentSnapshot> availableConsultants = [];
-      for (var consultant in consultants.docs) {
+      for (var consultant in consultantsSnapshot.docs) {
         final consultantId = consultant.id;
+        // Use the user's actual role for availability check
+        final userRole = (consultant.data() as Map<String, dynamic>)['role'] ?? 'consultant';
         final isAvailable = await _isStaffAvailable(
           consultantId,
-          'consultant',
+          userRole,
           appointmentTime,
           duration,
           appointmentId,
