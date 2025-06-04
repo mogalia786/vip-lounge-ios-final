@@ -71,6 +71,11 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
 
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/launcher.png"
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -117,3 +122,5 @@ flutter:
     - assets/walking_man.png
     - .env
     - assets/splash_screen.png
+    - assets/cc_logo.png # Added cc_logo.png
+    - assets/launcher.png # Added launcher.png

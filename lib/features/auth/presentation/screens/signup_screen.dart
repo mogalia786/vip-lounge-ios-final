@@ -246,223 +246,250 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Color ministerNameColor = Colors.amber;
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(
-          'Sign Up',
-          style: TextStyle(color: ministerNameColor, fontWeight: FontWeight.bold, fontSize: 26),
-        ),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        title: const Text('Create Account', style: TextStyle(color: const Color(0xFFD7263D), fontWeight: FontWeight.bold, fontSize: 24)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white.withOpacity(0.7)),
       ),
-      body: Center(
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.amber.shade700, width: 3.5),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withOpacity(0.25),
-                blurRadius: 14,
-                spreadRadius: 2,
-                offset: Offset(0, 4),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF0A1931),
+              Color(0xFF182848),
+              Color(0xFF223A5E),
+              Color(0xFF0A1931),
             ],
-            gradient: LinearGradient(
-              colors: [
-                Colors.black,
-                Colors.amber.shade900.withOpacity(0.12),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          constraints: const BoxConstraints(minWidth: 380, maxWidth: 500),
-          padding: const EdgeInsets.symmetric(vertical: 34, horizontal: 28),
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  DropdownButtonFormField<UserRole>(
-                    value: _selectedRole,
-                    decoration: InputDecoration(
-                      labelText: 'Role',
-                      labelStyle: TextStyle(color: ministerNameColor),
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: UserRole.values.map((role) {
-                      String displayName = role.name;
-                      switch (role) {
-                        case UserRole.floorManager:
-                          displayName = 'Floor Manager';
-                          break;
-                        case UserRole.operationalManager:
-                          displayName = 'Operational Manager';
-                          break;
-                        case UserRole.marketingAgent:
-                          displayName = 'Marketing Agent';
-                          break;
-                        default:
-                          displayName = role.name[0].toUpperCase() + role.name.substring(1);
-                      }
-                      return DropdownMenuItem(
-                        value: role,
-                        child: Text(displayName),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedRole = value;
-                        _isVerified = false;
-                        _employeeNumberController.clear();
-                        _firstNameController.clear();
-                        _lastNameController.clear();
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select a role';
-                      }
-                      return null;
-                    },
-                  ),
-                  _buildEmployeeNumberField(),
-                  _buildNameFields(),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(color: ministerNameColor),
-                      border: const OutlineInputBorder(),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  InternationalPhoneNumberInput(
-                    onInputChanged: (PhoneNumber number) {
-                      _phoneNumber = number;
-                    },
-                    selectorConfig: const SelectorConfig(
-                      selectorType: PhoneInputSelectorType.DIALOG,
-                    ),
-                    initialValue: _phoneNumber,
-                    formatInput: true,
-                    keyboardType: TextInputType.phone,
-                    inputDecoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      labelStyle: TextStyle(color: ministerNameColor),
-                      border: const OutlineInputBorder(),
-                    ),
-                    textStyle: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: TextStyle(color: ministerNameColor),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    obscureText: _obscurePassword,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      labelStyle: TextStyle(color: ministerNameColor),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    obscureText: _obscureConfirmPassword,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm password';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSignup,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: _isLoading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
-                        : Text(
-                            'Sign Up',
-                            style: TextStyle(color: ministerNameColor, fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/login');
-                    },
-                    child: const Text(
-                      'Already have an account? Login',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-      ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<UserRole>(
+                  value: _selectedRole,
+                  dropdownColor: Color(0xFF182848), // Match background
+                  iconEnabledColor: Colors.white.withOpacity(0.7),
+                  decoration: InputDecoration(
+                    labelText: 'Select Role',
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintText: 'Choose your role',
+                    hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                    ),
+                  ),
+                  items: UserRole.values.map((role) {
+                    String displayName = role.name;
+                    switch (role) {
+                      case UserRole.floorManager:
+                        displayName = 'Floor Manager';
+                        break;
+                      case UserRole.operationalManager:
+                        displayName = 'Operational Manager';
+                        break;
+                      case UserRole.marketingAgent:
+                        displayName = 'Marketing Agent';
+                        break;
+                      default:
+                        displayName = role.name[0].toUpperCase() + role.name.substring(1);
+                    }
+                    return DropdownMenuItem(
+                      value: role,
+                      child: Text(displayName),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRole = value;
+                      _isVerified = false;
+                      _employeeNumberController.clear();
+                      _firstNameController.clear();
+                      _lastNameController.clear();
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a role';
+                    }
+                    return null;
+                  },
+                ),
+                _buildEmployeeNumberField(),
+                _buildNameFields(),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                InternationalPhoneNumberInput(
+                  onInputChanged: (PhoneNumber number) {
+                    _phoneNumber = number;
+                  },
+                  selectorConfig: SelectorConfig(
+                    selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                    setSelectorButtonAsPrefixIcon: true,
+                    leadingPadding: 12,
+                  ),
+                  textStyle: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                  inputDecoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                    ),
+                  ),
+                  initialValue: _phoneNumber,
+                  formatInput: true,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white.withOpacity(0.7)),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                  obscureText: _obscurePassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off, color: Colors.white.withOpacity(0.7)),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                  obscureText: _obscureConfirmPassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _handleSignup,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo[600],
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.black,
+                          ),
+                        )
+                      : Text(
+                          'Sign Up',
+                          style: TextStyle(color: const Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                        ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'Already have an account? ',
+                      style: TextStyle(color: const Color(0xFFd4af37)),
+                      children: [
+                        TextSpan(
+                          text: 'Login',
+                          style: TextStyle(color: const Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ), // Closes SingleChildScrollView
+      ), // Closes Container (body of Scaffold)
     );
   }
 }

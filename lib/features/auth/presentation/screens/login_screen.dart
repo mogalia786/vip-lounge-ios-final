@@ -89,9 +89,12 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 5),
+            content: const Text(
+              'Incorrect username or password. Please try again.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       } finally {
@@ -106,15 +109,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final Color ministerNameColor = Colors.amber;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0D1B2A),
       body: Center(
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.amber.shade700, width: 3.5),
+            border: Border.all(color: const Color(0xFFd4af37), width: 3.5),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.25),
+                color: Colors.black.withOpacity(0.4),
                 blurRadius: 14,
                 spreadRadius: 2,
                 offset: Offset(0, 4),
@@ -122,8 +125,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
             gradient: LinearGradient(
               colors: [
-                Colors.black,
-                Colors.amber.shade900.withOpacity(0.12),
+                Color(0xFF050A18), // nearly black blue
+                Color(0xFF0D1B2A), // very dark blue
+                Color(0xFF112240), // deep navy blue
+                Color(0xFF1B263B), // dark slate blue
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -144,13 +149,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 110,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.gold, width: 4),
+                      border: Border.all(color: const Color(0xFFd4af37), width: 4),
                     ),
                     child: ClipOval(
                       child: Image.asset(
-                        'assets/logo.png',
+                        'assets/cc_logo.png',
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Icon(Icons.error, color: AppColors.gold, size: 60),
+                        errorBuilder: (context, error, stackTrace) => Icon(Icons.error, color: Colors.white70, size: 60),
                       ),
                     ),
                   ),
@@ -159,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'PRIMIER LOUNGE',
                   style: TextStyle(
-                    color: ministerNameColor,
+                    color: const Color(0xFFD7263D),
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
@@ -177,15 +182,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailController,
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: ministerNameColor),
+                          labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          hintText: 'Enter your email',
+                          hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
                           enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.gold),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.gold),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
                           ),
                         ),
-                        style: TextStyle(color: AppColors.gold),
+                        style: TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -202,19 +209,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: ministerNameColor),
+                          labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          hintText: 'Enter your password',
+                          hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
                           enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.gold),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.gold),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: AppColors.gold,
+                              color: Colors.white.withOpacity(0.7),
                             ),
                             onPressed: () {
                               setState(() {
@@ -223,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                         ),
-                        style: TextStyle(color: AppColors.gold),
+                        style: TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
                         obscureText: _obscurePassword,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -236,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.gold,
+                          backgroundColor: Colors.indigo[600],
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: _isLoading
@@ -261,9 +270,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           Navigator.pushNamed(context, '/signup');
                         },
-                        child: Text(
-                          'Don\'t have an account? Sign Up',
-                          style: TextStyle(color: ministerNameColor),
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Don't have an account? ",
+                            style: TextStyle(color: const Color(0xFFd4af37)),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
