@@ -80,11 +80,48 @@ class RoleNotificationList extends StatelessWidget {
         stream: _notificationStream(effectiveUserId),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
+            if ((effectiveUserRole ?? '').toLowerCase() == 'concierge') {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.warning_amber_rounded, size: 64, color: Color(0xFFD4AF37)),
+                    SizedBox(height: 16),
+                    Text(
+                      'Unable to load notifications. Please contact support.',
+                      style: TextStyle(color: Color(0xFFD4AF37), fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      style: TextStyle(color: Color(0xFFD4AF37), fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
             return Center(
               child: Text('Error: \\${snapshot.error}', style: const TextStyle(color: Colors.white)),
             );
           }
           if (!snapshot.hasData) {
+            if ((effectiveUserRole ?? '').toLowerCase() == 'concierge') {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.hourglass_empty, size: 64, color: Color(0xFFD4AF37)),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading notifications...',
+                      style: TextStyle(color: Color(0xFFD4AF37), fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }
             return const Center(
               child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37))),
             );
@@ -97,6 +134,22 @@ class RoleNotificationList extends StatelessWidget {
               })
               .toList();
           if (notifications.isEmpty) {
+            if ((effectiveUserRole ?? '').toLowerCase() == 'concierge') {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.notifications_off, size: 64, color: Color(0xFFD4AF37)),
+                    SizedBox(height: 16),
+                    Text(
+                      'No notifications found for Concierge.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFD4AF37), fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -319,14 +319,38 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     if (_conciergeId.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-    // Use the new uniform notification widget
-    return Expanded(
-      child: RoleNotificationList(
+    try {
+      return RoleNotificationList(
         userId: _conciergeId,
         userRole: 'concierge',
         showTitle: false,
-      ),
-    );
+      );
+    } catch (e, s) {
+      // Show error instead of grey screen
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error, color: Colors.redAccent, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'An error occurred displaying notifications. Please contact support.',
+                style: TextStyle(color: Colors.redAccent, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              Text(
+                e.toString(),
+                style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   // --- Performance Tab (copied from consultant) ---
