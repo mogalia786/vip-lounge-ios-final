@@ -124,12 +124,42 @@ class AppointmentCard extends StatelessWidget {
                         ),
                       ),
                       if (onChatWithMinister != null)
-                        IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, color: Colors.amber),
-                          onPressed: () {
-                            final chatData = {'appointmentId': safeAppointmentId, 'ministerName': displayMinisterName};
-                            onChatWithMinister!(context, {...appointmentData, ...chatData});
-                          },
+                        Stack(
+                          alignment: Alignment.topRight,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chat_bubble_outline, color: Colors.amber),
+                              onPressed: () {
+                                final chatData = {'appointmentId': safeAppointmentId, 'ministerName': displayMinisterName};
+                                onChatWithMinister!(context, {...appointmentData, ...chatData});
+                              },
+                            ),
+                            if ((appointmentData['unreadMessageCount'] ?? 0) > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 20,
+                                    minHeight: 20,
+                                  ),
+                                  child: Text(
+                                    '${appointmentData['unreadMessageCount']}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       const SizedBox(width: 6),
                     ],

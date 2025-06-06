@@ -148,6 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 110,
                     height: 110,
                     decoration: BoxDecoration(
+                      color: const Color(0xFFD7263D), // Red background to match logo
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFd4af37), width: 4),
                     ),
@@ -162,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'PRIMIER LOUNGE',
+                  'PREMIUM LOUNGE',
                   style: TextStyle(
                     color: const Color(0xFFD7263D),
                     fontSize: 32,

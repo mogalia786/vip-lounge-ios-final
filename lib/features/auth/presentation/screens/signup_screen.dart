@@ -306,7 +306,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     }
                     return DropdownMenuItem(
                       value: role,
-                      child: Text(displayName),
+                      child: Text(displayName, style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold)),
                     );
                   }).toList(),
                   onChanged: (value) {

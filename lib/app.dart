@@ -78,7 +78,7 @@ class _AppState extends State<App> {
           // Use proper role-based routing
           switch (user.role) {
             case 'minister':
-              return MaterialPageRoute(builder: (_) => const MinisterHomeScreen());
+              return MaterialPageRoute(builder: (_) => MinisterHomeScreen());
             case 'floor_manager':
             case 'supervisor':
               return MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew());
@@ -103,7 +103,7 @@ class _AppState extends State<App> {
           case '/signup':
             return MaterialPageRoute(builder: (_) => SignupScreen());
           case '/minister/home':
-            return MaterialPageRoute(builder: (_) => const MinisterHomeScreen());
+            return MaterialPageRoute(builder: (_) => MinisterHomeScreen());
           case '/minister/choice':
             return MaterialPageRoute(builder: (_) => const MinisterChoiceScreen());
           case '/minister/appointment':
@@ -134,7 +134,7 @@ class _AppState extends State<App> {
                 initialChatAppointmentId: appointmentId,
               ));
             } else {
-              return MaterialPageRoute(builder: (_) => const MinisterHomeScreen());
+              return MaterialPageRoute(builder: (_) => MinisterHomeScreen());
             }
           case '/concierge/chat':
             // Extract appointmentId and other params from arguments

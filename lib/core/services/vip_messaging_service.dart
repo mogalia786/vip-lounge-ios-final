@@ -172,7 +172,7 @@ class VipMessagingService {
     String messageId,
   ) async {
     try {
-      // Check if consultant is assigned
+      // Notify consultant if assigned
       if (appointmentData.containsKey('staff') && 
           appointmentData['staff'] is Map && 
           appointmentData['staff'].containsKey('consultant')) {
@@ -213,6 +213,50 @@ class VipMessagingService {
             print('✅ [FCM] Chat push sent to consultant \u001b[32m$consultantId\u001b[0m');
           } catch (e) {
             print('❌ [FCM] Failed to send chat push to consultant \u001b[31m$consultantId\u001b[0m: $e');
+          }
+        }
+      }
+      // Notify staff if assigned (generic staff role)
+      if (appointmentData.containsKey('staff') && 
+          appointmentData['staff'] is Map && 
+          appointmentData['staff'].containsKey('staff')) {
+        final staff = appointmentData['staff']['staff'];
+        if (staff != null && staff.containsKey('id')) {
+          final staffId = staff['id'];
+          final staffName = staff['name'] ?? '';
+          print('🐞 [DEBUG] Notifying staff $staffId ($staffName) of new message from minister $ministerName');
+          try {
+            await _notificationService.createNotification(
+              title: 'New Message from $ministerName',
+              body: message.length > 100 ? '${message.substring(0, 97)}...' : message,
+              data: {
+                'appointmentId': appointmentId,
+                'messageId': messageId,
+                'type': 'message',
+              },
+              role: 'staff',
+              assignedToId: staffId,
+              notificationType: 'message',
+            );
+            print('✅ [NOTIF] Notification created for staff $staffId');
+          } catch (e) {
+            print('❌ [NOTIF] Failed to create notification for staff $staffId: $e');
+          }
+          try {
+            await _notificationService.sendFCMToUser(
+              userId: staffId,
+              title: 'New Message from $ministerName',
+              body: message.length > 100 ? '${message.substring(0, 97)}...' : message,
+              data: {
+                'appointmentId': appointmentId,
+                'messageId': messageId,
+                'type': 'message',
+              },
+              messageType: 'message',
+            );
+            print('✅ [FCM] Chat push sent to staff \u001b[32m$staffId\u001b[0m');
+          } catch (e) {
+            print('❌ [FCM] Failed to send chat push to staff \u001b[31m$staffId\u001b[0m: $e');
           }
         }
       }

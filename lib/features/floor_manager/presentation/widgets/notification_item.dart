@@ -60,11 +60,19 @@ class NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if this notification is a message/chat type
     final data = _getNotificationData();
+    final notificationType = notification['type'] ?? notification['notificationType'] ?? '';
+    final isMessageType = notificationType == 'message' ||
+        notificationType == 'chat' ||
+        notificationType == 'message_received' ||
+        notificationType == 'chat_message';
+    // If it's a message/chat, disable tap by making onTapCallback a no-op
+    final effectiveOnTap = isMessageType ? null : null; // Always disable tap for message/chat notifications
+
     final bool isRead = notification['isRead'] as bool? ?? false;
     final DateTime? createdAt = (notification['createdAt'] as Timestamp?)?.toDate();
     final DateTime? timestamp = (notification['timestamp'] as Timestamp?)?.toDate();
-    final notificationType = notification['type'] ?? notification['notificationType'] ?? '';
     // Fallback for missing title/body for concierge and other roles
     String title = notification['title'] ?? data['title'] ?? '';
     String body = notification['body'] ?? data['body'] ?? '';
@@ -205,18 +213,58 @@ class NotificationItem extends StatelessWidget {
   ),
 ],
         if (ministerEmail.isNotEmpty) ...[
-  SizedBox(height: 4),
-  Text('Minister Email', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-  Padding(
-    padding: const EdgeInsets.only(left: 20, top: 2),
-    child: GestureDetector(
-      onTap: () => _launchEmail(ministerEmail),
-      child: Text(ministerEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
-    ),
-  ),
-],
+          SizedBox(height: 4),
+          Text('Minister Email', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Padding(
+            padding: const EdgeInsets.only(left: 20, top: 2),
+            child: GestureDetector(
+              onTap: effectiveOnTap,
+              onLongPress: onDismissCallback,
+              behavior: HitTestBehavior.opaque,
+              child: AbsorbPointer(
+                absorbing: isMessageType,
+                child: Text(ministerEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+              ),
+            ),
+          ),
+        ],
         // Consultant Info
-if (consultantName.isNotEmpty || consultantPhone.isNotEmpty || consultantEmail.isNotEmpty) ...[
+        if (consultantName.isNotEmpty || consultantPhone.isNotEmpty || consultantEmail.isNotEmpty) ...[
+          SizedBox(height: 8),
+          Text('Assigned Consultant', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          if (consultantName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 20, top: 2),
+              child: Text(consultantName, style: TextStyle(color: Colors.white, fontSize: 13)),
+            ),
+          if (consultantPhone.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 20, top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.phone, color: AppColors.gold, size: 16),
+                  SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => NotificationItem._launchPhoneCall(consultantPhone),
+                    child: Text(consultantPhone, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+          if (consultantEmail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 20, top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.email, color: AppColors.gold, size: 16),
+                  SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _launchEmail(consultantEmail),
+                    child: Text(consultantEmail, style: TextStyle(color: Colors.blue, fontSize: 13, decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
   SizedBox(height: 8),
   Text('Assigned Consultant', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
   if (consultantName.isNotEmpty)
@@ -322,8 +370,10 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
           borderRadius: BorderRadius.circular(10),
           onTap: () {
             onTapCallback();
-            // Open appointment details for all notifications with appointmentId
-            if (appointmentId.isNotEmpty) {
+            // Determine the user's role
+            final userRole = Provider.of<AppAuthProvider>(context, listen: false).appUser?.role;
+            // Only floor manager can open appointment details
+            if (appointmentId.isNotEmpty && userRole == 'floor_manager') {
               Navigator.of(context).pushNamed(
                 '/floor_manager/appointment_details',
                 arguments: {
@@ -331,12 +381,13 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
                   'notification': notification,
                 },
               );
-            } else if (notification['notificationType'] == 'chat' && notification['appointmentId'] != null) {
+              return;
+            }
+            // If minister, consultant, or concierge, handle chat navigation only
+            if ((notificationType == 'message' || notificationType == 'chat' || notificationType == 'message_received' || notificationType == 'chat_message') && notification['appointmentId'] != null) {
               final senderId = notification['senderId'] ?? '';
               final senderRoleVal = notification['senderRole'] ?? '';
               final senderNameVal = notification['senderName'] ?? '';
-              // Consultant chat notifications should open consultant dialog, not minister home
-              final userRole = Provider.of<AppAuthProvider>(context, listen: false).appUser?.role;
               if (userRole == 'consultant') {
                 FirebaseFirestore.instance
                     .collection('appointments')
@@ -359,7 +410,6 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
                     });
                   }
                 });
-                // Prevent any fallthrough to default/minster navigation for consultant role
                 return;
               } else if (userRole == 'concierge') {
                 FirebaseFirestore.instance
@@ -384,10 +434,13 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
                   }
                 });
                 return;
-              } else {
+              } else if (userRole == 'minister') {
+                // Open chat dialog for minister, do NOT navigate to floor manager screen
                 _openChatFromNotification(context, notification['appointmentId'], senderRoleVal, senderId, senderNameVal);
+                return;
               }
             }
+            // For all other cases, do nothing (prevent navigation)
           },
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
