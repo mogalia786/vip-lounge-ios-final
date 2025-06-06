@@ -1,8 +1,8 @@
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
-  adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/logo.png"
+  image_path: "assets/cc_logo.png"
+  adaptive_icon_background: "#FF0000"
+  adaptive_icon_foreground: "assets/cc_logo.png"
   min_sdk_android: 21
-  padding: 0.35
+  padding: 0.25

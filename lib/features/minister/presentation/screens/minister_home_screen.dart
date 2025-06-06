@@ -1228,11 +1228,8 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                   _openChatDialog(chatData);
                                 },
                               ),
-                              // Bell with count for consultant messages
-                              if (_unreadNotificationsList.any((notif) =>
-                                  notif['appointmentId'] == appointmentId &&
-                                  notif['type'] == 'message' &&
-                                  notif['senderRole'] == 'consultant'))
+                              // Bell with count for consultant messages (using isRead)
+                              if (_unreadMessageCounts[appointmentId] != null && _unreadMessageCounts[appointmentId]! > 0)
                                 Positioned(
                                   right: 0,
                                   top: 0,
@@ -1252,10 +1249,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                           ),
                                           constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
                                           child: Text(
-                                            _unreadNotificationsList.where((notif) =>
-                                                notif['appointmentId'] == appointmentId &&
-                                                notif['type'] == 'message' &&
-                                                notif['senderRole'] == 'consultant').length.toString(),
+                                            _unreadMessageCounts[appointmentId].toString(),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 9,
@@ -1314,11 +1308,8 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                   _openChatDialog(chatData);
                                 },
                               ),
-                              // Bell with count for concierge messages
-                              if (_unreadNotificationsList.any((notif) =>
-                                  notif['appointmentId'] == appointmentId &&
-                                  notif['type'] == 'message' &&
-                                  notif['senderRole'] == 'concierge'))
+                              // Bell with count for concierge messages (using isRead)
+                              if (_unreadMessageCounts[appointmentId] != null && _unreadMessageCounts[appointmentId]! > 0)
                                 Positioned(
                                   right: 0,
                                   top: 0,
@@ -1338,10 +1329,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                           ),
                                           constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
                                           child: Text(
-                                            _unreadNotificationsList.where((notif) =>
-                                                notif['appointmentId'] == appointmentId &&
-                                                notif['type'] == 'message' &&
-                                                notif['senderRole'] == 'concierge').length.toString(),
+                                            _unreadMessageCounts[appointmentId].toString(),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 9,

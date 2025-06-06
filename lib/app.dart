@@ -78,7 +78,7 @@ class _AppState extends State<App> {
           // Use proper role-based routing
           switch (user.role) {
             case 'minister':
-              return MaterialPageRoute(builder: (_) => MinisterHomeScreen());
+              return MaterialPageRoute(builder: (_) => const MinisterHomeScreen());
             case 'floor_manager':
             case 'supervisor':
               return MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew());
