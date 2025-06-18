@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "net.jonhanson.flutter_native_splash-merged_res-3:/values-lt/values-lt.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\860fd6866f7a159bd3e4bc35e2907d2f\\transformed\\core-1.12.0\\res\\values-lt\\values-lt.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,153,263,362,465,576,686,806",
+                        "endColumns": "97,109,98,102,110,109,119,100",
+                        "endOffsets": "148,258,357,460,571,681,801,902"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "net.jonhanson.flutter_native_splash-mergeReleaseResources-1:/values-lt/values-lt.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\860fd6866f7a159bd3e4bc35e2907d2f\\transformed\\core-1.12.0\\res\\values-lt\\values-lt.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,153,263,362,465,576,686,806",
+                        "endColumns": "97,109,98,102,110,109,119,100",
+                        "endOffsets": "148,258,357,460,571,681,801,902"
+                    }
+                }
+            ]
+        }
+    ]
+}

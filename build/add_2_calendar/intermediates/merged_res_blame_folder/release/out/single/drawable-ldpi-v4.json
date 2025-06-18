@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_answer.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_decline_low.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_answer_video.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_answer_video_low.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_answer_low.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.javih.add_2_calendar-merged_res-3:/drawable-ldpi-v4/ic_call_decline.png",
+        "source": "com.javih.add_2_calendar-core-1.12.0-14:/drawable-ldpi-v4/ic_call_decline.png"
+    }
+]

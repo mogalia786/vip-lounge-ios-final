@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.vip_lounge.app-mergeReleaseResources-6:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\3c50a76fb6980fabc8ac55022ed6423c\\transformed\\appcompat-1.6.1\\res\\values-v28\\values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        }
+    ]
+}

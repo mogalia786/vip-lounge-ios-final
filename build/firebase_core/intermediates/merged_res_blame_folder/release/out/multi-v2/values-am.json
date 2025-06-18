@@ -1,0 +1,82 @@
+{
+    "logs": [
+        {
+            "outputFile": "io.flutter.plugins.firebase.core.firebase_core-mergeReleaseResources-1:/values-am/values-am.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\c0acdb96f3544722b4ad61ef1c790068\\transformed\\jetified-play-services-basement-18.3.0\\res\\values-am\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "127",
+                        "endOffsets": "322"
+                    },
+                    "to": {
+                        "startLines": "9",
+                        "startColumns": "4",
+                        "startOffsets": "742",
+                        "endColumns": "131",
+                        "endOffsets": "869"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\860fd6866f7a159bd3e4bc35e2907d2f\\transformed\\core-1.12.0\\res\\values-am\\values-am.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,148,248,345,444,540,642,742",
+                        "endColumns": "92,99,96,98,95,101,99,100",
+                        "endOffsets": "143,243,340,439,535,637,737,838"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,10",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,148,248,345,444,540,642,874",
+                        "endColumns": "92,99,96,98,95,101,99,100",
+                        "endOffsets": "143,243,340,439,535,637,737,970"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "io.flutter.plugins.firebase.core.firebase_core-merged_res-3:/values-am/values-am.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\c0acdb96f3544722b4ad61ef1c790068\\transformed\\jetified-play-services-basement-18.3.0\\res\\values-am\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "127",
+                        "endOffsets": "322"
+                    },
+                    "to": {
+                        "startLines": "9",
+                        "startColumns": "4",
+                        "startOffsets": "742",
+                        "endColumns": "131",
+                        "endOffsets": "869"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\860fd6866f7a159bd3e4bc35e2907d2f\\transformed\\core-1.12.0\\res\\values-am\\values-am.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,148,248,345,444,540,642,742",
+                        "endColumns": "92,99,96,98,95,101,99,100",
+                        "endOffsets": "143,243,340,439,535,637,737,838"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,10",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,148,248,345,444,540,642,874",
+                        "endColumns": "92,99,96,98,95,101,99,100",
+                        "endOffsets": "143,243,340,439,535,637,737,970"
+                    }
+                }
+            ]
+        }
+    ]
+}

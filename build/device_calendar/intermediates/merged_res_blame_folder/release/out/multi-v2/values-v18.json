@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.builttoroam.devicecalendar.device_calendar-mergeReleaseResources-1:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\da9b92fd817f9ca13bcd074ed15aa17e\\transformed\\appcompat-1.3.1\\res\\values-v18\\values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.builttoroam.devicecalendar.device_calendar-merged_res-3:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\mogal\\.gradle\\caches\\transforms-3\\da9b92fd817f9ca13bcd074ed15aa17e\\transformed\\appcompat-1.3.1\\res\\values-v18\\values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}
