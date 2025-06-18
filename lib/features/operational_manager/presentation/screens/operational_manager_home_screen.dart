@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -82,6 +83,12 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
       );
       setState(() => _isAssigning = false);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Silwela in-app update check
   }
 
   @override

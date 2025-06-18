@@ -12,7 +12,7 @@ class StandardWeeklyDateScroll extends StatelessWidget {
     Key? key,
     required this.selectedDate,
     required this.onDateChange,
-    this.daysToShow = 30,
+    this.daysToShow = 71,
     this.startDate,
   }) : super(key: key);
 

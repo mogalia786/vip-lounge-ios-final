@@ -1,0 +1,8 @@
+{
+  "version": "1.3.4",
+  "apk_url": "https://vip-lounge-f3730.web.app/app-release.apk",
+  "release_notes": [
+    "This is version 1.3.4, for testing the updated AppUpdateHelper with correct URL.",
+    "Includes all previous UI enhancements and AppUpdateHelper modifications."
+  ]
+}

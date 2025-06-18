@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +32,12 @@ class StaffHomeScreen extends StatefulWidget {
 class _StaffHomeScreenState extends State<StaffHomeScreen> {
   int _selectedIndex = 0;
   DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Silwela in-app update check
+  }
 
   void _onNavTap(int idx) {
     setState(() => _selectedIndex = idx);

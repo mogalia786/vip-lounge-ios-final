@@ -50,7 +50,7 @@ class AppointmentCard extends StatelessWidget {
         }
         final appointmentData = {...appointment, ...data};
         print('DEBUG: AppointmentCard: appointmentData merged=' + appointmentData.toString());
-        if (role == 'consultant') {
+        if (role == 'consultant' || role == 'staff') {
           final minister = appointmentData['minister'] as Map<String, dynamic>?;
           final ministerData = appointmentData['ministerData'] as Map<String, dynamic>?;
           String displayMinisterName = 'Unknown Minister';
@@ -221,31 +221,50 @@ class AppointmentCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     icon: Icon(Icons.note_add, color: Colors.amber[600]),
-                    label: Text('Consultant Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    label: Text(role == 'staff' ? 'Staff Notes' : 'Consultant Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[800],
-                      side: BorderSide(color: Colors.amber[600]!),
-                      textStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: Colors.black,
-                          title: const Text('Consultant Notes', style: TextStyle(color: Colors.white)),
-                          content: _NotesSection(
-                            appointmentId: safeAppointmentId,
-                            initialNotes: appointmentData['consultantNotes'] ?? '',
-                            notesField: 'consultantNotes',
-                          ),
-                        ),
-                      );
-                    },
                   ),
-                  const SizedBox(height: 8),
-                  // --- SESSION BUTTONS ---
-                  Row(
-                    children: [
+                  onPressed: () {
+                    print('[DEBUG] Notes button pressed. role: $role, appointmentId: $safeAppointmentId');
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.black,
+                        title: Text(role == 'staff' ? 'Staff Notes' : 'Consultant Notes', style: const TextStyle(color: Colors.white)),
+                        content: _NotesSection(
+                          appointmentId: safeAppointmentId,
+                          initialNotes: appointmentData['consultantNotes'] ?? '',
+                          notesField: 'consultantNotes',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                // --- SESSION BUTTONS ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: Icon(
+                          appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true
+                              ? Icons.stop
+                              : Icons.play_arrow,
+                          color: appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true
+                              ? Colors.red
+                              : (appointmentData['conciergeSessionStarted'] == true ? Colors.green : Colors.grey),
+                        ),
+                        label: Text(
+                          appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true
+                              ? 'End Session'
+                              : 'Start Session',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: appointmentData['consultantSessionStarted'] == true && appointmentData['consultantSessionEnded'] != true
+                              ? Colors.red[900]
+                              : (appointmentData['conciergeSessionStarted'] == true ? Colors.green[900] : Colors.grey[700]),
+                          side: BorderSide(
                       Expanded(
                         child: ElevatedButton.icon(
                           icon: Icon(

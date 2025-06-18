@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -39,6 +40,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Silwela in-app update check
     _initializePushNotificationDebug();
     _listenToUnreadNotifications();
   }

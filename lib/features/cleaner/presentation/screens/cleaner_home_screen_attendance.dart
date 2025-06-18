@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -243,6 +244,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
   @override
   void initState() {
     super.initState();
+    // Silwela in-app update check
     _setCleanerIdAndInit();
   }
 
@@ -264,8 +266,6 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
     // Set the UID early so it is available for all subsequent calls
     await Future.delayed(Duration.zero);
     _loadAppointments();
-    _setupNotificationListener();
-    _setupMessageListener();
   }
 
   Future<void> _loadCleanerDetails() async {

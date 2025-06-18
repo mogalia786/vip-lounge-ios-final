@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import '../widgets/sick_leave_dialog.dart';
 // import 'package:vip_lounge/core/widgets/standard_weekly_date_scroll.dart'; // (Reverted AI addition)
 
@@ -125,10 +126,11 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
   @override
   void initState() {
     super.initState();
+
     _loadConciergeDetails();
-    _metricsUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _updatePerformanceMetrics();
-    });
+    _setupNotificationListener();
+    _setupMessageListener();
+    _metricsUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) => _updatePerformanceMetrics());
   }
 
   void _updatePerformanceMetrics() {
@@ -249,6 +251,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         seenIds.add(doc.id);
         final data = doc.data();
         data['id'] = doc.id;
+        data['appointmentId'] = doc.id;
         appointments.add(data);
       }
       for (var appt in appointments) {

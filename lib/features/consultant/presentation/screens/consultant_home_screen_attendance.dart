@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import '../widgets/sick_leave_dialog.dart';
 // import 'package:vip_lounge/core/widgets/standard_weekly_date_scroll.dart'; // (Reverted AI addition)
 
@@ -271,6 +272,9 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   @override
   void initState() {
     super.initState();
+
+    _initializeWithFirebase();
+    _setupNotificationListener();
     _loadConsultantDetails();
   }
 

@@ -164,11 +164,40 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
 
   Future<void> _showNotesDialog(BuildContext context, Map<String, dynamic> appointment) async {
     final String role = widget.role;
-    final String appointmentId = appointment['id'] ?? appointment['docId'] ?? appointment['appointmentId'];
+    // Fallback logic: prefer 'appointmentId', then 'id', then 'docId'
+    dynamic idRaw = appointment['appointmentId'];
+    if (idRaw == null || idRaw.toString().isEmpty) {
+      idRaw = appointment['id'];
+      if (idRaw != null && idRaw.toString().isNotEmpty) {
+        debugPrint('[WARN] appointmentId missing, falling back to id: '+idRaw.toString());
+      }
+    }
+    if (idRaw == null || idRaw.toString().isEmpty) {
+      idRaw = appointment['docId'];
+      if (idRaw != null && idRaw.toString().isNotEmpty) {
+        debugPrint('[WARN] appointmentId/id missing, falling back to docId: '+idRaw.toString());
+      }
+    }
+    if (idRaw == null || idRaw.toString().isEmpty) {
+      debugPrint('Error: appointmentId, id, and docId all missing in _showNotesDialog. Appointment: $appointment');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot show notes: Appointment ID missing.')),
+      );
+      return;
+    }
+    final String appointmentId = idRaw.toString();
+    // Defensive: ensure _appointmentData always has appointmentId
+    if (!_appointmentData.containsKey('appointmentId') || (_appointmentData['appointmentId']?.toString().isEmpty ?? true)) {
+      debugPrint('[INFO] Setting _appointmentData["appointmentId"] = $appointmentId');
+      _appointmentData['appointmentId'] = appointmentId;
+    }
     String field = 'notes';
     if (role == 'concierge') field = 'conciergeNotes';
     if (role == 'consultant') field = 'consultantNotes';
     if (role == 'cleaner') field = 'cleanerNotes';
+    if (!appointment.containsKey(field)) {
+      debugPrint('Warning: Field "$field" not found in appointment. Available keys: ${appointment.keys.toList()}');
+    }
     final currentNotes = (appointment[field] ?? '').toString();
     final TextEditingController notesController = TextEditingController(text: currentNotes);
     await showDialog(
@@ -628,6 +657,40 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
 
     // --- NEW BUTTONS LOGIC ---
     List<Widget> sessionButtons = [];
+
+    // --- VIEW NOTES BUTTON (ALWAYS SHOW FOR STAFF/CONSULTANT) ---
+    String notesField = 'notes';
+    if (widget.role == 'consultant' || widget.role == 'staff') notesField = 'consultantNotes';
+    if (widget.role == 'concierge') notesField = 'conciergeNotes';
+    if (widget.role == 'cleaner') notesField = 'cleanerNotes';
+    final String? notesValue = (appointmentData[notesField]?.toString().trim().isNotEmpty ?? false)
+        ? appointmentData[notesField]?.toString()
+        : null;
+    // Always show for consultant/staff, only conditional for others
+    if (widget.role == 'consultant' || widget.role == 'staff' || notesValue != null) {
+      sessionButtons.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.sticky_note_2, color: Colors.amber),
+            label: Text(
+              notesValue == null || notesValue.isEmpty ? 'Add Notes' : 'View Notes',
+              style: const TextStyle(color: Colors.amber),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.amber),
+              foregroundColor: Colors.amber,
+            ),
+            onPressed: () {
+              // DEBUG PRINT FOR STAFF/CONSULTANT NOTES BUTTON
+              print('[DEBUG] UnifiedAppointmentCard Notes button pressed. role: \x1B[32m${widget.role}\x1B[0m, appointmentId: \x1B[33m${appointmentData['id'] ?? appointmentData['docId'] ?? appointmentData['appointmentId']}\x1B[0m');
+              _showNotesDialog(context, appointmentData);
+            },
+          ),
+        ),
+      );
+    }
+
     if (!sessionEnded && (isConsultant || isConcierge)) {
       sessionButtons.add(
         Padding(

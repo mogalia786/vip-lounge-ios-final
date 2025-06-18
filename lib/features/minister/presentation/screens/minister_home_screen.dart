@@ -1,4 +1,5 @@
 import 'package:vip_lounge/core/services/fcm_service.dart';
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -82,6 +83,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   void initState() {
     super.initState();
     FCMService().init();
+    // Silwela in-app update check
     _setupNotificationListener();
     _setupChatMessageListener();
     _setupMessageListener();

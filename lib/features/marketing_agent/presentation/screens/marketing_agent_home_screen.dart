@@ -7,6 +7,7 @@ import '../../../../core/providers/app_auth_provider.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import './create_social_feed_post_screen.dart';
 import '../../../../core/services/fcm_service.dart'; 
+import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
 import 'package:vip_lounge/features/floor_manager/widgets/attendance_actions_widget.dart';
 
 class MarketingAgentHomeScreen extends StatefulWidget {
@@ -51,6 +52,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
     _attendanceScrollController.addListener(() {});
     _visualBarScrollController.addListener(() {});
     super.initState();
+    // Silwela in-app update check
     FCMService().init(); 
     WidgetsBinding.instance.addPostFrameCallback((_) => _initUser());
   }

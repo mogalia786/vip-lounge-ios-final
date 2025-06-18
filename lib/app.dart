@@ -20,6 +20,10 @@ import 'core/services/vip_notification_service.dart';
 import 'features/floor_manager/presentation/screens/appointment_details_screen.dart';
 import 'core/services/vip_messaging_service.dart';
 import 'core/widgets/unified_appointment_search_screen.dart';
+import 'core/services/app_version_service.dart';
+import 'core/services/app_version_local.dart';
+import 'core/widgets/update_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class App extends StatefulWidget {
   final bool isLoggedIn;
@@ -36,7 +40,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    
+
     // Complete FCM initialization after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final BuildContext? ctx = navigatorKey.currentContext;
