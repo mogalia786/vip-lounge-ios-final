@@ -14,7 +14,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
     final end = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.richGold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -23,12 +23,12 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.event_note, color: Colors.amber),
+                const Icon(Icons.event_note, color: AppColors.richGold),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'My Scheduled Activities',
-                    style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -45,7 +45,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                  return const Center(child: CircularProgressIndicator(color: AppColors.richGold));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text('No upcoming scheduled activities.', style: TextStyle(color: Colors.white54));
@@ -63,7 +63,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                     return Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Colors.amber, width: 2),
+                        side: const BorderSide(color: AppColors.richGold, width: 2),
                       ),
                       color: Colors.black,
                       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -74,7 +74,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.event, color: Colors.amber),
+                                const Icon(Icons.event, color: AppColors.richGold),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
@@ -85,14 +85,14 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                                 Checkbox(
                                   value: data['completed'] ?? false,
                                   onChanged: null,
-                                  activeColor: Colors.amber,
+                                  activeColor: AppColors.richGold,
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 16, color: AppColors.gold),
+                                Icon(Icons.calendar_today, size: 16, color: AppColors.richGold),
                                 const SizedBox(width: 6),
                                 Text(
                                   (() {
@@ -106,7 +106,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                                       return date.toString();
                                     }
                                   })(),
-                                  style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -118,7 +118,7 @@ class StaffScheduledActivitiesListWidget extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Text(
                                   data['completed'] == true ? 'Completed' : 'Pending',
-                                  style: TextStyle(color: data['completed'] == true ? Colors.green : Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: TextStyle(color: data['completed'] == true ? Colors.green : AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                               ],
                             ),

@@ -106,11 +106,11 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Icon(Icons.question_answer, color: Colors.red, size: 28),
+                  child: Icon(Icons.question_answer, color: AppColors.primary, size: 28),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.notifications, color: Colors.red),
+                icon: const Icon(Icons.notifications, color: AppColors.primary),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -121,7 +121,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
+                icon: const Icon(Icons.logout, color: AppColors.primary),
                 tooltip: 'Logout',
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
@@ -137,9 +137,9 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
             ],
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: Colors.red,
-              labelColor: Colors.red,
-              unselectedLabelColor: Colors.white,
+              indicatorColor: AppColors.primary,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.richGold,
               tabs: const [
                 Tab(text: 'Staff'),
                 Tab(text: 'Consultant'),
@@ -150,18 +150,18 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
             backgroundColor: Colors.black,
             title: const Text('Consultant Home',
                 style: TextStyle(
-                    color: Colors.red,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 20)),
             actions: [
               IconButton(
-                icon: const Icon(Icons.notifications, color: Colors.red),
+                icon: const Icon(Icons.notifications, color: AppColors.primary),
                 onPressed: () {
                   // Implement consultant notifications navigation (if any)
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
+                icon: const Icon(Icons.logout, color: AppColors.primary),
                 tooltip: 'Logout',
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
@@ -177,9 +177,9 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
             ],
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: Colors.red,
-              labelColor: Colors.red,
-              unselectedLabelColor: Colors.white,
+              indicatorColor: AppColors.primary,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.richGold,
               tabs: const [
                 Tab(text: 'Staff'),
                 Tab(text: 'Consultant'),
@@ -220,7 +220,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.red, width: 2),
+        border: Border.all(color: AppColors.primary, width: 2),
         borderRadius: BorderRadius.circular(18),
       ),
       child: SingleChildScrollView(
@@ -240,9 +240,9 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
                 width: 56,
                 margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.red : Colors.black,
+                  color: isSelected ? AppColors.primary : AppColors.red,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: isSelected ? Colors.red : Colors.transparent, width: 2),
+                  border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -294,7 +294,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
               child: Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.red, width: 2),
+                  side: const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 color: Colors.black,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -419,7 +419,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
   Widget _buildConsultantBottomNavBar() {
     return BottomNavigationBar(
       backgroundColor: Colors.black,
-      selectedItemColor: Colors.amber,
+      selectedItemColor: AppColors.primary,
       unselectedItemColor: Colors.grey,
       type: BottomNavigationBarType.fixed,
       currentIndex: _consultantCurrentIndex,
@@ -454,7 +454,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
                       child: Container(
                         padding: EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         constraints: BoxConstraints(
@@ -477,7 +477,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
           label: 'Notifications',
         ),
         const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Performance'),
-        const BottomNavigationBarItem(icon: Icon(Icons.sick, color: Colors.redAccent), label: 'Sick Leave'),
+        const BottomNavigationBarItem(icon: Icon(Icons.sick, color: AppColors.primary), label: 'Sick Leave'),
       ],
     );
   }
@@ -495,7 +495,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
               child: Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.red, width: 2),
+                  side: const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 color: Colors.black,
                 margin: const EdgeInsets.only(bottom: 16),

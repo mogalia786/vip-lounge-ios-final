@@ -119,7 +119,7 @@ class _MinisterNotificationItemFixedState extends State<MinisterNotificationItem
       child: Text(
         name,
         style: const TextStyle(
-          color: Colors.red,
+          color: AppColors.primary,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
@@ -179,7 +179,7 @@ class _MinisterNotificationItemFixedState extends State<MinisterNotificationItem
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
@@ -294,7 +294,7 @@ class _RatingDialogFixedState extends State<RatingDialogFixed> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.blue[900],
-      title: Text('Rate Experience for ${widget.senderName}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+      title: Text('Rate Experience for ${widget.senderName}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -303,7 +303,7 @@ class _RatingDialogFixedState extends State<RatingDialogFixed> {
             children: List.generate(5, (index) => IconButton(
               icon: Icon(
                 _rating > index ? Icons.star : Icons.star_border,
-                color: Colors.red,
+                color: AppColors.primary,
               ),
               onPressed: _submitting ? null : () => setState(() => _rating = index + 1),
             )),
@@ -326,7 +326,7 @@ class _RatingDialogFixedState extends State<RatingDialogFixed> {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
           ),
           onPressed: _submitting || _rating == 0 ? null : _submitRating,

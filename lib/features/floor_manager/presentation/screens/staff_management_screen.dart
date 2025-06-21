@@ -31,7 +31,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
         backgroundColor: Colors.black,
         title: Text(
           'Staff Management',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.richGold),
         ),
         actions: [],
       ),
@@ -52,7 +52,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
           if (!snapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold),
               ),
             );
           }

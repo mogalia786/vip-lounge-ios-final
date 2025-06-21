@@ -26,12 +26,12 @@ class VipTextField extends StatelessWidget {
       style: const TextStyle(color: AppColors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.gold),
+        labelStyle: const TextStyle(color: AppColors.richGold),
         enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: AppColors.gold),
+          borderSide: BorderSide(color: AppColors.richGold),
         ),
         focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: AppColors.gold, width: 2),
+          borderSide: BorderSide(color: AppColors.richGold, width: 2),
         ),
         errorBorder: const OutlineInputBorder(
           borderSide: BorderSide(color: AppColors.red),

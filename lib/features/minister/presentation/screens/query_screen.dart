@@ -71,7 +71,7 @@ class _QueryScreenState extends State<QueryScreen> {
             'Query submitted successfully!',
             style: TextStyle(color: Colors.black),
           ),
-          backgroundColor: AppColors.gold,
+          backgroundColor: AppColors.richGold,
         ),
       );
       Navigator.pop(context);
@@ -103,9 +103,9 @@ class _QueryScreenState extends State<QueryScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           'Submit Query',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.richGold),
         ),
-        iconTheme: IconThemeData(color: AppColors.gold),
+        iconTheme: IconThemeData(color: AppColors.richGold),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -116,10 +116,10 @@ class _QueryScreenState extends State<QueryScreen> {
               child: TextField(
                 controller: _queryController,
                 maxLines: 5,
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(color: AppColors.richGold),
                 decoration: InputDecoration(
                   hintText: 'Enter your query here...',
-                  hintStyle: TextStyle(color: AppColors.gold.withOpacity(0.5)),
+                  hintStyle: TextStyle(color: AppColors.richGold.withOpacity(0.5)),
                   border: InputBorder.none,
                 ),
               ),
@@ -128,7 +128,7 @@ class _QueryScreenState extends State<QueryScreen> {
             ElevatedButton(
               onPressed: _isLoading ? null : _submitQuery,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
+                backgroundColor: AppColors.richGold,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,7 +31,7 @@ class _StaffPerformanceWidgetState extends State<StaffPerformanceWidget> {
         label = 'Completed';
         break;
       case 'cancelled':
-        color = Colors.red;
+        color = AppColors.primary;
         label = 'Cancelled';
         break;
       default:

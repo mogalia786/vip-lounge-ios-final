@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
 
 class AppointmentStatusChip extends StatelessWidget {
   final String status;
@@ -28,7 +29,7 @@ class AppointmentStatusChip extends StatelessWidget {
         label = 'Completed';
         break;
       case 'cancelled':
-        backgroundColor = Colors.red;
+        backgroundColor = AppColors.primary;
         label = 'Cancelled';
         break;
       default:

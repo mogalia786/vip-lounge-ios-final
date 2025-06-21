@@ -44,9 +44,24 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
     return res.status(200).send('Notification sent');
   } catch (error) {
     console.error('Error sending notification:', error);
+    // Auto-remove invalid FCM token if error is 'registration-token-not-registered'
+    if (error.code === 'messaging/registration-token-not-registered') {
+      const userId = data && data.userId;
+      if (userId) {
+        try {
+          await admin.firestore().collection('users').doc(userId).update({
+            fcmToken: admin.firestore.FieldValue.delete()
+          });
+          console.log(`Removed invalid FCM token for user ${userId}`);
+        } catch (firestoreError) {
+          console.error('Error removing invalid FCM token from Firestore:', firestoreError);
+        }
+      }
+    }
     return res.status(500).send('Error sending notification');
   }
 });
 
 // Ensure the midnight clock-out function is deployed
 exports.autoClockOutAtMidnight = require('./autoClockOutAtMidnight').autoClockOutAtMidnight;
+exports.sendConciergeReminder = require('./sendConciergeReminder').sendConciergeReminder;

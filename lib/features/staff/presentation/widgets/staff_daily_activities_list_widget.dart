@@ -12,7 +12,7 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
         color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.richGold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -21,17 +21,17 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.list_alt, color: Colors.amber),
+                const Icon(Icons.list_alt, color: AppColors.richGold),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'My Daily Activities',
-                    style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const Spacer(),
-                Text(DateFormat('yyyy-MM-dd').format(selectedDate), style: const TextStyle(color: Colors.white70)),
+                Text(DateFormat('yyyy-MM-dd').format(selectedDate), style: TextStyle(color: AppColors.richGold)),
               ],
             ),
             const SizedBox(height: 12),
@@ -45,7 +45,7 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                  return const Center(child: CircularProgressIndicator(color: AppColors.richGold));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Padding(
@@ -65,7 +65,7 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
                     return Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Colors.amber, width: 2),
+                        side: const BorderSide(color: AppColors.richGold, width: 2),
                       ),
                       color: Colors.black,
                       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -76,7 +76,7 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
                           children: [
                             Row(
   children: [
-    Icon(data['isSale'] == true ? Icons.attach_money : Icons.work, color: data['isSale'] == true ? Colors.green : Colors.amber),
+    Icon(data['isSale'] == true ? Icons.attach_money : Icons.work, color: data['isSale'] == true ? Colors.green : AppColors.richGold),
     const SizedBox(width: 12),
     Expanded(
       child: Text(
@@ -89,7 +89,7 @@ class StaffDailyActivitiesListWidget extends StatelessWidget {
 const SizedBox(height: 4),
 Row(
   children: [
-    Icon(Icons.calendar_today, size: 16, color: AppColors.gold),
+    Icon(Icons.calendar_today, size: 16, color: AppColors.richGold),
     const SizedBox(width: 6),
     Text(
       () {
@@ -98,7 +98,7 @@ Row(
         final dt = date is Timestamp ? date.toDate() : date as DateTime;
         return DateFormat('d MMM yyyy, HH:mm').format(dt);
       }(),
-      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+      style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13),
     ),
   ],
 ),
@@ -109,7 +109,7 @@ Row(
                                 const SizedBox(width: 6),
                                 Text(
                                   data['isSale'] == true ? 'Sale' : 'Other',
-                                  style: TextStyle(color: data['isSale'] == true ? Colors.green : Colors.amber, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: TextStyle(color: data['isSale'] == true ? Colors.green : AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                               ],
                             ),

@@ -19,6 +19,17 @@ class AppointmentBookingScreen extends StatefulWidget {
 }
 
 class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
+  Future<void> testMinimalFirestoreWrite() async {
+    final now = DateTime.now();
+    final testData = {
+      'testString': 'hello world',
+      'testTimestamp': Timestamp.fromDate(now.toUtc()),
+      'testIso': now.toUtc().toIso8601String(),
+    };
+    print('DEBUG: testData to be saved => $testData');
+    await FirebaseFirestore.instance.collection('test_appointments').add(testData);
+  }
+
   ServiceCategory? _selectedCategory;
   Service? _selectedService;
   SubService? _selectedSubService;
@@ -81,19 +92,26 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         'venueId': _selectedVenue!.id,
         'venueName': _selectedVenue!.name,
         'appointmentTime': selectedTime.toIso8601String(),
+        'appointmentTimeUTC': Timestamp.fromDate(selectedTime.toUtc()),
         'duration': _selectedSubService?.maxDuration ?? _selectedService!.maxDuration,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         // Optionally, store the first floor manager's ID for reference
         'assignedFloorManagerId': floorManagerUids.isNotEmpty ? floorManagerUids.first : null,
+        'typeOfVip': 'VIP Client',
       };
 
-      print('Creating appointment with data: $appointmentData');
+      print('DEBUG: appointmentData to be saved => $appointmentData');
+
+
 
       // Create the appointment
       final appointmentRef = await FirebaseFirestore.instance
           .collection('appointments')
           .add(appointmentData);
+
+      // TEST BUTTON: Call this from your UI to test minimal Firestore write
+      // await testMinimalFirestoreWrite();
 
       // Add the appointmentId to the data for notifications
       final notificationData = Map<String, dynamic>.from(appointmentData);
@@ -231,6 +249,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        actions: [],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

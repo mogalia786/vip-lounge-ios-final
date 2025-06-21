@@ -21,7 +21,7 @@ class MarketingTabSocialFeed extends StatelessWidget {
         title: Text(
           'VIP DEALS',
           style: const TextStyle(
-            color: Colors.blue,
+            color: AppColors.richGold,
             fontWeight: FontWeight.bold,
             decoration: TextDecoration.underline,
             fontSize: 20,

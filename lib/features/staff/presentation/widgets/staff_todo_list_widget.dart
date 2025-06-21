@@ -39,8 +39,8 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
+      color: AppColors.black,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.primary, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -49,17 +49,17 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
           children: [
             Row(
               children: [
-                const Icon(Icons.task, color: Colors.amber),
+                const Icon(Icons.task, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'To-Do List',
-                    style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const Spacer(),
-                Text(DateFormat('yyyy-MM-dd').format(widget.selectedDate), style: const TextStyle(color: Colors.white70)),
+                Text(DateFormat('yyyy-MM-dd').format(widget.selectedDate), style: TextStyle(color: AppColors.primary)),
               ],
             ),
             const SizedBox(height: 12),
@@ -72,7 +72,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                       hintText: 'Enter task...',
                       hintStyle: TextStyle(color: Colors.white54),
                       filled: true,
-                      fillColor: Colors.black54,
+                      fillColor: AppColors.black,
                       border: OutlineInputBorder(),
                     ),
                     style: const TextStyle(color: Colors.white),
@@ -81,8 +81,8 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _addTask,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
-                  child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.add, color: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.black, side: BorderSide(color: AppColors.primary)),
+                  child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)) : const Icon(Icons.add, color: AppColors.primary),
                 ),
               ],
             ),
@@ -96,7 +96,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text('No tasks for this day.', style: TextStyle(color: Colors.white54));
@@ -114,7 +114,7 @@ class _StaffTodoListWidgetState extends State<StaffTodoListWidget> {
                       leading: Checkbox(
                         value: data['completed'] ?? false,
                         onChanged: (val) => _toggleCompleted(doc.id, val ?? false),
-                        activeColor: Colors.amber,
+                        activeColor: AppColors.primary,
                       ),
                       title: Text(
                         data['task'] ?? '',

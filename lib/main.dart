@@ -27,15 +27,18 @@ void main() async {
   final initService = InitializationService();
   await initService.initializeApp();
 
-  // Initialize FCM service
-  await FCMService().init();
-
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppAuthProvider()),
       ],
-      child: App(isLoggedIn: user != null),
+      child: Builder(
+        builder: (context) {
+          // Initialize FCM service with context
+          FCMService().init();
+          return App(isLoggedIn: user != null);
+        },
+      ),
     ),
   );
 }

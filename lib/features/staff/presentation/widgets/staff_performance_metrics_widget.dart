@@ -12,7 +12,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.richGold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -21,9 +21,9 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.bar_chart, color: Colors.amber),
+                const Icon(Icons.bar_chart, color: AppColors.richGold),
                 const SizedBox(width: 8),
-                Text('VIP Performance', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('VIP Performance', style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             const SizedBox(height: 12),
@@ -41,7 +41,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                  return const Center(child: CircularProgressIndicator(color: AppColors.richGold));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   // DEBUG: Show all document fields fetched (if any)
@@ -94,7 +94,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                         children: [
                           Text(
                             DateFormat('EEEE, dd MMMM yyyy').format(DateTime.parse(dayKey)),
-                            style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 15),
+                            style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           Text('Activities: ${dayActivities.length}', style: const TextStyle(color: Colors.white, fontSize: 13)),
                           Text('Revenue: R ${dayRevenue.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
@@ -111,7 +111,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 1.5),
                                 child: Row(
                                   children: [
-                                    Expanded(child: Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13))),
+                                    Expanded(child: Text(desc, style: const TextStyle(color: AppColors.richGold, fontSize: 13))),
                                     Text('R ${revenue.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
                                   ],
                                 ),
@@ -122,7 +122,7 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                           if (dayNonRevenueActivities.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.only(top: 4, bottom: 2),
-                              child: Text('Non-Revenue Generated', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+                              child: Text('Non-Revenue Generated', style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 14)),
                             ),
                             ...dayNonRevenueActivities.map((d) {
                               final desc = d['description'] ?? 'No description';
@@ -130,31 +130,31 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 1.5),
                                 child: Row(
                                   children: [
-                                    Expanded(child: Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13))),
+                                    Expanded(child: Text(desc, style: const TextStyle(color: AppColors.richGold, fontSize: 13))),
                                   ],
                                 ),
                               );
                             }).toList(),
-                            Text('Total Non-Revenue: ${dayNonRevenueActivities.length}', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text('Total Non-Revenue: ${dayNonRevenueActivities.length}', style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13)),
                           ],
-                          const Divider(color: Colors.amber, thickness: 0.7),
+                          const Divider(color: AppColors.richGold, thickness: 0.7),
                         ],
                       );
                     }).toList(),
                     // Summary Card at End
                     Card(
                       color: Colors.black87,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: AppColors.gold!, width: 1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: AppColors.richGold!, width: 1)),
                       margin: const EdgeInsets.only(top: 16),
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Total for ${DateFormat('MMMM yyyy').format(selectedDate)}', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text('Total for ${DateFormat('MMMM yyyy').format(selectedDate)}', style: const TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 16)),
                             const SizedBox(height: 8),
                             Text('Total Revenue Activities: ${revenueActivities.length}', style: const TextStyle(color: Colors.greenAccent, fontSize: 14)),
-                            Text('Total Non-Revenue Activities: ${nonRevenueActivities.length}', style: const TextStyle(color: Colors.amber, fontSize: 14)),
+                            Text('Total Non-Revenue Activities: ${nonRevenueActivities.length}', style: const TextStyle(color: AppColors.richGold, fontSize: 14)),
                             Text('Total Revenue: R ${totalRevenue.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 15, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -173,9 +173,9 @@ class StaffPerformanceMetricsWidget extends StatelessWidget {
   Widget _buildMetric(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.amber, size: 20),
+        Icon(icon, color: AppColors.richGold, size: 20),
         const SizedBox(width: 8),
-        Text(label + ': ', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        Text(label + ': ', style: const TextStyle(color: AppColors.richGold, fontSize: 14)),
         Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
       ],
     );

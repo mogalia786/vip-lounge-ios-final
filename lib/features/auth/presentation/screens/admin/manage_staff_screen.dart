@@ -42,10 +42,10 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
       appBar: AppBar(
         title: const Text('Manage Staff'),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.richGold,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.richGold))
           : ListView.builder(
               itemCount: _staff.length,
               itemBuilder: (context, index) {
@@ -56,7 +56,7 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
                   child: ListTile(
                     title: Text(
                       '${staff['firstName']} ${staff['lastName']}',
-                      style: const TextStyle(color: AppColors.gold),
+                      style: const TextStyle(color: AppColors.richGold),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +76,7 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
                       onChanged: (bool value) {
                         // TODO: Implement status toggle
                       },
-                      activeColor: AppColors.gold,
+                      activeColor: AppColors.richGold,
                     ),
                   ),
                 );
@@ -94,7 +94,7 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
             _loadStaff(); // Refresh the list if staff was added
           }
         },
-        backgroundColor: AppColors.gold,
+        backgroundColor: AppColors.richGold,
         child: const Icon(Icons.add, color: AppColors.black),
       ),
     );

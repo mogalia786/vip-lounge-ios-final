@@ -14,9 +14,9 @@ class MinisterChoiceScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         title: Text(
           'VIP Lounge',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.richGold),
         ),
-        iconTheme: IconThemeData(color: AppColors.gold),
+        iconTheme: IconThemeData(color: AppColors.richGold),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -27,7 +27,7 @@ class MinisterChoiceScreen extends StatelessWidget {
             Text(
               'How can we assist you?',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.richGold,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -74,7 +74,7 @@ class MinisterChoiceScreen extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 20),
-        side: BorderSide(color: AppColors.gold),
+        side: BorderSide(color: AppColors.richGold),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -82,12 +82,12 @@ class MinisterChoiceScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.gold),
+          Icon(icon, color: AppColors.richGold),
           const SizedBox(width: 12),
           Text(
             title,
             style: TextStyle(
-              color: AppColors.gold,
+              color: AppColors.richGold,
               fontSize: 18,
             ),
           ),

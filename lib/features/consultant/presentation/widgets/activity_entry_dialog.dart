@@ -45,7 +45,7 @@ class _ActivityEntryDialogState extends State<ActivityEntryDialog> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.gold),
+          border: Border.all(color: AppColors.richGold),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -55,7 +55,7 @@ class _ActivityEntryDialogState extends State<ActivityEntryDialog> {
             Text(
               'Add Activity',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.richGold,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -77,7 +77,7 @@ class _ActivityEntryDialogState extends State<ActivityEntryDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.gold),
+                  borderSide: BorderSide(color: AppColors.richGold),
                 ),
               ),
             ),
@@ -101,7 +101,7 @@ class _ActivityEntryDialogState extends State<ActivityEntryDialog> {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
+                    backgroundColor: AppColors.richGold,
                     disabledBackgroundColor: Colors.grey,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

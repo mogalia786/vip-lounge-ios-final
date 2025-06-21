@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'core/providers/app_auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/minister/presentation/screens/minister_home_screen.dart';
@@ -52,18 +53,36 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'VIP Lounge',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.black,
-      ),
-      darkTheme: AppTheme.lightTheme,
-      themeMode: ThemeMode.dark,
-      initialRoute: widget.isLoggedIn ? '/' : '/login',
-      onGenerateRoute: (settings) {
-        final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    return FutureBuilder(
+      future: Future.delayed(const Duration(milliseconds: 400)), // Give Firebase a moment to restore
+      builder: (context, snapshot) {
+        final appAuth = Provider.of<AppAuthProvider>(context);
+        final user = appAuth.appUser;
+
+        // Show splash/loading until auth state is determined
+        if (snapshot.connectionState != ConnectionState.done || (user == null && FirebaseAuth.instance.currentUser != null)) {
+          return const MaterialApp(
+            home: Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: CircularProgressIndicator(color: Colors.amber),
+              ),
+            ),
+          );
+        }
+
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'VIP Lounge',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            scaffoldBackgroundColor: Colors.black,
+          ),
+          darkTheme: AppTheme.lightTheme,
+          themeMode: ThemeMode.dark,
+          initialRoute: user != null ? '/' : '/login',
+          onGenerateRoute: (settings) {
+        // Use the user from above, don't redeclare
 
         // If not logged in, redirect to login
         if (user == null && settings.name != '/login' && settings.name != '/signup') {
@@ -224,6 +243,8 @@ class _AppState extends State<App> {
             return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
         }
       },
-    );
+        ); // End of MaterialApp
+      },
+    ); // End of FutureBuilder
   }
 }

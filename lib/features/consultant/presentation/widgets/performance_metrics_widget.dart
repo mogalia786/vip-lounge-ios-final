@@ -320,7 +320,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
         label = 'Completed';
         break;
       case 'cancelled':
-        color = Colors.red;
+        color = AppColors.primary;
         label = 'Cancelled';
         break;
       default:
@@ -486,7 +486,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
                 _buildSummaryCard('Total', total, Colors.blue),
                 _buildSummaryCard('Pending', pending, Colors.orange),
                 _buildSummaryCard('Completed', completed, Colors.green),
-                _buildSummaryCard('Cancelled', cancelled, Colors.red),
+                _buildSummaryCard('Cancelled', cancelled, AppColors.primary),
               ],
             ),
             const SizedBox(height: 18),
@@ -571,7 +571,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
   }
   
   Color _getProgressColor(int percentage) {
-    if (percentage < 30) return Colors.red;
+    if (percentage < 30) return AppColors.primary;
     if (percentage < 70) return Colors.orange;
     return Colors.green;
   }

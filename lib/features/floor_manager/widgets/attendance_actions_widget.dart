@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -558,7 +559,7 @@ class _AttendanceActionsWidgetState extends State<AttendanceActionsWidget> {
               if (_breakHistory.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 4, top: 8),
-                  child: Text('Your Break History', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                  child: Text('Your Break History', style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold)),
                 ),
               if (_breakHistory.isNotEmpty)
                 SizedBox(
@@ -602,16 +603,16 @@ class _AttendanceActionsWidgetState extends State<AttendanceActionsWidget> {
                                 if (reason.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text('Reason: $reason', style: TextStyle(color: Colors.orange, fontStyle: FontStyle.italic, fontSize: 13)),
+                                    child: Text('Reason: $reason', style: TextStyle(color: AppColors.richGold, fontStyle: FontStyle.italic, fontSize: 13)),
                                   ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Icon(Icons.timer, color: duration != null ? Colors.white : Colors.orange, size: 16),
+                                    Icon(Icons.timer, color: duration != null ? Colors.white : AppColors.richGold, size: 16),
                                     const SizedBox(width: 4),
                                     Text(
                                       duration != null ? '$duration min' : 'In progress',
-                                      style: TextStyle(color: duration != null ? Colors.white : Colors.orange, fontWeight: FontWeight.bold, fontSize: 13),
+                                      style: TextStyle(color: duration != null ? Colors.white : AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 13),
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
                                     ),

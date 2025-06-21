@@ -271,6 +271,15 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
 
       print('Booking with minister data: $ministerData'); // Debug print
 
+      // Debug print for UTC compatibility
+      print('[DEBUG] selectedTime (local): ' + selectedTime.toString());
+      print('[DEBUG] selectedTime.toUtc(): ' + selectedTime.toUtc().toString());
+      print('[DEBUG] selectedTime.toIso8601String(): ' + selectedTime.toIso8601String());
+
+      // True UTC instant regardless of device timezone
+      final guaranteedUtc = selectedTime.subtract(selectedTime.timeZoneOffset);
+      print('[DEBUG] guaranteedUtc: ' + guaranteedUtc.toIso8601String());
+
       // Create appointment data
       final appointmentData = {
         'ministerId': ministerData['uid'],
@@ -285,7 +294,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         'venueId': widget.venueId,
         'venueName': widget.venueName,
         'appointmentTime': Timestamp.fromDate(selectedTime),
+        'appointmentTimeUTC': Timestamp.fromDate(guaranteedUtc),
         'appointmentTimeISO': selectedTime.toIso8601String(),
+        'typeOfVip': 'VIP Client',
         'duration': widget.serviceDuration,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),

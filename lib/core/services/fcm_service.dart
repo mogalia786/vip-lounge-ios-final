@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/app_auth_provider.dart';
 import '../../features/minister/presentation/screens/consultant_rating_screen.dart';
 import '../../features/minister/presentation/screens/minister_home_screen.dart';
@@ -33,11 +34,37 @@ class FCMService {
       sound: true,
     );
     
+    // Initialize flutter_local_notifications
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
     // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('Received foreground message: ${message.notification?.title}');
       print('Message data: ${message.data}');
       
+      // Only show local notification for staff roles (not ministers)
+      // You may want to further filter by notification type if needed
+      if (message.notification != null) {
+        const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+          'vip_staff_channel',
+          'VIP Staff Notifications',
+          channelDescription: 'Notifications for staff session events',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+        const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+        await flutterLocalNotificationsPlugin.show(
+          message.notification.hashCode,
+          message.notification?.title ?? 'VIP Lounge',
+          message.notification?.body ?? '',
+          platformChannelSpecifics,
+          payload: jsonEncode(message.data),
+        );
+      }
       // We don't show a local notification, but we need to ensure the bottom bar notification count is updated
       // This will be handled by the notification listener in the appropriate screen
     });

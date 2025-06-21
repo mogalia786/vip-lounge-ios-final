@@ -968,8 +968,15 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       for (final doc in docs) {
           final data = doc.data() as Map<String, dynamic>;
           final status = (data['status'] ?? '').toLowerCase();
-          final appointmentTimestamp = data['appointmentTime'] as Timestamp?;
-          final appointmentTime = appointmentTimestamp?.toDate();
+           final rawAppointmentTime = data['appointmentTime'];
+           DateTime? appointmentTime;
+           if (rawAppointmentTime is Timestamp) {
+             appointmentTime = rawAppointmentTime.toDate();
+           } else if (rawAppointmentTime is String) {
+             appointmentTime = DateTime.tryParse(rawAppointmentTime);
+           } else {
+             appointmentTime = null;
+           }
           if (appointmentTime != null && appointmentTime.isBefore(now) && status == 'pending') {
             // Update status to 'Did Not Attend' in Firestore
             FirebaseFirestore.instance.collection('appointments').doc(doc.id).update({'status': 'Did Not Attend'});
@@ -980,9 +987,24 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
         // --- STRICT DESCENDING ORDER BY appointmentTime ---
       final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
       sortedDocs.sort((a, b) {
-        final aTime = (a['appointmentTime'] as Timestamp).toDate();
-        final bTime = (b['appointmentTime'] as Timestamp).toDate();
-        return bTime.compareTo(aTime); // Descending
+         DateTime? aTime;
+         DateTime? bTime;
+         final aRaw = a['appointmentTime'];
+         final bRaw = b['appointmentTime'];
+         if (aRaw is Timestamp) {
+           aTime = aRaw.toDate();
+         } else if (aRaw is String) {
+           aTime = DateTime.tryParse(aRaw);
+         }
+         if (bRaw is Timestamp) {
+           bTime = bRaw.toDate();
+         } else if (bRaw is String) {
+           bTime = DateTime.tryParse(bRaw);
+         }
+         if (aTime == null && bTime == null) return 0;
+         if (aTime == null) return 1;
+         if (bTime == null) return -1;
+         return bTime.compareTo(aTime); // Descending
       });
 
         return ListView.builder(
@@ -991,8 +1013,15 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           itemBuilder: (context, index) {
             final appointmentData = sortedDocs[index].data() as Map<String, dynamic>;
             final appointmentId = sortedDocs[index].id;
-            final appointmentTimestamp = appointmentData['appointmentTime'] as Timestamp;
-            final appointmentTime = appointmentTimestamp.toDate();
+             final rawAppointmentTime = appointmentData['appointmentTime'];
+             DateTime? appointmentTime;
+             if (rawAppointmentTime is Timestamp) {
+               appointmentTime = rawAppointmentTime.toDate();
+             } else if (rawAppointmentTime is String) {
+               appointmentTime = DateTime.tryParse(rawAppointmentTime);
+             } else {
+               appointmentTime = null;
+             }
             final status = appointmentData['status'] as String? ?? 'pending';
 
             // Determine booking status
@@ -1007,12 +1036,13 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             } else if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'in progress') {
               bookingStatus = 'In Progress';
               statusColor = AppColors.gold;
-            } else if (appointmentTime.day == now.day &&
+            } else if (appointmentTime != null &&
+                appointmentTime.day == now.day &&
                 appointmentTime.month == now.month &&
                 appointmentTime.year == now.year) {
               bookingStatus = 'Today';
               statusColor = Colors.orange;
-            } else if (appointmentTime.isAfter(now)) {
+            } else if (appointmentTime != null && appointmentTime.isAfter(now)) {
               final difference = appointmentTime.difference(now).inDays;
               bookingStatus = difference == 0
                   ? 'Today'
@@ -1101,7 +1131,9 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            DateFormat('E, MMM d, yyyy • h:mm a').format(appointmentTime),
+                            appointmentTime != null
+                                ? DateFormat('E, MMM d, yyyy • h:mm a').format(appointmentTime)
+                                : 'Unknown Time',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13,
@@ -1419,7 +1451,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                               ],
                             ),
                           ),
-                        if (appointmentTime.isAfter(now) && status != 'cancelled' && status != 'completed')
+                        if (appointmentTime != null && appointmentTime.isAfter(now) && status != 'cancelled' && status != 'completed')
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 120),
                             child: ElevatedButton(

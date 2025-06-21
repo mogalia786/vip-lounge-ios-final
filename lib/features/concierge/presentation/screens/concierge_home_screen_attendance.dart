@@ -295,20 +295,32 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                   itemCount: _appointments.length,
                   itemBuilder: (context, index) {
                     final appt = _appointments[index];
-                    return UnifiedAppointmentCard(
-                      role: 'concierge',
-                      isConsultant: false,
-                      ministerName: appt['ministerName'] ??
+                    // Add padding and ensure full height for card content
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Container(
+                        // Debug border to check layout
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.red, width: 2),
+                        ),
+                        // Ensure sufficient height for buttons
+                        constraints: BoxConstraints(minHeight: 250),
+                        child: UnifiedAppointmentCard(
+                          role: 'concierge',
+                          isConsultant: false,
+                          ministerName: appt['ministerName'] ??
   (appt['minister'] != null && appt['minister']['name'] != null ? appt['minister']['name'] : null) ??
   (((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim().isNotEmpty
     ? ((appt['ministerFirstName'] ?? '') + ' ' + (appt['ministerLastName'] ?? '')).trim()
     : 'Unknown Minister'),
-                      appointmentId: appt['id'] ?? appt['appointmentId'] ?? '',
-                      appointmentInfo: appt,
-                      date: appt['appointmentTime'] is Timestamp ? (appt['appointmentTime'] as Timestamp).toDate() : null,
-                      ministerId: appt['ministerId'] ?? appt['ministerUid'],
-                      disableStartSession: false,
-                      viewOnly: false,
+                          appointmentId: appt['id'] ?? appt['appointmentId'] ?? '',
+                          appointmentInfo: appt,
+                          date: appt['appointmentTime'] is Timestamp ? (appt['appointmentTime'] as Timestamp).toDate() : null,
+                          ministerId: appt['ministerId'] ?? appt['ministerUid'],
+                          disableStartSession: false,
+                          viewOnly: false,
+                        ),
+                      ),
                     );
                   },
                 ),

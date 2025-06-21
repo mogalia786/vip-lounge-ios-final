@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -56,9 +57,9 @@ class AppBottomNavBar extends StatelessWidget {
               backgroundColor: Colors.transparent,
               elevation: 0,
               type: BottomNavigationBarType.fixed,
-              selectedItemColor: Colors.red,
+              selectedItemColor: AppColors.primary,
               unselectedItemColor: Colors.white,
-              selectedLabelStyle: const TextStyle(color: Colors.red),
+              selectedLabelStyle: const TextStyle(color: AppColors.primary),
               unselectedLabelStyle: const TextStyle(color: Colors.white),
               showSelectedLabels: true,
               showUnselectedLabels: true,

@@ -7,18 +7,21 @@ REM 3. Deploy to Firebase Hosting
 set APK_PATH=build\app\outputs\flutter-apk\app-release.apk
 set PUBLIC_DIR=public
 set VERSION_JSON=%PUBLIC_DIR%\version.json
-set APK_DEST=%PUBLIC_DIR%\app-release.apk
+REM Extract main version (before '+') from pubspec.yaml
+for /f "tokens=2 delims=: " %%v in ('findstr /B /C:"version:" pubspec.yaml') do set VERSION=%%v
+for /f "delims=+" %%a in ("%VERSION%") do set MAIN_VERSION=%%a
+set APK_DEST=%PUBLIC_DIR%\premium_lounge_%MAIN_VERSION%.apk
 
 REM 1. Build APK
 echo Building APK...
 flutter build apk --release || goto :error
 
-REM 2. Copy APK to public folder
-echo Copying APK to public folder...
+REM 2. Copy APK to public folder as premium_lounge_<main_version>.apk
+echo Copying APK to public\premium_lounge_%MAIN_VERSION%.apk ...
 copy /Y %APK_PATH% %APK_DEST% || goto :error
 
-REM 3. Update version.json (manual step: edit version number in version.json if needed)
-echo Ensure version.json is updated with new version and APK URL.
+REM 3. Update version.json (manual step: edit version number and APK URL to premium_lounge_<main_version>.apk)
+echo Ensure version.json is updated with new version and APK URL: premium_lounge_%MAIN_VERSION%.apk
 
 REM 4. Deploy to Firebase Hosting
 echo Deploying to Firebase Hosting...

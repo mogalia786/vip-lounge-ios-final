@@ -46,7 +46,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.black,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.gold!, width: 2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.richGold!, width: 2)),
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -55,9 +55,9 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
           children: [
             Row(
               children: [
-                const Icon(Icons.add_task, color: Colors.amber),
+                const Icon(Icons.add_task, color: AppColors.richGold),
                 const SizedBox(width: 8),
-                Text('Add Activity', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('Add Activity', style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             const SizedBox(height: 12),
@@ -65,7 +65,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
               controller: _descController,
               decoration: const InputDecoration(
                 labelText: 'Activity Description',
-                labelStyle: TextStyle(color: Colors.amber),
+                labelStyle: TextStyle(color: AppColors.richGold),
                 filled: true,
                 fillColor: Colors.black54,
                 border: OutlineInputBorder(),
@@ -81,7 +81,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
                     keyboardType: TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'Revenue Generated (ZAR)',
-                      labelStyle: TextStyle(color: Colors.amber),
+                      labelStyle: TextStyle(color: AppColors.richGold),
                       filled: true,
                       fillColor: Colors.black54,
                       border: OutlineInputBorder(),
@@ -95,9 +95,9 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
                     Checkbox(
                       value: _isSale,
                       onChanged: (val) => setState(() => _isSale = val ?? false),
-                      activeColor: Colors.amber,
+                      activeColor: AppColors.richGold,
                     ),
-                    const Text('Sale', style: TextStyle(color: Colors.amber)),
+                    const Text('Sale', style: TextStyle(color: AppColors.richGold)),
                   ],
                 ),
               ],
@@ -125,7 +125,7 @@ class _StaffActivityEntryWidgetState extends State<StaffActivityEntryWidget> {
                     onPressed: _isLoading || disable ? null : _addActivity,
                     icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.add, color: Colors.black),
                     label: const Text('Add Activity', style: TextStyle(color: Colors.black)),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.richGold),
                   ),
                 );
               },

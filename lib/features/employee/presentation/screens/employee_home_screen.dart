@@ -78,12 +78,12 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           'Employee Dashboard',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.richGold),
         ),
-        iconTheme: IconThemeData(color: AppColors.gold),
+        iconTheme: IconThemeData(color: AppColors.richGold),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: AppColors.gold),
+            icon: Icon(Icons.logout, color: AppColors.richGold),
             onPressed: () {
               Provider.of<AppAuthProvider>(context, listen: false).signOut();
               Navigator.of(context).pushReplacementNamed('/login');
@@ -96,7 +96,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
           Row(
             children: [
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.richGold),
                 onPressed: _handleClockIn,
                 icon: const Icon(Icons.login, color: Colors.black),
                 label: const Text('Clock In', style: TextStyle(color: Colors.black)),
@@ -122,7 +122,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
               _selectedIndex = index;
             });
           },
-          selectedItemColor: AppColors.gold,
+          selectedItemColor: AppColors.richGold,
           unselectedItemColor: Colors.grey,
           items: const [
             BottomNavigationBarItem(

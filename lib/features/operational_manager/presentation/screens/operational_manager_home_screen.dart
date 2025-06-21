@@ -111,10 +111,10 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
           ),
         ),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.richGold,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.gold),
+            icon: const Icon(Icons.logout, color: AppColors.richGold),
             onPressed: () => _handleLogout(context),
           ),
         ],
@@ -130,7 +130,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.gold,
+                  color: AppColors.richGold,
                 ),
               ),
               const SizedBox(height: 24),
@@ -139,7 +139,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 decoration: InputDecoration(
                   labelText: 'Select Role',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                 ),
                 items: const [
@@ -158,7 +158,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 decoration: InputDecoration(
                   labelText: 'Employee Number',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                 ),
               ),
@@ -168,7 +168,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 decoration: InputDecoration(
                   labelText: 'First Name',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                 ),
               ),
@@ -178,7 +178,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 decoration: InputDecoration(
                   labelText: 'Last Name',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                 ),
               ),
@@ -205,7 +205,7 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.gold,
+                  color: AppColors.richGold,
                 ),
               ),
               const SizedBox(height: 16),
@@ -263,13 +263,13 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: AppColors.gold),
+              Icon(icon, size: 48, color: AppColors.richGold),
               const SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.richGold,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

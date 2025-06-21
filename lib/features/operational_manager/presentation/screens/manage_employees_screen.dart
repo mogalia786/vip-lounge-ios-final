@@ -74,10 +74,10 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
       appBar: AppBar(
         title: Text(
           'Manage Employees',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.richGold),
         ),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.richGold,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -91,12 +91,12 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
                 dropdownColor: AppColors.black,
                 decoration: InputDecoration(
                   labelText: 'Select Role',
-                  labelStyle: TextStyle(color: AppColors.gold),
+                  labelStyle: TextStyle(color: AppColors.richGold),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold, width: 2),
+                    borderSide: BorderSide(color: AppColors.richGold, width: 2),
                   ),
                 ),
                 style: TextStyle(color: AppColors.white),
@@ -124,15 +124,15 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
                 controller: _employeeNumberController,
                 decoration: InputDecoration(
                   labelText: 'Employee Number',
-                  labelStyle: TextStyle(color: AppColors.gold),
+                  labelStyle: TextStyle(color: AppColors.richGold),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.richGold),
                   ),
                 ),
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(color: AppColors.richGold),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter employee number';
@@ -144,7 +144,7 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleCreateEmployee,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
+                  backgroundColor: AppColors.richGold,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
@@ -168,7 +168,7 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
               Text(
                 'Employee Numbers',
                 style: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.richGold,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -189,7 +189,7 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
                   if (!snapshot.hasData) {
                     return Center(
                       child: CircularProgressIndicator(
-                        color: AppColors.gold,
+                        color: AppColors.richGold,
                       ),
                     );
                   }
@@ -199,7 +199,7 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
                   if (employees.isEmpty) {
                     return Text(
                       'No employee numbers created yet',
-                      style: TextStyle(color: AppColors.gold),
+                      style: TextStyle(color: AppColors.richGold),
                     );
                   }
 
@@ -215,7 +215,7 @@ class _ManageEmployeesScreenState extends State<ManageEmployeesScreen> {
                         child: ListTile(
                           title: Text(
                             'Employee #: ${employee['employeeNumber']}',
-                            style: TextStyle(color: AppColors.gold),
+                            style: TextStyle(color: AppColors.richGold),
                           ),
                           subtitle: Text(
                             'Role: ${employee['role']}\nStatus: ${employee['isAssigned'] ? 'Assigned' : 'Available'}',

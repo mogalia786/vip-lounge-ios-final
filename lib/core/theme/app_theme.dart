@@ -4,17 +4,17 @@ import '../constants/colors.dart';
 class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    primaryColor: AppColors.gold,
-    scaffoldBackgroundColor: AppColors.black,
+    primaryColor: AppColors.primary,
+    scaffoldBackgroundColor: AppColors.primary.withOpacity(0.03),
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.primary,
       foregroundColor: AppColors.gold,
       elevation: 0,
     ),
     textTheme: TextTheme(
-      bodyLarge: TextStyle(color: AppColors.blue),
-      bodyMedium: TextStyle(color: AppColors.blue),
-      titleLarge: TextStyle(color: AppColors.gold),
+      bodyLarge: TextStyle(color: AppColors.primary),
+      bodyMedium: TextStyle(color: AppColors.primary),
+      titleLarge: TextStyle(color: AppColors.primary),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -38,16 +38,16 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.gold),
+        borderSide: BorderSide(color: AppColors.primary),
       ),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.gold),
+        borderSide: BorderSide(color: AppColors.primary),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.gold),
+        borderSide: BorderSide(color: AppColors.primary),
       ),
-      labelStyle: TextStyle(color: AppColors.gold),
-      hintStyle: TextStyle(color: AppColors.gold.withOpacity(0.5)),
+      labelStyle: TextStyle(color: AppColors.primary),
+      hintStyle: TextStyle(color: AppColors.primary.withOpacity(0.5)),
     ),
   );
 }

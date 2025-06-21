@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vip_lounge/core/constants/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/app_auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -174,7 +175,7 @@ class RoleNotificationList extends StatelessWidget {
                 Color color;
                 switch (type) {
                   case 'sickleave':
-                    color = Colors.redAccent;
+                    color = AppColors.primary;
                     break;
                   case 'staff_assignment':
                     color = Colors.amber;

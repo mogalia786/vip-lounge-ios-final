@@ -1,0 +1,40 @@
+VIP Lounge App TODO List
+========================
+
+1. When app is opened it opens to the GIF *to be provided
+2. Then opens to picture of the lounge *to be provided
+3. The log in screen just says ‘premium lounge’ and has the login details. *color and font to be provided
+4. Photo of lounge as watermark
+5. Log in page: writing must be white and log in bar must change to red
+6. When minister is signing up have options:
+   - influencer/ celebrity
+   - high profile customer
+   - corporate executives
+   - other
+7. ‘VIP deals’ on promo page change to red
+8. Once minister joins and promos come up- pop up appears: ‘what would you like to see ?’ *options to be sent
+9. Add back concierge rule
+10. Add a preference for the vip meeting point for concierge pick up:
+    - meet at parking *specified parking bay with images to be provided
+    - meet at the vodacom store *specify landmarks
+11. Concierge should receive a reminder notification 10 minutes before that the VIP is arriving
+12. Floor manager / staff should receive a reminder 10 minutes before about their appointment.
+13. Concierge should have options as they move from receiving the vip to the lounge -> this should send notifications to floor manager / operational manager:
+    - Arrived at parking
+    - VIP received by concierge
+    - Escorting VIP to the lounge
+    - VIP has arrived at the lounge
+    - Concierge arrived at Lounge
+    - VIP en route to parking
+    - VIP has been dropped off
+    - Concierge back at the store
+14. Notifications about the whereabouts of the concierge should be sent to the floor manager / operational manager
+15. VIP is allowed to choose who their consultant is, one option is ‘no preference’ *names of consultant to be provided. Add a note: “Note: If a consultant appears greyed out, they are currently unavailable.”
+16. Rate your concierge - 5 stars
+    - Rate your consultant- 5 Stars
+    - Rate your experience- * 4 questions to be provided
+17. Remove messaging function to staff. Messages to be redirected to floor manager
+18. *Required automated messages for documents required depending on what is booked.
+19. Queries- choose who solves your queries. List names and have no preference option
+20. Time limit for query to be solved - should send warning to floor manager and operational manager after 45 minutes
+21. *Required messages for automated responses to query
