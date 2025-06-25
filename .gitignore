@@ -30,6 +30,11 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+build/
+
+# Explicitly exclude large build artifacts
+build/app/outputs/apk/debug/app-debug.apk
+build/app/intermediates/assets/debug/flutter_assets/kernel_blob.bin
 
 # Symbolication related
 app.*.symbols
