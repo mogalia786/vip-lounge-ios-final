@@ -12,7 +12,7 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
     return res.status(204).send('');
   }
 
-  const { token, title, body, data, messageType } = req.body;
+  const { token, title, body, data, messageType, expanded, style } = req.body;
 
   if (!token || !title || !body) {
     return res.status(400).send('Missing required fields');
@@ -27,14 +27,26 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
     data: {
       ...((data && typeof data === 'object') ? data : {}),
       messageType: messageType || 'general',
+      expanded: 'true', // Always use expanded notifications
+      bodyLong: body, // Include full body text in data payload
     },
     android: {
       priority: 'high',
-      notification: { sound: 'default' },
+      notification: { 
+        sound: 'default',
+        channelId: 'high_importance_channel', // Always use high importance channel
+        priority: 'max', // Set maximum priority
+      },
+      ttl: 86400000, // 24 hours in milliseconds
     },
     apns: {
       payload: {
-        aps: { sound: 'default' },
+        aps: { 
+          sound: 'default',
+          mutableContent: expanded ? 1 : undefined,
+          contentAvailable: true,
+          category: expanded ? 'EXPANDED_NOTIFICATION' : undefined,
+        },
       },
     },
   };

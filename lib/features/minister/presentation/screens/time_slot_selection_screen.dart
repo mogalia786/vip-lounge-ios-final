@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
 import 'concierge_closed_day_helper.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/workflow_service.dart';
@@ -355,6 +356,22 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             'status': 'pending',
           },
         );
+        
+        // Also send notification using SendMyFCM
+        final sendMyFCM = new SendMyFCM();
+        await sendMyFCM.sendNotification(
+          recipientId: ministerData['uid'],
+          title: 'Booking Confirmation',
+          body: 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.',
+          appointmentId: appointmentRef.id,
+          role: 'minister',
+          additionalData: {
+            'notificationType': 'booking_confirmation',
+            'status': 'pending',
+          },
+          showRating: false,
+          notificationType: 'booking_confirmation',
+        );
 
         // Query all floor managers and send notification to each
         final floorManagerQuery = await FirebaseFirestore.instance
@@ -375,6 +392,19 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
             notificationType: 'new_appointment',
             data: notificationData,
+          );
+          
+          // Also send notification to floor managers using SendMyFCM
+          final sendMyFCM = new SendMyFCM();
+          await sendMyFCM.sendNotification(
+            recipientId: floorManagerUid,
+            title: 'New Appointment Request',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
+            appointmentId: appointmentRef.id,
+            role: 'floor_manager',
+            additionalData: notificationData,
+            showRating: false,
+            notificationType: 'new_appointment',
           );
         }
         print('Notifications sent successfully');

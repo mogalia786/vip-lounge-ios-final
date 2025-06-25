@@ -1,8 +1,29 @@
 import 'package:vip_lounge/core/services/fcm_service.dart';
 import 'package:vip_lounge/features/shared/utils/app_update_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/constants/colors.dart';
+import 'package:vip_lounge/core/widgets/app_bottom_nav_bar.dart';
+import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
+import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/role_notification_list.dart';
+import '../../../../core/providers/app_auth_provider.dart';
+import '../../../../core/services/vip_messaging_service.dart';
+import '../../../../core/services/vip_notification_service.dart';
+import 'query_screen.dart';
+import 'consultant_rating_screen.dart';
+import '../../../floor_manager/presentation/screens/notifications_screen.dart';
+import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
+import 'minister_chat_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:vip_lounge/core/services/device_location_service.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/widgets/notification_item.dart';
+import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
 import 'package:vip_lounge/core/widgets/app_bottom_nav_bar.dart';
 import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
@@ -16,11 +37,6 @@ import 'query_screen.dart';
 import 'consultant_rating_screen.dart';
 import '../../../floor_manager/presentation/screens/notifications_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
-import 'minister_chat_dialog.dart';
-import 'package:vip_lounge/features/marketing_agent/models/social_feed_post_model.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/widgets/notification_item.dart';
 
@@ -1244,60 +1260,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                               ],
                             ),
                           ),
-                          Stack(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.chat_bubble_outline),
-                                color: AppColors.gold,
-                                iconSize: 20,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: 'Message Consultant',
-                                onPressed: () {
-                                  final Map<String, dynamic> chatData = {
-                                    ...appointmentData,
-                                    'id': appointmentId,
-                                    'selectedRole': 'consultant',
-                                  };
-                                  _openChatDialog(chatData);
-                                },
-                              ),
-                              // Bell with count for consultant messages (using isRead)
-                              if (_unreadMessageCounts[appointmentId] != null && _unreadMessageCounts[appointmentId]! > 0)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(Icons.notifications, color: Colors.orange, size: 16),
-                                      Positioned(
-                                        right: 0,
-                                        top: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(1),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 1),
-                                          ),
-                                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                                          child: Text(
-                                            _unreadMessageCounts[appointmentId].toString(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
+                          // Chat icon removed per requirements
                         ],
                       ),
                     if (appointmentData['conciergeId'] != null)
@@ -1322,62 +1285,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                               ],
                             ),
                           ),
-                          Stack(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.chat_bubble_outline),
-                                color: AppColors.gold,
-                                iconSize: 20,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: 'Message Concierge',
-                                onPressed: () {
-                                  final Map<String, dynamic> chatData = {
-                                    ...appointmentData,
-                                    'id': appointmentId,
-                                    'selectedRole': 'concierge',
-                                    'recipientId': appointmentData['conciergeId'],
-                                    'recipientName': appointmentData['conciergeName'],
-                                  };
-                                  _openChatDialog(chatData);
-                                },
-                              ),
-                              // Bell with count for concierge messages (using isRead)
-                              if (_unreadMessageCounts[appointmentId] != null && _unreadMessageCounts[appointmentId]! > 0)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(Icons.notifications, color: Colors.orange, size: 16),
-                                      Positioned(
-                                        right: 0,
-                                        top: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(1),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 1),
-                                          ),
-                                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                                          child: Text(
-                                            _unreadMessageCounts[appointmentId].toString(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
+                          // Chat icon removed per requirements
                         ],
                       ),
                     if (appointmentData['cleanerId'] != null)
@@ -1409,19 +1317,84 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
-                            icon: Icon(Icons.chat, color: AppColors.gold),
-                            label: Text(
-                              'Chat',
-                              style: TextStyle(color: AppColors.gold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.gold),
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                            ),
-                            onPressed: () {
-                              _openChatDialog({...appointmentData, 'id': appointmentId});
+                          child: StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('chat_messages')
+                                .where('appointmentId', isEqualTo: appointmentId)
+                                .where('recipientId', isEqualTo: user?.uid)
+                                .where('isRead', isEqualTo: false)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              int unreadCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                              
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  OutlinedButton.icon(
+                                    icon: Icon(Icons.chat, color: AppColors.richGold),
+                                    label: Text(
+                                      'Chat with Floor Manager',
+                                      style: TextStyle(color: AppColors.richGold),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: AppColors.richGold),
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                    ),
+                                    onPressed: () async {
+                                      // Get floor manager ID
+                                      String floorManagerId = _assignedStaff['floor_manager']?['id'] ?? '';
+                                      
+                                      // Set selectedRole to floor_manager to chat only with floor manager
+                                      _openChatDialog({
+                                        ...appointmentData,
+                                        'id': appointmentId,
+                                        'selectedRole': 'floor_manager'
+                                      });
+                                      
+                                      // Mark all messages as read when opening the chat dialog
+                                      FirebaseFirestore.instance
+                                          .collection('chat_messages')
+                                          .where('appointmentId', isEqualTo: appointmentId)
+                                          .where('recipientId', isEqualTo: user?.uid)
+                                          .where('isRead', isEqualTo: false)
+                                          .get()
+                                          .then((querySnapshot) {
+                                        for (var doc in querySnapshot.docs) {
+                                          doc.reference.update({'isRead': true});
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  if (unreadCount > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          unreadCount.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                              
+                              print('✅ [CHAT] Chat message sent to floor manager');
                             },
                           ),
                         ),

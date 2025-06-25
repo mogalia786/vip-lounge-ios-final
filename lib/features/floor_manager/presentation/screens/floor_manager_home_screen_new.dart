@@ -17,8 +17,10 @@ import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
 import 'employee_registration_screen.dart';
 import 'floor_manager_query_inbox_screen.dart';
+import 'floor_manager_chat_list_screen.dart';
 import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import '../../widgets/attendance_actions_widget.dart';
+import '../widgets/message_icon_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../screens/closed_days_screen.dart';
@@ -2143,10 +2145,11 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 ),
               );
               break;
-            case 4: // Employee Registration
+            case 4: // Messages
+              print('DEBUG: Navigating to FloorManagerChatListScreen');
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => EmployeeRegistrationScreen()),
+                MaterialPageRoute(builder: (context) => FloorManagerChatListScreen()),
               );
               break;
           }
@@ -2176,8 +2179,15 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
             label: 'Inbox',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_add),
-            label: 'Register',
+            icon: MessageIconWidget(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FloorManagerChatListScreen()),
+                );
+              },
+            ),
+            label: 'Messages',
           ),
         ],
       ),

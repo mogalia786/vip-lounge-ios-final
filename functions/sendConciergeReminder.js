@@ -10,18 +10,30 @@ if (!admin.apps.length) {
 }
 
 // Helper to send FCM with bell sound
-async function sendBellAlarmToConcierge(conciergeId, appointmentId, conciergeName, fcmToken) {
+async function sendBellAlarmToConcierge(conciergeId, appointmentId, conciergeName, fcmToken, appt) {
+  // Get VIP name by concatenating ministerFirstname and ministerLastname
+  const vipName = `${appt.ministerFirstName || ''} ${appt.ministerLastName || ''}`.trim() || 'VIP Client';
+  const venue = appt.venueName || 'the venue';
+  
+  // Format appointment time
+  const appointmentTime = appt.appointmentTime ? 
+    moment(appt.appointmentTime.toDate()).tz('Africa/Johannesburg').format('h:mm A') : 'scheduled time';
+  
+  // Create notification payload with improved message
   const payload = {
     notification: {
       title: 'Escort VIP Client',
-      body: 'Please remember to meet VIP Client promptly',
-      sound: 'bell_ring',
-      icon: 'cc_logo',
+      body: `Please meet ${vipName} at pickup spot and escort to ${venue} for ${appointmentTime} appointment`,
+      //sound: 'bell_ring',
+      //icon: 'cc_logo',
     },
     data: {
       appointmentId: appointmentId,
       notificationType: 'escort_reminder',
       sound: 'bell_ring',
+      vipName: vipName,
+      venue: venue,
+      appointmentTime: appointmentTime,
     },
     android: {
       priority: 'high',
@@ -50,17 +62,20 @@ async function sendBellAlarmToConcierge(conciergeId, appointmentId, conciergeNam
 }
 
 exports.sendConciergeReminder = functions.pubsub.schedule('every 2 minutes').onRun(async (context) => {
-    const now = moment().utc();
-  // Calculate window for now to 15 minutes from now
+  // Use Africa/Johannesburg timezone (UTC+2, South Africa local time)
+  const now = moment().tz('Africa/Johannesburg');
+  
+  // Calculate window for appointments in the next 0-10 minutes (local time)
   const windowStart = now.clone();
-  const windowEnd = now.clone().add(15, 'minutes');
-
+  const windowEnd = now.clone().add(10, 'minutes');
+  
+  console.log(`Checking for appointments between ${windowStart.format()} and ${windowEnd.format()} (Africa/Johannesburg time)`);
+  
   const appointmentsRef = admin.firestore().collection('appointments');
   const snapshot = await appointmentsRef
-    .where('appointmentTimeUTC', '>=', windowStart.toDate())
-    .where('appointmentTimeUTC', '<=', windowEnd.toDate())
-    .where('conciergeSessionStarted', '==', false)
-    //.where('conciergeReminderSent', '!=', true)
+    .where('appointmentTime', '>=', windowStart.toDate())
+    .where('appointmentTime', '<=', windowEnd.toDate())
+    //.where('conciergeSessionStarted', '==', false)
     .get();
 
   if (snapshot.empty) {
@@ -83,7 +98,7 @@ exports.sendConciergeReminder = functions.pubsub.schedule('every 2 minutes').onR
       continue;
     }
 
-    await sendBellAlarmToConcierge(conciergeId, appointmentId, conciergeName, fcmToken);
+    await sendBellAlarmToConcierge(conciergeId, appointmentId, conciergeName, fcmToken, appt);
     // Mark as reminder sent
     await appointmentsRef.doc(appointmentId).update({ conciergeReminderSent: true });
   }

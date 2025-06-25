@@ -13,7 +13,9 @@ import 'package:vip_lounge/features/minister/presentation/screens/concierge_clos
 import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
 import 'floor_manager_query_inbox_screen.dart';
+import 'floor_manager_chat_list_screen.dart';
 import '../widgets/staff_assignment_dialog.dart';
+import '../widgets/message_icon_widget.dart';
 
 class FloorManagerHomeScreen extends StatefulWidget {
   const FloorManagerHomeScreen({super.key});
@@ -24,6 +26,7 @@ class FloorManagerHomeScreen extends StatefulWidget {
 
 class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
   int _unreadNotifications = 0;
+  int _unreadMessages = 0;
   DateTime _selectedDate = DateTime.now();
   final ScrollController _horizontalScrollController = ScrollController();
 
@@ -43,6 +46,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
     // Silwela in-app update check
     _initializePushNotificationDebug();
     _listenToUnreadNotifications();
+    _listenToUnreadMessages();
   }
 
   @override
@@ -64,6 +68,26 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
       if (mounted) {
         setState(() {
           _unreadNotifications = snapshot.docs.length;
+        });
+      }
+    });
+  }
+
+  void _listenToUnreadMessages() {
+    final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    final userId = user?.uid;
+    if (userId == null) return;
+    
+    // Listen for unread messages where floor manager is the receiver
+    FirebaseFirestore.instance
+        .collection('messages')
+        .where('receiverId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _unreadMessages = snapshot.docs.length;
         });
       }
     });
@@ -1332,8 +1356,18 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
           ],
         ),
         actions: [
+          // Chat icon using MessageIconWidget
+          const MessageIconWidget(),
+          // Search icon
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.gold),
+            icon: const Icon(Icons.search, color: AppColors.richGold),
+            tooltip: 'Search',
+            onPressed: () {
+              // Search functionality to be implemented
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.richGold),
             tooltip: 'Logout',
             onPressed: () async {
               await Provider.of<AppAuthProvider>(context, listen: false).signOut();
@@ -1752,6 +1786,10 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
             icon: Icon(Icons.inbox),
             label: 'Inbox',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Messages',
+          ),
         ],
         currentIndex: 0,
         onTap: (index) {
@@ -1769,6 +1807,11 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => FloorManagerQueryInboxScreen()),
+            );
+          } else if (index == 4) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => FloorManagerChatListScreen()),
             );
           }
         },

@@ -32,7 +32,7 @@ class VipMessagingService {
       
       // Create the message document
       try {
-        final messageRef = await _firestore.collection('messages').add({
+        final messageRef = await _firestore.collection('chat_messages').add({
           'appointmentId': appointmentId,
           'senderId': senderId,
           'senderName': senderName,
@@ -72,8 +72,9 @@ class VipMessagingService {
 
   /// Get all messages for a specific appointment
   Stream<QuerySnapshot> getMessagesForAppointment(String appointmentId) {
+    print('DEBUG: Getting messages for appointment $appointmentId');
     return _firestore
-        .collection('messages')
+        .collection('chat_messages')
         .where('appointmentId', isEqualTo: appointmentId)
         .orderBy('timestamp', descending: false)
         .snapshots();
@@ -82,8 +83,9 @@ class VipMessagingService {
   /// Mark a message as read
   Future<void> markMessageAsRead(String messageId) async {
     try {
+      print('DEBUG: Marking message $messageId as read');
       await _firestore
-          .collection('messages')
+          .collection('chat_messages')
           .doc(messageId)
           .update({'isRead': true});
     } catch (e) {
@@ -94,11 +96,14 @@ class VipMessagingService {
   /// Mark all messages for an appointment as read for a specific user
   Future<void> markAllMessagesAsRead(String appointmentId, String recipientId) async {
     try {
+      print('DEBUG: Marking messages as read for appointment $appointmentId and recipient $recipientId');
       final messagesQuery = await _firestore
-          .collection('messages')
+          .collection('chat_messages')
           .where('appointmentId', isEqualTo: appointmentId)
           .where('isRead', isEqualTo: false)
           .get();
+          
+      print('DEBUG: Found ${messagesQuery.docs.length} unread messages to mark as read');
       
       // Create a batch to update all documents at once
       final batch = _firestore.batch();
@@ -147,7 +152,7 @@ class VipMessagingService {
       
       for (var appointmentId in appointmentIds) {
         final messagesQuery = await _firestore
-            .collection('messages')
+            .collection('chat_messages')
             .where('appointmentId', isEqualTo: appointmentId)
             .where('senderId', isNotEqualTo: userId)
             .where('isRead', isEqualTo: false)
