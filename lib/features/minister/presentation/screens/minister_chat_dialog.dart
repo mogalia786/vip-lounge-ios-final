@@ -24,6 +24,31 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
   String recipientName = 'Floor Manager';
   String recipientRole = 'floor_manager';
   
+  // Fetch floor manager ID from users collection
+  Future<void> _fetchFloorManagerId() async {
+    try {
+      // Query users collection to find the floor manager
+      final floorManagerUsers = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'floor_manager')
+          .limit(1) // We only need one floor manager
+          .get();
+      
+      if (floorManagerUsers.docs.isNotEmpty) {
+        // Get the first floor manager user ID
+        final floorManagerDoc = floorManagerUsers.docs.first;
+        setState(() {
+          recipientId = floorManagerDoc.id; // Set the correct floor manager ID
+          print('DEBUG: Found floor manager ID: $recipientId');
+        });
+      } else {
+        print('ERROR: No floor manager found in users collection');
+      }
+    } catch (e) {
+      print('Error fetching floor manager ID: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,27 +72,135 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
         appointmentId = "";
         print('DEBUG: WARNING - No valid appointmentId found in appointment data:');
         print('DEBUG: Appointment data: ${widget.appointment}');
-        
-        // Avoid generating an ID - better to fail visibly than silently create mismatched IDs
-        // If we need a fallback, ask developer to fix the appointment data structure
       }
     }
     
     print('DEBUG: Final appointmentId for chat: $appointmentId');
+    
+    // First fetch the floor manager ID from users collection
+    _fetchFloorManagerId();
+    
+    // Then try to set up recipient info from appointment data as fallback
+    // This will be overwritten by _fetchFloorManagerId() when it completes
     _setupRecipientInfo();
     
     // Mark messages as read when dialog opens
     _markMessagesAsRead();
+    
+    // Check if we need to create an initial message with appointment details
+    _checkAndCreateInitialMessage();
   }
   
   void _setupRecipientInfo() {
-    // For minister chat, the recipient should be the floor manager
-    recipientId = widget.appointment['floorManagerId'] as String? ?? '';
+    // Only set recipientId if it's not already set by _fetchFloorManagerId
+    // This serves as a fallback if the fetch didn't work
+    if (recipientId.isEmpty) {
+      final String fallbackId = widget.appointment['floorManagerId'] as String? ?? '';
+      if (fallbackId.isNotEmpty) {
+        recipientId = fallbackId;
+        print('DEBUG: Using fallback floor manager ID from appointment: $recipientId');
+      }
+    }
+    
+    // Always update the display name
     recipientName = widget.appointment['floorManagerName'] as String? ?? 'Floor Manager';
     recipientRole = 'floor_manager';
     
     print('DEBUG: Chat setup with appointmentId: $appointmentId');
     print('DEBUG: Recipient - ID: $recipientId, Name: $recipientName, Role: $recipientRole');
+  }
+  
+  // Creates an initial message with appointment details if none exists
+  Future<void> _checkAndCreateInitialMessage() async {
+    // Check if any messages already exist for this appointment
+    try {
+      final messagesQuery = await _firestore
+          .collection('chat_messages')
+          .where('appointmentId', isEqualTo: appointmentId)
+          .limit(1)
+          .get();
+      
+      // If no messages found, create an initial message with appointment details
+      if (messagesQuery.docs.isEmpty) {
+        await _createInitialMessage();
+      }
+    } catch (e) {
+      print('Error checking for existing messages: $e');
+    }
+  }
+  
+  // Create an initial message containing appointment details
+  Future<void> _createInitialMessage() async {
+    final currentUser = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    if (currentUser == null) return;
+    
+    try {
+      // Get user information
+      final userDoc = await _firestore.collection('users').doc(currentUser.uid).get();
+      if (!userDoc.exists) return;
+      
+      final userData = userDoc.data()!;
+      final senderName = userData['name'] ?? '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+      
+      // Format appointment date and time
+      String appointmentDate = 'Not specified';
+      String appointmentTime = 'Not specified';
+      
+      // Get appointment date/time from appointmentTime
+      if (widget.appointment['appointmentTime'] != null) {
+        final timestamp = widget.appointment['appointmentTime'] as Timestamp;
+        final dateTime = timestamp.toDate();
+        appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+        appointmentTime = DateFormat('h:mm a').format(dateTime);
+      } 
+      // Try appointmentTimeUTC if appointmentTime is not available
+      else if (widget.appointment['appointmentTimeUTC'] != null) {
+        final timestamp = widget.appointment['appointmentTimeUTC'] as Timestamp;
+        final dateTime = timestamp.toDate().toLocal();
+        appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+        appointmentTime = DateFormat('h:mm a').format(dateTime);
+      }
+      
+      // Get service name
+      final serviceName = widget.appointment['serviceName'] as String? ?? 'Not specified';
+      
+      // Create the initial message with appointment details - use plain text formatting
+      // that will display properly in the chat bubble
+      final initialMessageText = 'APPOINTMENT DETAILS:\n\n'
+          '📅 Date: $appointmentDate\n'
+          '⏰ Time: $appointmentTime\n'
+          '📋 Service: $serviceName';
+      
+      // Use the client timestamp to ensure immediate display
+      final clientTimestamp = Timestamp.now();
+      
+      // Create message document in Firestore with a client-side timestamp
+      // to ensure it appears immediately in the UI
+      await _firestore.collection('chat_messages').add({
+        'appointmentId': appointmentId,
+        'message': initialMessageText,
+        'timestamp': clientTimestamp,  // Use client timestamp for immediate display
+        'isRead': true,  // Mark as read initially
+        'senderId': 'system',  // Use system as sender to distinguish from user messages
+        'senderName': 'Appointment Info',
+        'senderRole': 'system',
+        'recipientId': currentUser.uid,
+        'recipientName': senderName.isEmpty ? 'Minister' : senderName,
+        'recipientRole': 'minister',
+        'participants': _createParticipantsArray(currentUser.uid),
+        'chatId': appointmentId,
+        // Add these fields explicitly for chat list display
+        'appointmentDate': appointmentDate,
+        'appointmentTime': appointmentTime,
+        'serviceName': serviceName,
+        'isSystemMessage': true,
+      });
+      
+      print('DEBUG: Created initial message with appointment details');
+      
+    } catch (e) {
+      print('Error creating initial message: $e');
+    }
   }
   
   // Ensure participants array always includes both minister and floor manager IDs
@@ -144,6 +277,26 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
       final userData = userDoc.data()!;
       final senderName = userData['name'] ?? '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
       
+      // Format appointment date and time for metadata
+      String appointmentDate = 'Not specified';
+      String appointmentTime = 'Not specified';
+      String serviceName = widget.appointment['serviceName'] as String? ?? 'Not specified';
+      
+      // Get appointment date/time from appointmentTime
+      if (widget.appointment['appointmentTime'] != null) {
+        final timestamp = widget.appointment['appointmentTime'] as Timestamp;
+        final dateTime = timestamp.toDate();
+        appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+        appointmentTime = DateFormat('h:mm a').format(dateTime);
+      } 
+      // Try appointmentTimeUTC if appointmentTime is not available
+      else if (widget.appointment['appointmentTimeUTC'] != null) {
+        final timestamp = widget.appointment['appointmentTimeUTC'] as Timestamp;
+        final dateTime = timestamp.toDate().toLocal();
+        appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+        appointmentTime = DateFormat('h:mm a').format(dateTime);
+      }
+      
       // Create message document in Firestore
       await _firestore.collection('chat_messages').add({
         'appointmentId': appointmentId,
@@ -158,6 +311,10 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
         'recipientRole': recipientRole,
         'participants': _createParticipantsArray(currentUser.uid),
         'chatId': appointmentId,
+        // Add these fields explicitly for chat list display
+        'appointmentDate': appointmentDate,
+        'appointmentTime': appointmentTime,
+        'serviceName': serviceName,
       });
       
       // Send notification to recipient
@@ -235,14 +392,46 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Service: ${widget.appointment['serviceName'] ?? 'Not specified'}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  Text(
-                    'Venue: ${widget.appointment['venueName'] ?? 'Not specified'}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
+                  // Display formatted appointment date and time
+                  Builder(builder: (context) {
+                    String appointmentDate = 'Not specified';
+                    String appointmentTime = 'Not specified';
+                    
+                    if (widget.appointment['appointmentTime'] != null) {
+                      final timestamp = widget.appointment['appointmentTime'] as Timestamp;
+                      final dateTime = timestamp.toDate();
+                      appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+                      appointmentTime = DateFormat('h:mm a').format(dateTime);
+                    } 
+                    else if (widget.appointment['appointmentTimeUTC'] != null) {
+                      final timestamp = widget.appointment['appointmentTimeUTC'] as Timestamp;
+                      final dateTime = timestamp.toDate().toLocal();
+                      appointmentDate = DateFormat('EEEE, MMMM d, yyyy').format(dateTime);
+                      appointmentTime = DateFormat('h:mm a').format(dateTime);
+                    }
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date: $appointmentDate',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          'Time: $appointmentTime',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          'Service: ${widget.appointment['serviceName'] ?? 'Not specified'}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          'Venue: ${widget.appointment['venueName'] ?? 'Not specified'}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -334,30 +523,47 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
     final timestamp = message['timestamp'] as Timestamp?;
     final String senderName = message['senderName'] as String? ?? 'Unknown';
     final String senderRole = message['senderRole'] as String? ?? '';
+    final bool isSystemMessage = message['isSystemMessage'] as bool? ?? false;
     
     String formattedTime = 'Just now';
     if (timestamp != null) {
       formattedTime = DateFormat('MMM d, h:mm a').format(timestamp.toDate());
     }
     
-    final mainColor = isFromCurrentUser ? AppColors.richGold : Colors.grey[700]!;
+    // Use special styling for system messages (appointment details)
+    final Color messageColor = isSystemMessage 
+        ? Colors.black
+        : (isFromCurrentUser ? AppColors.richGold : Colors.grey[700]!);
+    
+    final textColor = isSystemMessage ? Colors.white : Colors.black;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Align(
-        alignment: isFromCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+        // System messages are centered
+        alignment: isSystemMessage 
+            ? Alignment.center 
+            : (isFromCurrentUser ? Alignment.centerRight : Alignment.centerLeft),
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
+            maxWidth: isSystemMessage 
+                ? MediaQuery.of(context).size.width * 0.85 
+                : MediaQuery.of(context).size.width * 0.75,
           ),
           padding: const EdgeInsets.all(12.0),
           decoration: BoxDecoration(
-            color: mainColor,
+            color: messageColor,
             borderRadius: BorderRadius.circular(12),
+            // Add a gold border for system messages
+            border: isSystemMessage 
+                ? Border.all(color: AppColors.richGold, width: 2) 
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Only show sender info for non-system messages
+              if (!isSystemMessage)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

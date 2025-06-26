@@ -12,10 +12,6 @@
         "source": "com.example.vip_lounge.app-main-1:/mipmap-xhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.example.vip_lounge.app-main-1:/mipmap-anydpi-v26/ic_launcher.xml"
-    },
-    {
         "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-hdpi_ic_launcher.png.flat",
         "source": "com.example.vip_lounge.app-main-1:/mipmap-hdpi/ic_launcher.png"
     },
@@ -40,20 +36,20 @@
         "source": "com.example.vip_lounge.app-main-1:/drawable-hdpi/splash.png"
     },
     {
-        "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "com.example.vip_lounge.app-main-1:/mipmap-mdpi/ic_launcher.png"
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-hdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-hdpi/android12splash.png"
     },
     {
-        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxxhdpi_splash.png.flat",
-        "source": "com.example.vip_lounge.app-main-1:/drawable-xxxhdpi/splash.png"
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-night-xhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-night-xhdpi/android12splash.png"
     },
     {
         "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxhdpi_ic_launcher_foreground.png.flat",
         "source": "com.example.vip_lounge.app-main-1:/drawable-xxhdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable_cc_logo.png.flat",
-        "source": "com.example.vip_lounge.app-main-1:/drawable/cc_logo.png"
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-mdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-mdpi/android12splash.png"
     },
     {
         "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-xxhdpi_ic_launcher.png.flat",
@@ -68,11 +64,55 @@
         "source": "com.example.vip_lounge.app-main-1:/drawable-xxhdpi/splash.png"
     },
     {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-night-xxhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-night-xxhdpi/android12splash.png"
+    },
+    {
         "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-v21_background.png.flat",
         "source": "com.example.vip_lounge.app-main-1:/drawable-v21/background.png"
     },
     {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-night-xxxhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-night-xxxhdpi/android12splash.png"
+    },
+    {
         "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxxhdpi_ic_launcher_foreground.png.flat",
         "source": "com.example.vip_lounge.app-main-1:/drawable-xxxhdpi/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-xxhdpi/android12splash.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.vip_lounge.app-main-1:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxxhdpi_splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-xxxhdpi/splash.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable_cc_logo.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable/cc_logo.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xxxhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-xxxhdpi/android12splash.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-night-hdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-night-hdpi/android12splash.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-xhdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-xhdpi/android12splash.png"
+    },
+    {
+        "merged": "com.example.vip_lounge.app-merged_res-8:/drawable-night-mdpi_android12splash.png.flat",
+        "source": "com.example.vip_lounge.app-main-1:/drawable-night-mdpi/android12splash.png"
     }
 ]

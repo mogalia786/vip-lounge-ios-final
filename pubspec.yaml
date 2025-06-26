@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.3.4+1
+version: 1.3.5+1
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -78,9 +78,17 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/cc_logo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/cc_logo.png"
+  image_path: "assets/launcherMain.jpg"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/launcherMain.jpg"
+  remove_alpha_ios: false
+  min_sdk_android: 21
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -124,6 +132,16 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
+  # Custom fonts declaration
+  fonts:
+    - family: VODAFONERG
+      fonts:
+        - asset: fonts/VODAFONERG.TTF
+    - family: VODAFONERGBD
+      fonts:
+        - asset: fonts/VODAFONERGBD.TTF
+          weight: 700
+          
   assets:
     - assets/walking_man.png
     - .env
@@ -131,3 +149,6 @@ flutter:
     - assets/cc_logo.png # Added cc_logo.png
     - assets/launcher.png # Added launcher.png
     - assets/cc_logo_original.png
+    - assets/New_cc_logo.jpg
+    - assets/shop_front.jpg
+    - assets/launcherMain.png # Added launcherMain.jpg

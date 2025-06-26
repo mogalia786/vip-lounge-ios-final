@@ -357,17 +357,106 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           },
         );
         
-        // Also send notification using SendMyFCM
+        // Also send notification using SendMyFCM with dynamic content based on category/subcategory
         final sendMyFCM = new SendMyFCM();
+        
+        // Get client name from ministerData
+        String clientName = '${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''}';
+        clientName = clientName.trim();
+        
+        // Generate dynamic notification body based on service category and subcategory
+        String categorySpecificMessage = '';
+        String mainCategory = widget.serviceCategory;
+        String subcategory = widget.subServiceName ?? '';
+        
+        if (mainCategory.contains('Contract Services')) {
+          if (subcategory.contains('New contract')) {
+            categorySpecificMessage = 'Documents Needed for Your New Contract Appointment\n\n'
+                'Hi $clientName, '
+                'Thanks for booking your new contract appointment. Please bring the following documents with you:\n'
+                '• ID\n'
+                '• Latest Proof of Residence (not older than 3 months)\n'
+                '• Latest Proof of Banking Details\n'
+                '• Latest Proof of Income:\n'
+                ' – Payslip or\n'
+                ' – 3 months\' bank statements\n'
+                'We look forward to assisting you!';
+          } else if (subcategory.contains('Upgrade') && subcategory.contains('Individual')) {
+            categorySpecificMessage = 'Documents for Your Upgrade Appointment\n\n'
+                'Hi $clientName, for your upgrade appointment, kindly bring:\n'
+                '• Valid ID or Driver\'s Licence\n\n'
+                'Thank you for choosing our VIP service.';
+          } else if (subcategory.contains('Upgrade') && subcategory.contains('Business')) {
+            categorySpecificMessage = 'Business Upgrade Appointment – Required Documents\n\n'
+                'Hi $clientName, for your business upgrade, please bring:\n'
+                '• Director\'s ID\n'
+                '• Company order\n'
+                'Please ensure all documents are available for a seamless process.';
+          } else {
+            // Default for other Contract Services
+            categorySpecificMessage = 'Documents Needed for Your Appointment\n\n'
+                'Hi $clientName, '
+                'Thanks for booking your Contract Services appointment. Please bring the following documents with you:\n'
+                '• ID\n'
+                '• Latest Proof of Residence (not older than 3 months)\n'
+                '• Latest Proof of Banking Details\n'
+                '• Latest Proof of Income:\n'
+                ' – Payslip or\n'
+                ' – 3 months\' bank statements\n'
+                'We look forward to assisting you!';
+          }
+        } else if (mainCategory.contains('Device and sim Services') || 
+                  subcategory.contains('SIM Swap')) {
+          if (subcategory.contains('Individual')) {
+            categorySpecificMessage = 'SIM Swap Appointment – Required Documents\n\n'
+                'Hi $clientName, for your SIM swap, please bring:\n'
+                '• Valid ID and Proof of Address\n'
+                'We\'re here to help you get reconnected quickly.';
+          } else if (subcategory.contains('Business')) {
+            categorySpecificMessage = 'Business SIM Swap – Required Documents\n\n'
+                'Hi $clientName, for your business SIM swap, kindly bring:\n'
+                '• Company order on official letterhead\n'
+                '• Director\'s ID\n'
+                'Let us know if you need any assistance before your appointment.';
+          } else if (subcategory.contains('Prepaid')) {
+            categorySpecificMessage = 'Documents for Prepaid Activation\n\n'
+                'Hi $clientName, for your prepaid SIM activation, please bring:\n'
+                '• Valid ID\n'
+                '• Proof of address\n'
+                'Your convenience is our priority.';
+          }
+        } else if (mainCategory.contains('Business solutions')) {
+          categorySpecificMessage = 'Business Upgrade Appointment – Required Documents\n\n'
+                'Hi $clientName, for your business upgrade, please bring:\n'
+                '• Director\'s ID\n'
+                '• Company order\n'
+                'Please ensure all documents are available for a seamless process.';
+        } else if (mainCategory.contains('Value Added') || subcategory.contains('VAS')) {
+          categorySpecificMessage = 'Documents for Your Value-Added Service\n\n'
+                'Hi $clientName, to process your VAS request, please bring:\n'
+                '• Valid ID\n'
+                'Feel free to reach out if you have any questions before your appointment.';
+        }
+        
+        // If no specific message was set, use the default
+        if (categorySpecificMessage.isEmpty) {
+          categorySpecificMessage = 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.';
+        } else {
+          // Add the standard booking confirmation at the end if we have a specific message
+          categorySpecificMessage += '\n\nAppointment details: ${widget.selectedService.name} at ${widget.venueName} on $formattedTime.';
+        }
+        
         await sendMyFCM.sendNotification(
           recipientId: ministerData['uid'],
           title: 'Booking Confirmation',
-          body: 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.',
+          body: categorySpecificMessage,
           appointmentId: appointmentRef.id,
           role: 'minister',
           additionalData: {
             'notificationType': 'booking_confirmation',
             'status': 'pending',
+            'serviceCategory': mainCategory,
+            'subServiceName': subcategory,
           },
           showRating: false,
           notificationType: 'booking_confirmation',

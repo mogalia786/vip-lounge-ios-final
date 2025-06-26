@@ -41,48 +41,73 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
     try {
       print('DEBUG: Loading chat conversations for floor manager: $_userId');
       
-      // Get all chat messages where this floor manager is a participant
+      // Get all chat messages involving this floor manager
+      // Previously we used participants array, but that might be missing in some messages
+      // So we use a more comprehensive query to catch all messages
       final messagesQuery = await _firestore
           .collection('chat_messages')
-          .where('participants', arrayContains: _userId)
+          .where('senderRole', isEqualTo: 'minister') // Get messages from ministers to floor manager
           .orderBy('timestamp', descending: true)
           .get();
       
-      print('DEBUG: Found ${messagesQuery.docs.length} messages involving floor manager');
+      // Also get messages sent by the floor manager
+      final sentMessagesQuery = await _firestore
+          .collection('chat_messages')
+          .where('senderId', isEqualTo: _userId) // Messages sent by this floor manager
+          .orderBy('timestamp', descending: true)
+          .get();
+      
+      // Combine both query results
+      final allMessages = [...messagesQuery.docs, ...sentMessagesQuery.docs];
+      
+      print('DEBUG: Found ${allMessages.length} messages involving floor manager');
       
       // Group by appointments to create conversations
       final Map<String, Map<String, dynamic>> conversationsMap = {};
       
-      for (var doc in messagesQuery.docs) {
+      for (var doc in allMessages) {
         final data = doc.data();
         final String appointmentId = data['appointmentId'] ?? '';
         
-        // Handle messages with empty appointmentId by using the senderId as a fallback grouping key
-        final String conversationKey = appointmentId.isNotEmpty 
-            ? 'appointment_$appointmentId' 
-            : 'direct_${data['senderId'] == _userId ? data['recipientId'] : data['senderId']}';
+        // Create a conversation key - use appointmentId if available, otherwise use the chat participants
+        String conversationKey;
+        if (appointmentId.isNotEmpty) {
+          conversationKey = 'appointment_$appointmentId';
+          print('DEBUG: Using appointmentId for conversation key: $conversationKey');
+        } else {
+          // For messages without appointmentId, create a direct conversation key based on the participants
+          // If the current user is the sender, the conversation should be with the recipient
+          // Otherwise, the conversation should be with the sender
+          final String senderId = data['senderId'] ?? '';
+          final String recipientId = data['recipientId'] ?? '';
+          final String otherPersonId = senderId == _userId ? recipientId : senderId;
+          conversationKey = 'direct_${otherPersonId.isNotEmpty ? otherPersonId : "unknown"}';
+          print('DEBUG: Created direct conversation key for message without appointmentId: $conversationKey');
+        }
         
-        print('DEBUG: Processing message with conversationKey: $conversationKey (empty appointmentId: ${appointmentId.isEmpty})');
+        print('DEBUG: Processing message with conversationKey: $conversationKey');
 
-        
         final Timestamp timestamp = data['timestamp'] ?? Timestamp.now();
         final String message = data['message'] ?? 'No message content';
         final bool isRead = data['isRead'] ?? false;
         
-        // Determine the conversation partner (the other person in the chat)
+        // Get sender information
         final String senderId = data['senderId'] ?? '';
         final String senderName = data['senderName'] ?? 'Unknown';
         final String senderRole = data['senderRole'] ?? '';
         
+        // Get recipient information
         final String recipientId = data['recipientId'] ?? '';
         final String recipientName = data['recipientName'] ?? 'Unknown';
         
-        // For conversations with ministers - log more detailed information
-        print('DEBUG CHAT: Message has - senderId: $senderId, senderRole: $senderRole, recipientRole: ${data['recipientRole']}, appointmentId: $appointmentId');
-          
-        // Process all messages - temporarily removing filters to see what's available
-        final String ministerId = senderId == _userId ? recipientId : senderId;
-        final String ministerName = senderId == _userId ? recipientName : senderName;
+        // Log detailed message information
+        print('DEBUG CHAT: Message has - senderId: $senderId, senderRole: $senderRole, recipientRole: ${data['recipientRole']}, appointmentId: $appointmentId, recipientId: $recipientId');
+        
+        // Determine minister details (the conversation partner)
+        // If the message was sent by the floor manager, then the minister is the recipient
+        // Otherwise, the minister is the sender
+        final String ministerId = senderRole == 'floor_manager' ? recipientId : senderId;
+        final String ministerName = senderRole == 'floor_manager' ? recipientName : senderName;
         
         print('DEBUG CHAT: Processing message with ministerId: $ministerId and ministerName: $ministerName');
           
@@ -131,6 +156,17 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
       }
       
       // Convert to list and sort by latest message timestamp
+      // More detailed logging about the conversations map
+      print('DEBUG: Conversation map contains ${conversationsMap.length} unique conversation keys:');
+      conversationsMap.forEach((key, value) {
+        print('DEBUG: Conversation Key: $key');
+        print('DEBUG: -> AppointmentId: ${value['appointmentId']}');
+        print('DEBUG: -> MinisterName: ${value['ministerName']}');
+        print('DEBUG: -> ServiceName: ${value['serviceName']}');
+        print('DEBUG: -> Latest Message: ${value['latestMessage']}');
+        print('DEBUG: -> Unread Count: ${value['unreadCount']}');
+      });
+      
       final List<Map<String, dynamic>> sortedConversations = conversationsMap.values.toList();
       sortedConversations.sort((a, b) {
         final DateTime timeA = a['latestMessageTimestamp'] as DateTime;
@@ -206,6 +242,7 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Prevent keyboard from causing overflow
       appBar: AppBar(
         title: const Text('Messages', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primary,
@@ -228,17 +265,19 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
                 )
               : RefreshIndicator(
                   onRefresh: _loadConversations,
-                  child: ListView.builder(
-                    itemCount: _conversations.length,
-                    itemBuilder: (context, index) {
-                      final conversation = _conversations[index];
-                      return _buildConversationItem(conversation);
-                    },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: _conversations.map((conversation) => 
+                        _buildConversationItem(conversation)
+                      ).toList(),
+                    ),
                   ),
                 ),
     );
   }
   
+  // Updated to prevent overflow issues
   Widget _buildConversationItem(Map<String, dynamic> conversation) {
     final bool hasUnread = (conversation['unreadCount'] as int? ?? 0) > 0;
     final DateTime timestamp = conversation['latestMessageTimestamp'] as DateTime;
@@ -267,46 +306,50 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: GlassCard(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _openChatDialog(conversation),
-            child: Container(
-              constraints: const BoxConstraints(
-                minHeight: 80, // Minimum height to accommodate content
-              ),
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Avatar circle
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: hasUnread ? AppColors.richGold : Colors.grey.shade400,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      (conversation['ministerName'] as String? ?? 'U').isNotEmpty
-                          ? (conversation['ministerName'] as String).substring(0, 1).toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+      child: Card(
+        color: Colors.black54,
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _openChatDialog(conversation),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar circle
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: hasUnread ? AppColors.richGold : Colors.grey.shade400,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    (conversation['ministerName'] as String? ?? 'U').isNotEmpty
+                        ? (conversation['ministerName'] as String).substring(0, 1).toUpperCase()
+                        : 'U',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  
-                  // Message content - main column with all text content
-                  Expanded(
+                ),
+                const SizedBox(width: 12),
+                
+                // Message content - main column with all text content
+                Expanded(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.1,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min, // Use minimum required space
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         // First row: Name and time
                         Row(
@@ -379,66 +422,72 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
                         const SizedBox(height: 6),
                         
                         // Last row: Message preview and unread count
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Message preview with sender prefix
-                            Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Sender prefix
-                                  Text(
-                                    _getSenderPrefix(conversation['latestMessageSender']),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                
-                                  // Message text
-                                  Expanded(
-                                    child: Text(
-                                      latestMessage,
+                        // Wrapping in a ConstrainedBox to set max height and prevent overflow
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: 60,  // Limit height to prevent overflow
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Message preview with sender prefix
+                              Expanded(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Sender prefix
+                                    Text(
+                                      _getSenderPrefix(conversation['latestMessageSender']),
                                       style: TextStyle(
-                                        color: hasUnread ? Colors.white : Colors.grey.shade300,
+                                        fontWeight: FontWeight.bold,
                                         fontSize: 14,
-                                        fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                        color: Colors.grey.shade300,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  
+                                    // Message text
+                                    Expanded(
+                                      child: Text(
+                                        latestMessage,
+                                        style: TextStyle(
+                                          color: hasUnread ? Colors.white : Colors.grey.shade300,
+                                          fontSize: 14,
+                                          fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            
+                              // Unread count badge (only shown if hasUnread)
+                              if (hasUnread)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    conversation['unreadCount'].toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            
-                            // Unread count badge (only shown if hasUnread)
-                            if (hasUnread)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Text(
-                                  conversation['unreadCount'].toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

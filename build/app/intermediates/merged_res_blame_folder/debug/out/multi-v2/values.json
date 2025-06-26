@@ -131,10 +131,10 @@
                     "from": {
                         "startLines": "3,18",
                         "startColumns": "4,4",
-                        "startOffsets": "176,1105",
+                        "startOffsets": "173,1093",
                         "endLines": "11,20",
                         "endColumns": "12,12",
-                        "endOffsets": "756,1271"
+                        "endOffsets": "746,1257"
                     },
                     "to": {
                         "startLines": "1558,1566",

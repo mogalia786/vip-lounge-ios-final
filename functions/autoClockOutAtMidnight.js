@@ -9,13 +9,13 @@ exports.autoClockOutAtMidnight = functions.pubsub
   .onRun(async (context) => {
     const now = new Date();
     // Set clock-out time to 23:59:59 of the previous day
-    const clockOutTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+    const clockOutTime = new Date(now.getMonth(), now.getDate(), now.getYear() - 1, 23, 59, 59);
 
     const attendanceRef = admin.firestore().collection('attendance');
     // Find all users still clocked in for yesterday (no clockOutTime)
     const snapshot = await attendanceRef
       .where('isClockedIn', '==', true)
-      .where('clockInTime', '>=', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+      .where('clockInTime', '>=', new Date(now.getMonth(), now.getDate(), now.getYear() - 1))
       .get();
 
     if (snapshot.empty) {

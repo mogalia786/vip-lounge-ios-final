@@ -126,9 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Positioned.fill(
                 child: Opacity(
-                  opacity: 0.15,
+                  opacity: 0.25,
                   child: Image.asset(
-                    'assets/cc_logo_original.png',
+                    'assets/New_cc_logo.jpg',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -145,7 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'PREMIUM LOUNGE',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.montserrat(
+                          style: TextStyle(
+                            fontFamily: 'VODAFONERGBD',
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
@@ -165,10 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Enter your email',
                                   hintStyle: TextStyle(color: AppColors.primary),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.2),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.5),
                                   ),
                                 ),
                                 style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -189,10 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Enter your password',
                                   hintStyle: TextStyle(color: AppColors.primary),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.2),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.5),
                                   ),
                                   suffixIcon: IconButton(
                                     icon: Icon(

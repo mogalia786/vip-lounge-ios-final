@@ -203,6 +203,7 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Messages', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primary,
@@ -225,12 +226,13 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
                 )
               : RefreshIndicator(
                   onRefresh: _loadConversations,
-                  child: ListView.builder(
-                    itemCount: _conversations.length,
-                    itemBuilder: (context, index) {
-                      final conversation = _conversations[index];
-                      return _buildConversationItem(conversation);
-                    },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: _conversations.map((conversation) =>
+                        _buildConversationItem(conversation)
+                      ).toList(),
+                    ),
                   ),
                 ),
     );
