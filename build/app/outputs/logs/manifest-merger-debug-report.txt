@@ -1,6 +1,6 @@
 -- Merging decision tree log ---
 application
-INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:16:5-47:19
+INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:30:5-61:19
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml
 MERGED from [:cloud_firestore] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\cloud_firestore\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
 MERGED from [:cloud_firestore] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\cloud_firestore\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
@@ -85,8 +85,8 @@ MERGED from [com.google.maps.android:android-maps-utils:3.6.0] C:\Users\mogal\.g
 	android:name
 		INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml
 manifest
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:1:1-59:12
-MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:1:1-59:12
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:1:1-75:12
+MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:1:1-75:12
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml:1:1-7:12
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml:1:1-7:12
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml:1:1-7:12
@@ -209,17 +209,17 @@ MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] C:\Users\mog
 	xmlns:android
 		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:1:11-69
 uses-permission#android.permission.READ_CALENDAR
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:2:5-72
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:2:5-3:58
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:2:22-69
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:3:9-56
 uses-permission#android.permission.WRITE_CALENDAR
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:3:5-73
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:4:5-5:59
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:3:22-70
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:5:9-57
 uses-permission#android.permission.INTERNET
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:4:5-66
-MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:4:5-66
-MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:4:5-66
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:6:5-7:53
+MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:6:5-7:53
+MERGED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:6:5-7:53
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-67
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-67
 MERGED from [com.google.firebase:firebase-auth:22.3.1] C:\Users\mogal\.gradle\caches\transforms-3\5a5c7c658fbabdf9ce1a15086db9fbc3\transformed\jetified-firebase-auth-22.3.1\AndroidManifest.xml:25:5-67
@@ -239,19 +239,19 @@ MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] C:\Use
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] C:\Users\mogal\.gradle\caches\transforms-3\25f6e0072e5c5a00fa3a030d7df8362c\transformed\jetified-transport-backend-cct-3.1.8\AndroidManifest.xml:25:5-67
 MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] C:\Users\mogal\.gradle\caches\transforms-3\25f6e0072e5c5a00fa3a030d7df8362c\transformed\jetified-transport-backend-cct-3.1.8\AndroidManifest.xml:25:5-67
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:4:22-64
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:7:9-51
 uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:5:5-80
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:8:5-9:67
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:5:22-78
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:9:9-65
 uses-permission#android.permission.VIBRATE
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:6:5-66
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:10:5-11:52
 MERGED from [:flutter_local_notifications] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\flutter_local_notifications\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-66
 MERGED from [:flutter_local_notifications] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\flutter_local_notifications\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-66
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:6:22-63
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:11:9-50
 uses-permission#android.permission.WAKE_LOCK
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:7:5-68
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:12:5-13:54
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:8:5-68
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:8:5-68
 MERGED from [com.google.firebase:firebase-messaging:23.4.1] C:\Users\mogal\.gradle\caches\transforms-3\eaabd33fd3ae8d69a95e905925336793\transformed\jetified-firebase-messaging-23.4.1\AndroidManifest.xml:24:5-68
@@ -259,17 +259,17 @@ MERGED from [com.google.firebase:firebase-messaging:23.4.1] C:\Users\mogal\.grad
 MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] C:\Users\mogal\.gradle\caches\transforms-3\c0d61e5fb851dbf26089085d18496877\transformed\jetified-play-services-cloud-messaging-17.1.0\AndroidManifest.xml:9:5-68
 MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] C:\Users\mogal\.gradle\caches\transforms-3\c0d61e5fb851dbf26089085d18496877\transformed\jetified-play-services-cloud-messaging-17.1.0\AndroidManifest.xml:9:5-68
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:7:22-65
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:13:9-52
 uses-permission#android.permission.USE_FULL_SCREEN_INTENT
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:8:5-81
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:14:5-15:67
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:8:22-78
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:15:9-65
 uses-permission#android.permission.SCHEDULE_EXACT_ALARM
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:9:5-78
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:16:5-17:65
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:9:22-76
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:17:9-63
 uses-permission#android.permission.POST_NOTIFICATIONS
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:10:5-76
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:18:5-19:63
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-77
 MERGED from [:firebase_messaging] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\firebase_messaging\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-77
 MERGED from [:flutter_local_notifications] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\flutter_local_notifications\intermediates\merged_manifest\debug\AndroidManifest.xml:8:5-77
@@ -277,47 +277,47 @@ MERGED from [:flutter_local_notifications] C:\Development Apps\Cascades projects
 MERGED from [com.google.firebase:firebase-messaging:23.4.1] C:\Users\mogal\.gradle\caches\transforms-3\eaabd33fd3ae8d69a95e905925336793\transformed\jetified-firebase-messaging-23.4.1\AndroidManifest.xml:23:5-77
 MERGED from [com.google.firebase:firebase-messaging:23.4.1] C:\Users\mogal\.gradle\caches\transforms-3\eaabd33fd3ae8d69a95e905925336793\transformed\jetified-firebase-messaging-23.4.1\AndroidManifest.xml:23:5-77
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:10:22-74
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:19:9-61
 uses-permission#android.permission.ACCESS_FINE_LOCATION
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:11:5-79
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:20:5-21:65
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:11:22-76
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:21:9-63
 uses-permission#android.permission.ACCESS_COARSE_LOCATION
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:12:5-81
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:22:5-23:67
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:12:22-78
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:23:9-65
 uses-permission#android.permission.REQUEST_INSTALL_PACKAGES
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:13:5-82
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:24:5-25:69
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:13:22-80
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:25:9-67
 uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:14:5-80
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:26:5-27:67
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:14:22-78
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:27:9-65
 uses-permission#android.permission.READ_EXTERNAL_STORAGE
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:15:5-79
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:28:5-29:66
 MERGED from [:file_picker] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\file_picker\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-9:38
 MERGED from [:file_picker] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\file_picker\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-9:38
 	android:maxSdkVersion
 		ADDED from [:file_picker] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\file_picker\intermediates\merged_manifest\debug\AndroidManifest.xml:9:9-35
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:15:22-77
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:29:9-64
 queries
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:53:5-58:15
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:67:5-74:15
 MERGED from [:file_picker] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\file_picker\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-17:15
 MERGED from [:file_picker] C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\build\file_picker\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-17:15
 MERGED from [com.google.android.gms:play-services-maps:18.2.0] C:\Users\mogal\.gradle\caches\transforms-3\de2e3d766c502524f7798ee051981f94\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:30:5-34:15
 MERGED from [com.google.android.gms:play-services-maps:18.2.0] C:\Users\mogal\.gradle\caches\transforms-3\de2e3d766c502524f7798ee051981f94\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:30:5-34:15
 intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:54:9-57:18
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:68:9-73:18
 action#android.intent.action.PROCESS_TEXT
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:55:13-72
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:69:13-70:68
 	android:name
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:55:21-70
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:70:17-66
 data
-ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:56:13-50
+ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:71:13-72:48
 	android:mimeType
-		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:56:19-48
+		ADDED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\main\AndroidManifest.xml:72:17-46
 uses-sdk
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Development Apps\Cascades projects\vip_lounge_notification_bookings\android\app\src\debug\AndroidManifest.xml

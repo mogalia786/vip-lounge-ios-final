@@ -207,9 +207,10 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       Navigator.pop(context);
     } catch (e) {
       print('Error booking appointment: $e');
-      setState(() => _isBooking = false);
-
+      
       if (!mounted) return;
+      
+      setState(() => _isBooking = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

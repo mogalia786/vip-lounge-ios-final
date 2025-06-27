@@ -300,7 +300,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     final bool fromNotification = widget.notification != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Appointment Details'),
+        title: const Text('Appointment Assign'),
         backgroundColor: AppColors.gold,
         foregroundColor: Colors.black,
       ),

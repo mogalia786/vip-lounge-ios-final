@@ -242,7 +242,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     
     // Listen for unread messages and count them by appointment
     FirebaseFirestore.instance
-        .collection('messages')
+        .collection('chat_messages')
         .where('recipientId', isEqualTo: user.uid)
         .where('isRead', isEqualTo: false)
         .snapshots()
@@ -313,7 +313,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
 
     // Listen for all messages where minister is recipient
     FirebaseFirestore.instance
-        .collection('messages')
+        .collection('chat_messages')
         .where('recipientId', isEqualTo: user.uid)
         .orderBy('timestamp', descending: true)
         .limit(50)
@@ -449,20 +449,53 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       }
       
       final appointmentData = appointmentDoc.data()!;
+      appointmentData['id'] = appointmentId; // Ensure ID is included
       
       // Mark any unread notifications for this appointment as read
       final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
       if (user != null) {
+        // Mark notifications as read
         FirebaseFirestore.instance
             .collection('notifications')
             .where('appointmentId', isEqualTo: appointmentId)
-            .where('ministerId', isEqualTo: user.uid)
+            .where('assignedToId', isEqualTo: user.uid)
             .where('isRead', isEqualTo: false)
             .get()
             .then((snapshot) {
           for (var doc in snapshot.docs) {
             doc.reference.update({'isRead': true});
           }
+        });
+        
+        // Mark chat messages as read
+        FirebaseFirestore.instance
+            .collection('chat_messages')
+            .where('appointmentId', isEqualTo: appointmentId)
+            .where('recipientId', isEqualTo: user.uid)
+            .where('isRead', isEqualTo: false)
+            .get()
+            .then((snapshot) {
+          for (var doc in snapshot.docs) {
+            doc.reference.update({'isRead': true});
+          }
+          
+          // Update local state if there were unread messages
+          if (snapshot.docs.isNotEmpty && mounted) {
+            setState(() {
+              if (_unreadMessageCounts.containsKey(appointmentId)) {
+                _unreadMessageCounts.remove(appointmentId);
+              }
+              
+              // Remove from notification list
+              _unreadNotificationsList.removeWhere((notif) => 
+                notif['appointmentId'] == appointmentId && notif['type'] == 'message');
+              
+              // Update notification type count
+              _notificationTypeCount['message'] = (_notificationTypeCount['message'] ?? 0) - snapshot.docs.length;
+              if (_notificationTypeCount['message']! < 0) _notificationTypeCount['message'] = 0;
+            });
+          }
+          
           // Open chat dialog for appointment
           _openChatDialog(appointmentData);
         });
@@ -876,7 +909,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
       final String senderName = userData['name'] ?? '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
       
       // Create message in Firestore directly
-      await FirebaseFirestore.instance.collection('messages').add({
+      await FirebaseFirestore.instance.collection('chat_messages').add({
         'senderId': currentUser.uid,
         'senderName': senderName.isEmpty ? 'Minister' : senderName,
         'senderRole': 'minister',
@@ -1926,13 +1959,43 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   }
 
   void _handleChatAction(Map<String, dynamic> appointment) {
-    // Clear unread messages for this appointment
-    setState(() {
-      _unreadNotificationsList.removeWhere((notif) => 
-        notif['appointmentId'] == appointment['id'] && notif['type'] == 'message');
-    });
+    final appointmentId = appointment['id'] as String? ?? '';
+    final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
     
-    // First check for pre-assigned staff
+    if (user != null && appointmentId.isNotEmpty) {
+      // Mark messages as read in Firestore
+      FirebaseFirestore.instance
+          .collection('chat_messages')
+          .where('appointmentId', isEqualTo: appointmentId)
+          .where('recipientId', isEqualTo: user.uid)
+          .where('isRead', isEqualTo: false)
+          .get()
+          .then((snapshot) {
+            // Update isRead status for all messages
+            for (var doc in snapshot.docs) {
+              doc.reference.update({'isRead': true});
+            }
+            
+            // Clear unread count for this appointment
+            if (mounted && _unreadMessageCounts.containsKey(appointmentId)) {
+              setState(() {
+                _unreadMessageCounts.remove(appointmentId);
+                
+                // Also remove from notifications list
+                _unreadNotificationsList.removeWhere((notif) => 
+                  notif['appointmentId'] == appointmentId && notif['type'] == 'message');
+                
+                // Update notification type count
+                _notificationTypeCount['message'] = snapshot.docs.isNotEmpty 
+                  ? (_notificationTypeCount['message'] ?? 0) - snapshot.docs.length 
+                  : _notificationTypeCount['message'] ?? 0;
+                if (_notificationTypeCount['message']! < 0) _notificationTypeCount['message'] = 0;
+              });
+            }
+          });
+    }
+    
+    // Open the chat dialog
     _openChatDialog(appointment);
   }
 

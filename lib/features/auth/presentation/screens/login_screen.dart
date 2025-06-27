@@ -119,20 +119,20 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.black,
       body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/shop_front.jpg'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.7), // Darken the background for readability
+              BlendMode.darken,
+            ),
+          ),
+        ),
         child: SafeArea(
           child: Stack(
             children: [
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.25,
-                  child: Image.asset(
-                    'assets/New_cc_logo.jpg',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
               Center(
                 child: SingleChildScrollView(
                   child: Padding(
@@ -166,10 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Enter your email',
                                   hintStyle: TextStyle(color: AppColors.primary),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.2),
+                                    borderSide: BorderSide(color: AppColors.white, width: 2.2),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.5),
+                                    borderSide: BorderSide(color: AppColors.white, width: 2.5),
                                   ),
                                 ),
                                 style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -190,17 +190,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Enter your password',
                                   hintStyle: TextStyle(color: AppColors.primary),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.2),
+                                    borderSide: BorderSide(color: AppColors.white, width: 2.2),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.richGold, width: 2.5),
+                                    borderSide: BorderSide(color: AppColors.white, width: 2.5),
                                   ),
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       _obscurePassword
                                           ? Icons.visibility_off
                                           : Icons.visibility,
-                                      color: AppColors.richGold,
+                                      color: AppColors.white,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -222,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: _isLoading ? null : _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.black,
-                                  side: BorderSide(color: AppColors.richGold, width: 2),
+                                  side: BorderSide(color: AppColors.white, width: 2),
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                   minimumSize: const Size(double.infinity, 50),
                                   shape: RoundedRectangleBorder(
@@ -235,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.richGold,
+                                          color: AppColors.white,
                                         ),
                                       )
                                     : Text(
@@ -258,6 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     children: [
                                       TextSpan(
                                         text: 'Sign Up',
+                                        
                                         style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                                       ),
                                     ],
@@ -272,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Text(
-                              '$_versionInfo\nPowered by MOGALIA ENTERPRISES',
+                              '$_versionInfo\nPowered by MOGALIA MOBILE ENGINES',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,

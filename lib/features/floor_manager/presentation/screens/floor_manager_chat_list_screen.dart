@@ -215,16 +215,34 @@ class _FloorManagerChatListScreenState extends State<FloorManagerChatListScreen>
   
   Future<void> _markMessagesAsRead(String appointmentId) async {
     try {
-      final unreadMessages = await _firestore
+      print('DEBUG: Marking messages as read for appointmentId: $appointmentId');
+      
+      // Get messages sent directly to this user
+      final directMessages = await _firestore
           .collection('chat_messages')
           .where('appointmentId', isEqualTo: appointmentId)
           .where('recipientId', isEqualTo: _userId)
           .where('isRead', isEqualTo: false)
           .get();
       
-      for (var doc in unreadMessages.docs) {
+      // Get messages sent to 'floor_manager' role (generic floor manager messages)
+      final roleMessages = await _firestore
+          .collection('chat_messages')
+          .where('appointmentId', isEqualTo: appointmentId)
+          .where('recipientId', isEqualTo: 'floor_manager')
+          .where('isRead', isEqualTo: false)
+          .get();
+      
+      print('DEBUG: Found ${directMessages.docs.length} direct unread messages and ${roleMessages.docs.length} role-based unread messages');
+      
+      // Mark all as read
+      for (var doc in [...directMessages.docs, ...roleMessages.docs]) {
         await doc.reference.update({'isRead': true});
+        print('DEBUG: Marked message ${doc.id} as read');
       }
+      
+      // Refresh unread counts in MessageIconWidget by notifying listeners
+      // This will cause the widget to requery Firestore for the updated counts
     } catch (e) {
       print('Error marking messages as read: $e');
     }

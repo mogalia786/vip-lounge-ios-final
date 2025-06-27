@@ -49,23 +49,35 @@ class TimeSlotSelectionScreen extends StatefulWidget {
 }
 
 class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
+  // Time slots and booking state
   List<DateTime> _availableTimeSlots = [];
   List<DateTime> _bookedTimeSlots = [];
-  bool _isLoading = true;
+  DateTime? _selectedTimeSlot;
+  bool _isLoadingConsultants = false;
+  List<Map<String, dynamic>> _consultantsAndStaff = [];
+  Map<String, dynamic>? _selectedConsultant;
   bool _isBooking = false;
+  bool _isLoading = true;
+  
+  // Services
   final NotificationService _notificationService = NotificationService();
   final WorkflowService _workflowService = WorkflowService();
+  
+  // Consultant selection
+  String? _selectedConsultantId;
+  String? _selectedConsultantName;
+  String? _selectedConsultantEmail;
 
   // --- CLOSED DAYS & BUSINESS HOURS STATE ---
-  TimeOfDay? _openingTime;
-  TimeOfDay? _closingTime;
+  DateTime? _openingTime;
+  DateTime? _closingTime;
   Map<String, dynamic>? _businessHoursMap;
   Map<String, dynamic>? _defaultBusinessHours;
 
   // Helper to get abbreviated weekday key (e.g., 'mon', 'tue', ...)
   String _weekdayKey(DateTime date) {
     final key = DateFormat('E').format(date).toLowerCase();
-    print('[DEBUG] _weekdayKey for ${date.toIso8601String()} = $key');
+    print('[DEBUG] _weekdayKey for ${date.toIso8601String()} = $key (weekday: ${date.weekday})');
     return key;
   }
 
@@ -80,36 +92,65 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
 
   // Returns the opening/closing TimeOfDay for the selected date, or null if closed
   Map<String, TimeOfDay?> _getBusinessHoursForDate(DateTime date, {bool withBuffer = false}) {
+    print('[DEBUG] Retrieving business hours for date: ${date.toString()}');
+    
+    // Get day key ('mon', 'tue', etc.)
     final String dayKey = _weekdayKey(date);
+    print('[DEBUG] Day key for ${date.toString()}: $dayKey');
+    
     int openBuffer = withBuffer ? -1 : 0;
     int closeBuffer = withBuffer ? 1 : 0;
-    if (_businessHoursMap != null && _businessHoursMap![dayKey] is Map) {
+    
+    // Check if we have hours for this day in the business hours map
+    if (_businessHoursMap != null && _businessHoursMap![dayKey] != null) {
+      print('[DEBUG] Found business hours entry for $dayKey');
       final dayHours = _businessHoursMap![dayKey];
-      if (dayHours['closed'] == true) return {'open': null, 'close': null};
+      print('[DEBUG] Day hours content: $dayHours');
+      
+      // Check if the day is marked as closed
+      if (dayHours['closed'] == true) {
+        print('[DEBUG] Day is marked as closed');
+        return {'open': null, 'close': null};
+      }
+      
+      // Get open and close times
       if (dayHours['open'] != null && dayHours['close'] != null) {
-        final openParts = (dayHours['open'] as String).split(":");
-        final closeParts = (dayHours['close'] as String).split(":");
-        TimeOfDay open = TimeOfDay(hour: int.parse(openParts[0]), minute: int.parse(openParts[1]));
-        TimeOfDay close = TimeOfDay(hour: int.parse(closeParts[0]), minute: int.parse(closeParts[1]));
-        if (withBuffer) {
-          open = TimeOfDay(hour: (open.hour + openBuffer).clamp(0, 23), minute: open.minute);
-          close = TimeOfDay(hour: (close.hour + closeBuffer).clamp(0, 23), minute: close.minute);
+        final String openStr = dayHours['open'].toString();
+        final String closeStr = dayHours['close'].toString();
+        print('[DEBUG] Raw times - open: $openStr, close: $closeStr');
+        
+        // Parse time strings
+        final openParts = openStr.split(":");
+        final closeParts = closeStr.split(":");
+        print('[DEBUG] Parsed parts - open: $openParts, close: $closeParts');
+        
+        if (openParts.length >= 2 && closeParts.length >= 2) {
+          try {
+            TimeOfDay open = TimeOfDay(hour: int.parse(openParts[0]), minute: int.parse(openParts[1]));
+            TimeOfDay close = TimeOfDay(hour: int.parse(closeParts[0]), minute: int.parse(closeParts[1]));
+            
+            if (withBuffer) {
+              open = TimeOfDay(hour: (open.hour + openBuffer).clamp(0, 23), minute: open.minute);
+              close = TimeOfDay(hour: (close.hour + closeBuffer).clamp(0, 23), minute: close.minute);
+            }
+            
+            print('[DEBUG] Returning times - open: ${open.hour}:${open.minute}, close: ${close.hour}:${close.minute}');
+            return {'open': open, 'close': close};
+          } catch (e) {
+            print('[ERROR] Failed to parse time strings: $e');
+          }
+        } else {
+          print('[ERROR] Invalid time format - open: $openStr, close: $closeStr');
         }
-        return {'open': open, 'close': close};
       }
+    } else {
+      print('[DEBUG] No business hours entry found for day: $dayKey');
     }
-    // Fallback to settings if available, otherwise null
-    if (_defaultBusinessHours != null) {
-      final openParts = (_defaultBusinessHours!['open'] as String).split(":");
-      final closeParts = (_defaultBusinessHours!['close'] as String).split(":");
-      TimeOfDay open = TimeOfDay(hour: int.parse(openParts[0]), minute: int.parse(openParts[1]));
-      TimeOfDay close = TimeOfDay(hour: int.parse(closeParts[0]), minute: int.parse(closeParts[1]));
-      if (withBuffer) {
-        open = TimeOfDay(hour: (open.hour + openBuffer).clamp(0, 23), minute: open.minute);
-        close = TimeOfDay(hour: (close.hour + closeBuffer).clamp(0, 23), minute: close.minute);
-      }
-      return {'open': open, 'close': close};
-    }
+    
+    // No fallback to settings or hardcoded values - only use Firestore data
+    // This follows user's GOLDEN RULE: no hardcoded defaults or fallbacks
+    print('[WARNING] No business hours found for this day: $dayKey');
+    // Return null values to indicate no business hours available
     return {'open': null, 'close': null};
   }
 
@@ -117,22 +158,75 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
   List<DateTime> _generateTimeSlots() {
     final slots = <DateTime>[];
     final date = widget.selectedDate;
+    
+    print('[DEBUG] Generating time slots for date: ${date.toString()}, day key: ${_weekdayKey(date)}');
+    print('[DEBUG] Business hours map contains keys: ${_businessHoursMap?.keys.toList() ?? 'null'}');
+    
+    if (_businessHoursMap != null) {
+      // Emergency: debug dump all business hours data to see what we're working with
+      print('[DEBUG] Full business hours map:');
+      _businessHoursMap!.forEach((key, value) {
+        print('[DEBUG]   $key: $value');
+      });
+      
+      // Let's check for day keys different from what we expect
+      // Try matching with different formats
+      final dayFormats = [
+        _weekdayKey(date),                 // Standard format (mon, tue, etc)
+        DateFormat('EEE').format(date).toLowerCase(), // 3-letter abbr
+        date.weekday.toString(),          // Numeric day of week
+        'day${date.weekday}',             // day1, day2, etc.
+        DateFormat('EEEE').format(date).toLowerCase() // Full day name
+      ];
+      
+      print('[DEBUG] Trying possible day formats: $dayFormats');
+      
+      // Check if any of these formats exist in the business hours
+      for (final format in dayFormats) {
+        if (_businessHoursMap!.containsKey(format)) {
+          print('[DEBUG] FOUND MATCH! Day format "$format" exists in business hours');
+          
+          // Print the full day data
+          print('[DEBUG] Day data for $format: ${_businessHoursMap![format]}');
+        }
+      }
+    } else {
+      print('[ERROR] No business hours data loaded from Firestore');
+    }
+    
+    // Existing logic
     final hours = _getBusinessHoursForDate(date);
-    final opening = hours['open'];
-    final closing = hours['close'];
-    if (opening == null || closing == null) return slots; // Closed
-    DateTime current = DateTime(date.year, date.month, date.day, opening.hour, opening.minute);
-    final end = DateTime(date.year, date.month, date.day, closing.hour, closing.minute);
+    final open = hours['open'];
+    final close = hours['close'];
+    print('[DEBUG] Hours for date: open=$open, close=$close');
+    
+    if (open == null || close == null) {
+      print('[DEBUG] No business hours found for this date, returning empty slots');
+      return slots; // Closed
+    }
+    
+    DateTime current = DateTime(date.year, date.month, date.day, open.hour, open.minute);
+    final end = DateTime(date.year, date.month, date.day, close.hour, close.minute);
+    
+    print('[DEBUG] Start time: $current, End time: $end');
+    
     while (current.isBefore(end)) {
       slots.add(current);
       current = current.add(const Duration(minutes: 30)); // Always 30 min interval
     }
+    
+    print('[DEBUG] Generated ${slots.length} time slots');
     return slots;
   }
 
   @override
   void initState() {
     super.initState();
+    // Initialize with default values in case Firestore fails to load
+    _defaultBusinessHours = {
+      'open': '09:00',
+      'close': '17:00',
+    };
     _fetchClosedDaysAndHours().then((_) => _loadTimeSlots());
   }
 
@@ -259,9 +353,151 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     });
   }
 
-  Future<void> _handleTimeSlotSelection(DateTime selectedTime) async {
-    setState(() => _isBooking = true);
+  // Fetch consultants and staff for the selected time slot
+  Future<void> _fetchConsultantsAndStaff() async {
+    try {
+      setState(() => _isLoadingConsultants = true);
+      
+      // Query all users with role 'consultant' or 'staff'
+      final consultantsQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', whereIn: ['consultant', 'staff'])
+          .get();
+          
+      // Convert to list of maps with availability information (initially all true)
+      List<Map<String, dynamic>> results = [];
+      for (var doc in consultantsQuery.docs) {
+        final data = doc.data();
+        results.add({
+          'id': doc.id,
+          'name': '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
+          'role': data['role'] ?? '',
+          'isAvailable': true, // Default to available, will check later
+          'email': data['email'] ?? '', // Add email
+        });
+      }
+      
+      // Sort by name
+      results.sort((a, b) => a['name'].compareTo(b['name']));
+      
+      if (mounted) {
+        setState(() {
+          _consultantsAndStaff = results;
+          _isLoadingConsultants = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching consultants: $e');
+      if (mounted) {
+        setState(() => _isLoadingConsultants = false);
+      }
+    }
+  }
+  
+  // Check if staff is available at specified time - using the floor manager availability check method
+  Future<bool> _isStaffAvailable(String staffId, String staffType, Timestamp appointmentTime, int duration, String? currentAppointmentId) async {
+    // Check if staff is on sick leave
+    final staffDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(staffId)
+        .get();
+    if (staffDoc.exists) {
+      final staffData = staffDoc.data();
+      if (staffData != null && (staffData['isSick'] == true || staffData['onSickLeave'] == true)) {
+        print('[DEBUG][AVAILABILITY] Staff $staffId is on sick leave');
+        return false;
+      }
+    }
 
+    final appointmentStart = appointmentTime.toDate();
+    final appointmentEnd = appointmentStart.add(Duration(minutes: duration));
+
+    // Check for overlapping appointments
+    final overlappingAppointments = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('${staffType}Id', isEqualTo: staffId)
+        .get();
+
+    for (var doc in overlappingAppointments.docs) {
+      final data = doc.data();
+
+      // Skip if looking at the same appointment
+      if (currentAppointmentId != null && doc.id == currentAppointmentId) continue;
+
+      if (data['appointmentTime'] is Timestamp) {
+        final otherAppointmentTime = data['appointmentTime'] as Timestamp;
+        final otherStart = otherAppointmentTime.toDate();
+        final otherDuration = data['duration'] is int ? data['duration'] as int : 60;
+        final otherEnd = otherStart.add(Duration(minutes: otherDuration));
+
+        // Check for overlap
+        if (appointmentStart.isBefore(otherEnd) && appointmentEnd.isAfter(otherStart)) {
+          print('[DEBUG][AVAILABILITY] Staff $staffId has conflict with appointment ${doc.id} ($otherStart - $otherEnd)');
+          return false;
+        }
+      }
+    }
+
+    print('[DEBUG][AVAILABILITY] Staff $staffId is available for $appointmentStart - $appointmentEnd');
+    return true;
+  }
+  
+  
+  // Update availability for all consultants for the selected time
+  Future<void> _updateConsultantAvailability(DateTime selectedTime) async {
+    if (_consultantsAndStaff.isEmpty) await _fetchConsultantsAndStaff();
+    
+    List<Map<String, dynamic>> updatedList = [];
+    
+    for (var consultant in _consultantsAndStaff) {
+      // Convert selectedTime to Timestamp for _isStaffAvailable
+      final timestamp = Timestamp.fromDate(selectedTime);
+      // Use _isStaffAvailable to check availability
+      final isAvailable = await _isStaffAvailable(
+        consultant['id'], 
+        'consultant', // staffType (consultant or staff)
+        timestamp,
+        widget.serviceDuration, // appointment duration in minutes
+        null // No current appointment ID for new bookings
+      );
+      
+      updatedList.add({
+        ...consultant,
+        'isAvailable': isAvailable,
+      });
+    }
+    
+    if (mounted) {
+      setState(() {
+        _consultantsAndStaff = updatedList;
+        _isLoadingConsultants = false;
+      });
+    }
+  }
+
+  // When a time slot is selected - simply show consultant dropdown, no booking yet
+  Future<void> _handleTimeSlotSelection(DateTime selectedTime) async {
+    // Store the selected time and show loading
+    setState(() {
+      _selectedTimeSlot = selectedTime;
+      _isLoadingConsultants = true;
+    });
+    
+    // Load consultants for dropdown - no navigation or booking happens yet
+    await _updateConsultantAvailability(selectedTime);
+  }
+  
+  // Handle the booking process
+  Future<void> _handleBookAppointment() async {
+    if (_selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a time slot first')),
+      );
+      return;
+    }
+    
+    setState(() => _isBooking = true);
+    
     try {
       final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
       final ministerData = authProvider.ministerData;
@@ -273,46 +509,106 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       print('Booking with minister data: $ministerData'); // Debug print
 
       // Debug print for UTC compatibility
-      print('[DEBUG] selectedTime (local): ' + selectedTime.toString());
-      print('[DEBUG] selectedTime.toUtc(): ' + selectedTime.toUtc().toString());
-      print('[DEBUG] selectedTime.toIso8601String(): ' + selectedTime.toIso8601String());
+      print('[DEBUG] _selectedTimeSlot (local): ' + _selectedTimeSlot!.toString());
+      print('[DEBUG] _selectedTimeSlot.toUtc(): ' + _selectedTimeSlot!.toUtc().toString());
+      print('[DEBUG] _selectedTimeSlot.toIso8601String(): ' + _selectedTimeSlot!.toIso8601String());
 
       // True UTC instant regardless of device timezone
-      final guaranteedUtc = selectedTime.subtract(selectedTime.timeZoneOffset);
+      final guaranteedUtc = _selectedTimeSlot!.subtract(_selectedTimeSlot!.timeZoneOffset);
       print('[DEBUG] guaranteedUtc: ' + guaranteedUtc.toIso8601String());
 
-      // Create appointment data
+      // Create appointment data with base fields
       final appointmentData = {
         'ministerId': ministerData['uid'],
         'ministerFirstName': ministerData['firstName'] ?? '',
         'ministerLastName': ministerData['lastName'] ?? '',
+        'ministerPhoneNumber': ministerData['phoneNumber'] ?? '',
         'ministerEmail': ministerData['email'] ?? '',
-        'ministerPhone': ministerData['phoneNumber'] ?? 'Not provided',
-        'serviceId': widget.selectedService.id,
-        'serviceName': widget.selectedService.name,
-        'serviceCategory': widget.serviceCategory,
-        'subServiceName': widget.subServiceName,
         'venueId': widget.venueId,
         'venueName': widget.venueName,
-        'appointmentTime': Timestamp.fromDate(selectedTime),
-        'appointmentTimeUTC': Timestamp.fromDate(guaranteedUtc),
-        'appointmentTimeISO': selectedTime.toIso8601String(),
-        'typeOfVip': 'VIP Client',
-        'duration': widget.serviceDuration,
+        'appointmentTime': Timestamp.fromDate(_selectedTimeSlot!),
+        'appointmentTimeUTC': Timestamp.fromDate(_selectedTimeSlot!.toUtc()), // Store clean UTC
+        'serviceId': widget.selectedService.id,
+        'serviceName': widget.selectedService.name,
+        'serviceDuration': widget.serviceDuration,
+        'serviceCategory': widget.serviceCategory,
+        'subServiceName': widget.subServiceName,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
+        'typeOfVip': 'VIP Client', // Add fixed value for type of VIP
       };
+      
+      // Only add consultant fields if a specific consultant was selected (not 'No preference')
+      // This follows the user's requirement to not set these fields when 'No preference' is selected
+      if (_selectedConsultantId != null) {
+        appointmentData['consultantId'] = _selectedConsultantId;
+        appointmentData['consultantName'] = _selectedConsultantName;
+        appointmentData['consultantEmail'] = _selectedConsultantEmail;
+        print('[DEBUG] Consultant selected: $_selectedConsultantName (ID: $_selectedConsultantId)');
+      } else {
+        print('[DEBUG] No consultant preference selected - consultant fields will not be set');
+      }
 
       print('Creating appointment with data: $appointmentData');
 
-      // Create the appointment
-      final appointmentRef = await FirebaseFirestore.instance
+      // Save to Firestore
+      final docRef = await FirebaseFirestore.instance
           .collection('appointments')
           .add(appointmentData);
-
+      
+      // Get the app ID for better reference in notifications
+      final appointmentId = docRef.id;
+      print('[DEBUG] Created appointment with ID: $appointmentId');
+      
+      // Send FCM to Floor Managers (always)
+      final notificationService = NotificationService();
+      await notificationService.sendFCMToFloorManager(
+        title: 'New Appointment',
+        body: 'A new appointment has been booked by ${ministerData['firstName']} ${ministerData['lastName']}',
+        data: {
+          'type': 'booking',
+          'bookingId': appointmentId,
+        },
+      );
+      
+      // Only send FCM to consultant if one is selected
+      if (_selectedConsultantId != null && _selectedConsultantId!.isNotEmpty) {
+        try {
+          // Get consultant FCM token
+          final consultantDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_selectedConsultantId)
+              .get();
+              
+          if (consultantDoc.exists && consultantDoc.data() != null) {
+            final consultantData = consultantDoc.data()!;
+            final fcmToken = consultantData['fcmToken'];
+            
+            if (fcmToken != null && fcmToken.toString().isNotEmpty) {
+              // Send notification to the consultant
+              await notificationService.createNotification(
+                title: 'New Appointment Assigned',
+                body: 'You have been assigned to a new appointment with ${ministerData['firstName']} ${ministerData['lastName']}',
+                data: {
+                  'type': 'booking',
+                  'bookingId': appointmentId,
+                },
+                role: 'consultant',
+                assignedToId: _selectedConsultantId,
+                notificationType: 'booking_assigned',
+              );
+              print('[DEBUG] Sent FCM to consultant: $_selectedConsultantName');
+            }
+          }
+        } catch (e) {
+          print('[ERROR] Failed to send notification to consultant: $e');
+          // Continue with flow even if consultant notification fails
+        }
+      }
+      
       // Record workflow event for booking creation
       await _workflowService.recordEvent(
-        appointmentId: appointmentRef.id,
+        appointmentId: appointmentId,
         eventType: 'booking_created',
         initiatorId: ministerData['uid'],
         initiatorRole: 'minister',
@@ -325,7 +621,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           'subServiceName': widget.subServiceName,
           'venueId': widget.venueId,
           'venueName': widget.venueName,
-          'appointmentTime': selectedTime.toIso8601String(),
+          'appointmentTime': _selectedTimeSlot!.toIso8601String(),
           'duration': widget.serviceDuration,
         },
       );
@@ -333,14 +629,14 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       // Create notification for floor managers
       final notificationData = {
         ...appointmentData,
-        'appointmentId': appointmentRef.id,
+        'appointmentId': appointmentId,
         'notificationType': 'new_appointment',
       };
 
       print('Creating notification with data: $notificationData');
 
       // Format appointment time for display
-      final formattedTime = DateFormat('EEEE, MMMM d, yyyy, h:mm a').format(selectedTime);
+      final formattedTime = DateFormat('EEEE, MMMM d, yyyy, h:mm a').format(_selectedTimeSlot!);
       
       try {
         // Send initial welcome notification to minister
@@ -351,7 +647,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           body: 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.',
           notificationType: 'booking_confirmation',
           data: {
-            'appointmentId': appointmentRef.id,
+            'appointmentId': appointmentId,
             'notificationType': 'booking_confirmation',
             'status': 'pending',
           },
@@ -450,7 +746,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           recipientId: ministerData['uid'],
           title: 'Booking Confirmation',
           body: categorySpecificMessage,
-          appointmentId: appointmentRef.id,
+          appointmentId: appointmentId,
           role: 'minister',
           additionalData: {
             'notificationType': 'booking_confirmation',
@@ -489,11 +785,39 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             recipientId: floorManagerUid,
             title: 'New Appointment Request',
             body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
-            appointmentId: appointmentRef.id,
+            appointmentId: appointmentId,
             role: 'floor_manager',
             additionalData: notificationData,
             showRating: false,
             notificationType: 'new_appointment',
+          );
+        }
+        
+        // If a consultant was selected, send them a notification
+        if (_selectedConsultantId != null && _selectedConsultantName != null) {
+          print('Sending notification to selected consultant: $_selectedConsultantName (ID: $_selectedConsultantId)');
+          
+          // Create notification for the consultant
+          await _notificationService.createNotification(
+            role: 'consultant',
+            assignedToId: _selectedConsultantId!,
+            title: 'You Have Been Assigned an Appointment',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant',
+            notificationType: 'assigned_appointment',
+            data: notificationData,
+          );
+          
+          // Also send FCM notification to the consultant
+          final consultantFcm = new SendMyFCM();
+          await consultantFcm.sendNotification(
+            recipientId: _selectedConsultantId!,
+            title: 'You Have Been Assigned an Appointment',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant',
+            appointmentId: appointmentId,
+            role: 'consultant',
+            additionalData: notificationData,
+            showRating: false,
+            notificationType: 'assigned_appointment',
           );
         }
         print('Notifications sent successfully');
@@ -559,13 +883,16 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         elevation: 0,
         title: Text(
           'Select Appointment Time',
-          style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.richGold, fontWeight: FontWeight.bold),
         ),
-        iconTheme: IconThemeData(color: AppColors.gold),
+        iconTheme: IconThemeData(color: AppColors.richGold),
       ),
-      body: _isLoading 
-        ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold)))
-        : Column(
+      body: Stack(
+        children: [
+          // Main content
+          _isLoading 
+            ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold)))
+            : Column(
             children: [
               // Date and service info section at top
               Container(
@@ -591,9 +918,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.gold, width: 1),
+                            border: Border.all(color: AppColors.richGold, width: 1),
                           ),
-                          child: Icon(Icons.spa, color: AppColors.gold, size: 24),
+                          child: Icon(Icons.spa, color: AppColors.richGold, size: 24),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -612,7 +939,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '${widget.serviceDuration} minutes',
-                                style: TextStyle(color: AppColors.gold, fontSize: 14),
+                                style: TextStyle(color: AppColors.richGold, fontSize: 14),
                               ),
                             ],
                           ),
@@ -632,11 +959,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                              border: Border.all(color: AppColors.richGold.withOpacity(0.5)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_today, color: AppColors.gold, size: 20),
+                                Icon(Icons.calendar_today, color: AppColors.richGold, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -668,11 +995,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                              border: Border.all(color: AppColors.richGold.withOpacity(0.5)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.location_on, color: AppColors.gold, size: 20),
+                                Icon(Icons.location_on, color: AppColors.richGold, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -707,12 +1034,12 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Icon(Icons.access_time, color: AppColors.gold, size: 20),
+                    Icon(Icons.access_time, color: AppColors.richGold, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'Available Time Slots',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.richGold,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -730,18 +1057,18 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.event_busy, color: AppColors.gold, size: 64),
+                          Icon(Icons.event_busy, color: AppColors.richGold, size: 64),
                           const SizedBox(height: 16),
                           Text(
                             'Closed on this day',
-                            style: TextStyle(color: AppColors.gold, fontSize: 16),
+                            style: TextStyle(color: AppColors.richGold, fontSize: 16),
                           ),
                           const SizedBox(height: 24),
                           OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.gold),
-                              foregroundColor: AppColors.gold,
+                              side: BorderSide(color: AppColors.richGold),
+                              foregroundColor: AppColors.richGold,
                             ),
                             child: const Text('Select Another Date'),
                           ),
@@ -753,18 +1080,18 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.event_busy, color: AppColors.gold, size: 64),
+                            Icon(Icons.event_busy, color: AppColors.richGold, size: 64),
                             const SizedBox(height: 16),
                             Text(
                               'No time slots available for this date',
-                              style: TextStyle(color: AppColors.gold, fontSize: 16),
+                              style: TextStyle(color: AppColors.richGold, fontSize: 16),
                             ),
                             const SizedBox(height: 24),
                             OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: AppColors.gold),
-                                foregroundColor: AppColors.gold,
+                                side: BorderSide(color: AppColors.richGold),
+                                foregroundColor: AppColors.richGold,
                               ),
                               child: const Text('Select Another Date'),
                             ),
@@ -804,11 +1131,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                           decoration: BoxDecoration(
                                             color: Colors.black,
                                             borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: AppColors.gold.withOpacity(0.7)),
+                                            border: Border.all(color: AppColors.richGold.withOpacity(0.7)),
                                           ),
                                           child: Text(
                                             '$timeOfDay',
-                                            style: TextStyle(color: AppColors.gold, fontSize: 12),
+                                            style: TextStyle(color: AppColors.richGold, fontSize: 12),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -840,11 +1167,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                               border: Border.all(
                                                 color: isDisabled 
                                                   ? (isBooked ? Colors.redAccent.withOpacity(0.5) : Colors.grey) 
-                                                  : AppColors.gold,
+                                                  : AppColors.richGold,
                                               ),
                                               boxShadow: isDisabled ? [] : [
                                                 BoxShadow(
-                                                  color: AppColors.gold.withOpacity(0.2),
+                                                  color: AppColors.richGold.withOpacity(0.2),
                                                   blurRadius: 4,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -858,7 +1185,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                                   style: TextStyle(
                                                     color: isDisabled 
                                                       ? (isBooked ? Colors.redAccent.withOpacity(0.7) : Colors.grey) 
-                                                      : AppColors.gold,
+                                                      : AppColors.richGold,
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -888,46 +1215,295 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                       ),
               ),
               
+              // Note: Removing the consultant selection UI from here as it will be added to stack overlay
+              
               // Booking indicator
               if (_isBooking)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  color: Colors.black,
-                  child: Column(
-                    children: [
-                      const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.amber)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Confirming your appointment...',
-                        style: TextStyle(color: AppColors.gold, fontSize: 16),
-                      ),
-                    ],
-                  ),
+                  child: _isLoading
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading time slots...',
+                  style: TextStyle(color: AppColors.richGold),
+                ),
+              ],
+            ),
+          )
+        : Column(
+            children: [
+              const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold)),
+              const SizedBox(height: 16),
+              Text(
+                'Confirming your appointment...',
+                style: TextStyle(color: AppColors.richGold, fontSize: 16),
+              ),
+            ],
+          ),
                 ),
             ],
           ),
+          
+          // Consultant selection overlay when a time slot is selected
+          if (_selectedTimeSlot != null && !isClosed)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {}, // Prevent taps from passing through to background
+                child: Container(
+                  color: Colors.black.withOpacity(0.7),
+                  child: Center(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[900],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title and close button
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Select Consultant',
+                                style: TextStyle(color: AppColors.richGold, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close, color: AppColors.richGold),
+                                onPressed: () {
+                                  setState(() => _selectedTimeSlot = null);
+                                },
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 8),
+                          
+                          // Selected time display
+                          Text(
+                            'Selected Time: ${DateFormat('h:mm a').format(_selectedTimeSlot!)}',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          
+                          const Divider(color: Colors.grey, height: 24),
+                          
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              'Please select your preferred consultant. Unavailable consultants are shown in gray.',
+                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                            ),
+                          ),
+                          
+                          // Consultant dropdown
+                          _isLoadingConsultants
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.richGold, width: 1),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    dropdownColor: Colors.black,
+                                    value: _selectedConsultantId,
+                                    hint: Text('Select consultant', style: TextStyle(color: Colors.white70)),
+                                    icon: Icon(Icons.arrow_drop_down, color: AppColors.richGold),
+                                    items: [
+                                       DropdownMenuItem<String>(
+                                        value: null,
+                                        child: Text(
+                                          'No preference',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                      ...(_consultantsAndStaff).map((consultant) {
+                                        // Always show all consultants, but grey out and disable unavailable ones
+                                        final bool isAvailable = consultant['isAvailable'] ?? false;
+                                        return DropdownMenuItem<String>(
+                                          value: consultant['id'],
+                                          enabled: isAvailable, // Only allow selecting available consultants
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  consultant['name'],
+                                                  style: TextStyle(
+                                                    color: isAvailable ? Colors.white : Colors.grey[600],
+                                                    fontWeight: isAvailable ? FontWeight.normal : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ),
+                                              // Show availability indicator
+                                              if (!isAvailable)
+                                                Tooltip(
+                                                  message: 'Consultant not available at selected time',
+                                                  child: Icon(
+                                                    Icons.block,
+                                                    color: Colors.red[300],
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ],
+                                    onChanged: (String? consultantId) {
+                                      setState(() {
+                                        _selectedConsultantId = consultantId;
+                                        if (consultantId == null) {
+                                          _selectedConsultantName = null;
+                                          _selectedConsultantEmail = null;
+                                        } else {
+                                          // Find the consultant in the list
+                                          final consultant = (_consultantsAndStaff)
+                                                .firstWhere((c) => c['id'] == consultantId);
+                                          _selectedConsultantName = consultant['name'];
+                                          _selectedConsultantEmail = consultant['email'];
+                                          print('Selected consultant: ${consultant['name']}, Email: ${consultant['email']}');
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Book button
+                          ElevatedButton(
+                            onPressed: _isBooking ? null : _handleBookAppointment,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.richGold,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: const Size(double.infinity, 48),
+                            ),
+                            child: _isBooking
+                              ? SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'BOOK THIS APPOINTMENT',
+                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Future<void> _fetchClosedDaysAndHours() async {
-    final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
-    final data = doc.data();
-    if (data != null) {
-      // Business hours (per day)
-      if (data['businessHours'] != null) {
-        final bh = data['businessHours'] as Map<String, dynamic>;
-        setState(() {
-          _businessHoursMap = bh;
-        });
-        print('[DEBUG] Loaded businessHours keys: ' + bh.keys.join(', '));
+    // Call static method directly
+    await ClosedDayHelper.ensureLoaded();
+
+    try {
+      // Fetch business hours from global settings
+      print('[DEBUG] Fetching global business hours');
+      final doc = await FirebaseFirestore.instance
+          .collection('business')
+          .doc('settings')
+          .get();
+          
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data();
+        if (data != null) {
+          // Business hours (per day)
+          if (data['businessHours'] != null) {
+            setState(() {
+              _businessHoursMap = data['businessHours'] as Map<String, dynamic>;
+              print('[DEBUG] Loaded business hours: ${_businessHoursMap?.keys.toList() ?? 'none'}');
+            });
+          } else {
+            print('[WARNING] No global business settings found');
+            setState(() {
+              _businessHoursMap = null;
+            });
+          }
+        }
+      } else {
+        print('[WARNING] No global business settings found');
       }
-      // Default opening/closing from settings (for buffer fallback)
-      if (data['defaultBusinessHours'] != null) {
+      
+      // Log any existing business hours we might have loaded
+      if (_businessHoursMap != null) {
+        print('[DEBUG] Current business hours map:');
+        for (var key in _businessHoursMap!.keys) {
+          print('[DEBUG]   $key: ${_businessHoursMap![key]}');
+        }
+      } else {
+        print('[DEBUG] No business hours map loaded yet');
+      }
+      
+      // NO LONGER USING DEFAULT HOURS AS FALLBACK - per user requirement
+      // Only get settings for debug purposes
+      final settingsDoc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc('businessHours')
+          .get();
+      
+      if (settingsDoc.exists && settingsDoc.data() != null) {
+        final data = settingsDoc.data();
+        print('[DEBUG] Settings data available (for debug only): $data');
+      } else {
+        print('[DEBUG] No settings doc found');
+      }
+    } catch (e) {
+      print('[ERROR] Error fetching business hours: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading business hours: $e'))
+        );
+      }
+    } finally {
+      // Make sure we reset loading status even if there's an error
+      if (mounted) {
         setState(() {
-          _defaultBusinessHours = data['defaultBusinessHours'] as Map<String, dynamic>;
+          _isLoading = false;
         });
-        print('[DEBUG] Loaded defaultBusinessHours: ' + _defaultBusinessHours.toString());
       }
     }
   }

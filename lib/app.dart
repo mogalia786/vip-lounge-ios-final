@@ -61,11 +61,25 @@ class _AppState extends State<App> {
 
         // Show splash/loading until auth state is determined
         if (snapshot.connectionState != ConnectionState.done || (user == null && FirebaseAuth.instance.currentUser != null)) {
-          return const MaterialApp(
+          return MaterialApp(
             home: Scaffold(
               backgroundColor: Colors.black,
               body: Center(
-                child: CircularProgressIndicator(color: Colors.amber),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Large logo image
+                    Image.asset(
+                      'assets/New_cc_logo.jpg',
+                      width: MediaQuery.of(context).size.width * 0.85,
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 32),
+                    // Progress indicator below image
+                    const CircularProgressIndicator(color: Colors.amber),
+                  ],
+                ),
               ),
             ),
           );

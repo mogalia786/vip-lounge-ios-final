@@ -1,12 +1,14 @@
 flutter_native_splash:
   color: "#000000"
-  image: assets/shop_front.jpg
+  image: assets/New_cc_logo.jpg
   android: true
   ios: true
   web: false
   fullscreen: true
   android_12:
-    image: assets/shop_front.jpg
+    image: assets/New_cc_logo.jpg
     icon_background_color: "#000000"
-  android_gravity: fill
-  ios_content_mode: scaleAspectFill
+  android_gravity: center
+  ios_content_mode: center
+  android_screen_orientation: portrait
+ 

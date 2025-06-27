@@ -788,7 +788,6 @@ drawable btn_radio_off_mtrl
 drawable btn_radio_off_to_on_mtrl_animation
 drawable btn_radio_on_mtrl
 drawable btn_radio_on_to_off_mtrl_animation
-drawable cc_logo
 drawable common_full_open_on_phone
 drawable common_google_signin_btn_icon_dark
 drawable common_google_signin_btn_icon_dark_focused
@@ -820,6 +819,7 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_launcher_foreground
 drawable launch_background
+drawable launchermain
 drawable notification_action_background
 drawable notification_bg
 drawable notification_bg_low
@@ -1173,6 +1173,7 @@ layout select_dialog_singlechoice_material
 layout support_simple_spinner_dropdown_item
 layout toast_custom
 mipmap ic_launcher
+mipmap launchermain
 raw firebase_common_keep
 string abc_action_bar_home_description
 string abc_action_bar_up_description

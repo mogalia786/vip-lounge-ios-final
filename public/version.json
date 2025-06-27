@@ -1,8 +1,8 @@
 {
-  "version": "1.3.5",
+  "version": "1.3.6",
   "apk_url": "https://vip-lounge-f3730.web.app/app-release.apk",
   "release_notes": [
-    "This is version 1.3.4, for testing the updated AppUpdateHelper with correct URL.",
+    "This is version 1.3.6, with dynamic category-specific notifications for minister bookings.",
     "Includes all previous UI enhancements and AppUpdateHelper modifications."
   ]
 }
