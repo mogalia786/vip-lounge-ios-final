@@ -62,6 +62,14 @@ class VipNotificationService {
     String? assignedToId,
     String? notificationType,
   }) async {
+    print('[NOTIF][DEBUG][START] createNotification called');
+    print('[NOTIF][DEBUG] Title: $title');
+    print('[NOTIF][DEBUG] Body: $body');
+    print('[NOTIF][DEBUG] Role: $role');
+    print('[NOTIF][DEBUG] AssignedToId: $assignedToId');
+    print('[NOTIF][DEBUG] NotificationType: $notificationType');
+    print('[NOTIF][DEBUG] Data: $data');
+    print('[NOTIF] createNotification called with title: $title, role: $role, assignedToId: $assignedToId');
     // Defensive: do not create notification if assignedToId is present but empty
     if (assignedToId != null && assignedToId.isEmpty) {
       print('[ERROR] createNotification: assignedToId is empty, aborting notification creation.');
@@ -137,6 +145,7 @@ if (!enrichedData.containsKey('showRating')) {
           'notificationDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
         },
       };
+      print('[NOTIF] Writing notification to Firestore: ' + notificationData.toString());
       // Also ensure phone is in data for UI
       if (role == 'minister') {
         notificationData['data']['ministerPhone'] = enrichedData['ministerPhone'] ?? '';
@@ -147,6 +156,7 @@ if (!enrichedData.containsKey('showRating')) {
       // Remove any null or empty fields for cleanliness
       notificationData.removeWhere((k, v) => v == null);
       await _firestore.collection('notifications').add(notificationData);
+      print('[NOTIF] Notification successfully written to Firestore');
       // Send FCM push notification if assignedToId is present
       if (assignedToId != null && assignedToId.isNotEmpty) {
         await sendFCMToUser(
@@ -171,6 +181,12 @@ if (!enrichedData.containsKey('showRating')) {
     required Map<String, dynamic> data,
     required String messageType,
   }) async {
+    print('[FCM][DEBUG][START] sendFCMToUser called');
+    print('[FCM][DEBUG] User ID: $userId');
+    print('[FCM][DEBUG] Title: $title');
+    print('[FCM][DEBUG] Body: $body');
+    print('[FCM][DEBUG] Message Type: $messageType');
+    print('[FCM][DEBUG] Data: $data');
     if (userId.isEmpty) {
       print('[FCM] ERROR: userId is empty, cannot send FCM.');
       return;
@@ -178,8 +194,18 @@ if (!enrichedData.containsKey('showRating')) {
     try {
       // Before using the path in Firestore, print it for debugging
       print('[DEBUG] Firestore document path: users/$userId');
+      print('[FCM][DEBUG] Fetching user document for ID: $userId');
       final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        print('[FCM][ERROR] User document does not exist for ID: $userId');
+        return;
+      }
       final token = userDoc.data()?['fcmToken'];
+      print('[FCM][DEBUG] FCM Token found: ${token != null && token.isNotEmpty ? 'YES' : 'NO'}');
+      if (token == null || token.isEmpty) {
+        print('[FCM][ERROR] No FCM token found for user ID: $userId');
+        print('[FCM][DEBUG] User document data: ${userDoc.data()}');
+      }
 
       print('[FCM] Preparing to send FCM to user: $userId');
       print('[FCM] Title: $title');
@@ -199,17 +225,23 @@ if (!enrichedData.containsKey('showRating')) {
           'messageType': messageType,
         };
 
+        print('[FCM][DEBUG] Sending FCM request to: $url');
+        print('[FCM][DEBUG] Payload: $payload');
+        
         final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(payload),
         );
 
-        print('[FCM] HTTP response: ${response.statusCode} ${response.body}');
+        print('[FCM][DEBUG] HTTP Response Status: ${response.statusCode}');
+        print('[FCM][DEBUG] HTTP Response Body: ${response.body}');
 
         if (response.statusCode == 200) {
-          print('[FCM] Push notification sent to user $userId: "$title"');
+          print('[FCM][SUCCESS] Push notification sent to user $userId: "$title"');
         } else {
+          print('[FCM][ERROR] Failed to send push notification. Status: ${response.statusCode}');
+          print('[FCM][DEBUG] Response: ${response.body}');
           print('[FCM] Failed to send push notification: ${response.body}');
         }
       } else {

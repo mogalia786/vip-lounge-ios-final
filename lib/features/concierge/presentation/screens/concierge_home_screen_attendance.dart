@@ -52,12 +52,12 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text('Chat with Sender', style: TextStyle(color: AppColors.gold)),
+        title: Text('Chat with Sender', style: TextStyle(color: AppColors.primary)),
         content: Text('Chat dialog with senderId: ' + senderId, style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close', style: TextStyle(color: AppColors.gold)),
+            child: Text('Close', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -433,16 +433,16 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
+                  border: Border.all(color: AppColors.primary),
                 ),
                 child: Column(
                   children: [
                     Text(
                     DateFormat('E').format(day),
                     style: TextStyle(
-                      color: isSelected ? Colors.black : AppColors.gold,
+                      color: isSelected ? Colors.black : AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -450,7 +450,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                   Text(
                     DateFormat('d').format(day),
                     style: TextStyle(
-                      color: isSelected ? Colors.black : AppColors.gold,
+                      color: isSelected ? Colors.black : AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
@@ -618,7 +618,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: const Text('Session Notes', style: TextStyle(color: AppColors.gold)),
+        title: const Text('Session Notes', style: TextStyle(color: AppColors.primary)),
         content: TextField(
           controller: notesController,
           decoration: const InputDecoration(hintText: 'Enter session notes'),
@@ -628,7 +628,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.gold)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.primary)),
           ),
           TextButton(
             onPressed: () async {
@@ -654,7 +654,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                 Navigator.pop(context);
               }
             },
-            child: const Text('Save', style: TextStyle(color: AppColors.gold)),
+            child: const Text('Save', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -681,18 +681,18 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
             Text(
               'Role: Concierge',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.verified, color: AppColors.gold, size: 22),
+            const Icon(Icons.verified, color: AppColors.primary, size: 22),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.gold),
+            icon: const Icon(Icons.logout, color: AppColors.primary),
             tooltip: 'Logout',
             onPressed: () async {
               await Provider.of<AppAuthProvider>(context, listen: false).signOut();
@@ -711,11 +711,11 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                 ],
                 body: body,
               )
-            : const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+            : const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedItemColor: AppColors.gold,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,

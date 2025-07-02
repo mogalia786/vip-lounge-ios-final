@@ -394,7 +394,7 @@ class AppointmentCard extends StatelessWidget {
                       ),
                       if (onChatWithMinister != null)
                         IconButton(
-                          icon: const Icon(Icons.message, color: AppColors.gold),
+                          icon: const Icon(Icons.message, color: AppColors.primary),
                           tooltip: 'Chat with Minister',
                           onPressed: () => onChatWithMinister!(context, appointmentData),
                         ),

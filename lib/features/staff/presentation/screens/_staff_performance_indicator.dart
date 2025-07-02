@@ -21,7 +21,7 @@ class StaffPerformanceIndicator extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
         }
         final docs = snapshot.data?.docs ?? [];
         final total = docs.length;
@@ -39,7 +39,7 @@ class StaffPerformanceIndicator extends StatelessWidget {
           color: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.gold, width: 2),
+            side: const BorderSide(color: AppColors.primary, width: 2),
           ),
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: Padding(
@@ -49,18 +49,18 @@ class StaffPerformanceIndicator extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.bar_chart, color: AppColors.gold, size: 32),
+                    Icon(Icons.bar_chart, color: AppColors.primary, size: 32),
                     const SizedBox(width: 12),
                     Text(
                       'Performance',
-                      style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Container(
                   width: double.infinity,
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
                   child: const Text(
                     'Revenue Activities',

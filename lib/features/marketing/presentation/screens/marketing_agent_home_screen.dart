@@ -114,7 +114,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppColors.black,
-          title: const Text('Start Break', style: TextStyle(color: AppColors.gold)),
+          title: const Text('Start Break', style: TextStyle(color: AppColors.primary)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -122,7 +122,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                 controller: _breakReasonController,
                 decoration: const InputDecoration(
                   labelText: 'Reason for break',
-                  labelStyle: TextStyle(color: AppColors.gold),
+                  labelStyle: TextStyle(color: AppColors.primary),
                 ),
                 style: const TextStyle(color: Colors.white),
               ),
@@ -134,7 +134,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
               child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
               onPressed: _isLoading ? null : _startBreak,
               child: _isLoading
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.black))
@@ -227,7 +227,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
         title: const Text(
           'Marketing Post',
           style: TextStyle(
-            color: AppColors.gold,
+            color: AppColors.primary,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -250,7 +250,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                 children: [
                   if (!_isOnBreak)
                     ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                       onPressed: _showBreakDialog,
                       icon: const Icon(Icons.coffee, color: Colors.black),
                       label: const Text('Start Break', style: TextStyle(color: Colors.black)),
@@ -280,7 +280,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Break History', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+                child: Text('Break History', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
               ),
             ),
           if (_isClockedIn)
@@ -325,7 +325,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         backgroundColor: AppColors.black,
-        selectedItemColor: AppColors.gold,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.white54,
         onTap: (index) {
           setState(() {
@@ -356,7 +356,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
   Widget _buildPostsList() {
     if (_posts.isEmpty) {
       return const Center(
-        child: Text('No posts yet. Tap "Create Post" below.', style: TextStyle(color: AppColors.gold)),
+        child: Text('No posts yet. Tap "Create Post" below.', style: TextStyle(color: AppColors.primary)),
       );
     }
     return ListView.builder(
@@ -374,8 +374,8 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(post.imageUrl!, width: 60, height: 60, fit: BoxFit.cover),
                   )
-                : const Icon(Icons.image, color: AppColors.gold, size: 40),
-            title: Text(post.title, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+                : const Icon(Icons.image, color: AppColors.primary, size: 40),
+            title: Text(post.title, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -419,38 +419,38 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
         String terms = '';
         return AlertDialog(
           backgroundColor: AppColors.black,
-          title: const Text('Create Post', style: TextStyle(color: AppColors.gold)),
+          title: const Text('Create Post', style: TextStyle(color: AppColors.primary)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Title', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Title', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => title = v,
                 ),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Description', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Description', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => description = v,
                 ),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Image URL', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Image URL', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => imageUrl = v,
                 ),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Type', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Type', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => type = v,
                 ),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Phone', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Phone', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => phone = v,
                 ),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Terms', labelStyle: TextStyle(color: AppColors.gold)),
+                  decoration: const InputDecoration(labelText: 'Terms', labelStyle: TextStyle(color: AppColors.primary)),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (v) => terms = v,
                 ),
@@ -463,7 +463,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
               child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
               onPressed: () {
                 if (title.isNotEmpty && description.isNotEmpty) {
                   setState(() {

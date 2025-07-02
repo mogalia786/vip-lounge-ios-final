@@ -778,7 +778,6 @@ drawable abc_textfield_search_material
 drawable abc_vector_test
 drawable amu_bubble_mask
 drawable amu_bubble_shadow
-drawable android12splash
 drawable background
 drawable btn_checkbox_checked_mtrl
 drawable btn_checkbox_checked_to_unchecked_mtrl_animation
@@ -1173,6 +1172,8 @@ layout select_dialog_singlechoice_material
 layout support_simple_spinner_dropdown_item
 layout toast_custom
 mipmap ic_launcher
+mipmap ic_launcher_round
+mipmap launcher_icon
 mipmap launchermain
 raw firebase_common_keep
 string abc_action_bar_home_description

@@ -8,7 +8,7 @@ class AppTheme {
     scaffoldBackgroundColor: AppColors.primary.withOpacity(0.03),
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.gold,
+      foregroundColor: AppColors.primary,
       elevation: 0,
     ),
     textTheme: TextTheme(
@@ -18,7 +18,7 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.gold,
+        backgroundColor: AppColors.primary,
         foregroundColor: AppColors.black,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(
@@ -28,8 +28,8 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.gold,
-        side: BorderSide(color: AppColors.gold),
+        foregroundColor: AppColors.primary,
+        side: BorderSide(color: AppColors.primary),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

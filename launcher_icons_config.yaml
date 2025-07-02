@@ -1,0 +1,18 @@
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/New_cc_logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/New_cc_logo.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  # Increased padding to 30% to ensure icon is fully visible
+  android_adaptive_icon_foreground_padding: "50%"
+  # Add more margin around the icon
+  padding: 15
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false

@@ -1,14 +1,16 @@
 flutter_native_splash:
+  image: assets/shop_front.jpg
   color: "#000000"
-  image: assets/New_cc_logo.jpg
   android: true
   ios: true
   web: false
   fullscreen: true
   android_12:
-    image: assets/New_cc_logo.jpg
-    icon_background_color: "#000000"
+    icon_background_color: "#3d3535"
   android_gravity: center
   ios_content_mode: center
   android_screen_orientation: portrait
- 
+  # Set splash screen duration to 2 seconds
+  # See: https://pub.dev/packages/flutter_native_splash#customizing-the-splash-screen-duration
+  # The duration is set in milliseconds
+  splash_screen_duration: 2000

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color richGold = Color(0xFFb39700); // Rich Gold
+  static const Color richGold = Color(0xFFDA291C); // Rich Gold
   static const Color primary = Color(0xFFDA291C);  // Celluar Citi Color RED
   static const Color gold = Color(0xFFA60A0A);     // Gold
   static const Color black = Color(0xFF000000);    // Black

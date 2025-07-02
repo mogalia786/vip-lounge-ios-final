@@ -77,7 +77,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.grey[900],
-      title: Text('Search Appointments', style: TextStyle(color: AppColors.gold)),
+      title: Text('Search Appointments', style: TextStyle(color: AppColors.primary)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -97,7 +97,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
                       }
                     });
                   },
-                  activeColor: AppColors.gold,
+                  activeColor: AppColors.primary,
                 ),
                 Text('Show All Dates', style: TextStyle(color: Colors.white)),
               ],
@@ -126,7 +126,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
                   decoration: BoxDecoration(
                     color: Colors.grey[850],
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                   ),
                   child: Text(_fromDate != null ? DateFormat('yyyy-MM-dd').format(_fromDate!) : 'Select From Date', style: TextStyle(color: Colors.white)),
                 ),
@@ -155,7 +155,7 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
                   decoration: BoxDecoration(
                     color: Colors.grey[850],
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                   ),
                   child: Text(_toDate != null ? DateFormat('yyyy-MM-dd').format(_toDate!) : 'Select To Date', style: TextStyle(color: Colors.white)),
                 ),
@@ -192,18 +192,18 @@ class _FloorManagerSearchDialogState extends State<FloorManagerSearchDialog> {
               dropdownColor: Colors.white,
             ),
             SizedBox(height: 16),
-            _loading ? Center(child: CircularProgressIndicator(color: AppColors.gold)) : SizedBox.shrink(),
+            _loading ? Center(child: CircularProgressIndicator(color: AppColors.primary)) : SizedBox.shrink(),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel', style: TextStyle(color: AppColors.gold)),
+          child: Text('Cancel', style: TextStyle(color: AppColors.primary)),
         ),
         ElevatedButton(
           onPressed: _performSearch,
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, foregroundColor: Colors.black),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black),
           child: Text('Search'),
         ),
       ],

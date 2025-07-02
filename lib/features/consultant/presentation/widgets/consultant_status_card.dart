@@ -32,7 +32,7 @@ class ConsultantStatusCard extends StatelessWidget {
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.gold),
+        side: BorderSide(color: AppColors.primary),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -45,7 +45,7 @@ class ConsultantStatusCard extends StatelessWidget {
                 Text(
                   'Attendance',
                   style: TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.primary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -129,7 +129,7 @@ class ConsultantStatusCard extends StatelessWidget {
               ElevatedButton(
                 onPressed: onManageBreak,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -202,7 +202,7 @@ class ConsultantStatusCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onManageBreak,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

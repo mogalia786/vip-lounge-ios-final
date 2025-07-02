@@ -119,7 +119,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         context: context,
         builder: (context) => AlertDialog(
           backgroundColor: Colors.black,
-          title: Text('Select $staffType', style: const TextStyle(color: AppColors.gold)),
+          title: Text('Select $staffType', style: const TextStyle(color: AppColors.primary)),
           content: SizedBox(
             height: 300,
             width: 300,
@@ -145,7 +145,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       final staffName = '$firstName $lastName'.trim();
                       return ListTile(
                         title: Text(staffName.isNotEmpty ? staffName : 'Staff #$index', style: const TextStyle(color: Colors.white)),
-                        trailing: const Icon(Icons.arrow_forward, color: AppColors.gold),
+                        trailing: const Icon(Icons.arrow_forward, color: AppColors.primary),
                         onTap: () async {
                           await _assignStaff(appointmentId, staffType, staffName, staffId);
                           await _fetchAppointment();
@@ -168,7 +168,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         context: context,
         builder: (context) => AlertDialog(
           backgroundColor: Colors.black,
-          title: Text('Select $staffType', style: const TextStyle(color: AppColors.gold)),
+          title: Text('Select $staffType', style: const TextStyle(color: AppColors.primary)),
           content: SizedBox(
             height: 300,
             width: 300,
@@ -194,7 +194,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       final staffName = '$firstName $lastName'.trim();
                       return ListTile(
                         title: Text(staffName.isNotEmpty ? staffName : 'Staff #$index', style: const TextStyle(color: Colors.white)),
-                        trailing: const Icon(Icons.arrow_forward, color: AppColors.gold),
+                        trailing: const Icon(Icons.arrow_forward, color: AppColors.primary),
                         onTap: () async {
                           await _assignStaff(appointmentId, staffType, staffName, staffId);
                           await _fetchAppointment();
@@ -274,7 +274,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     final assigned = currentId != null && currentId.isNotEmpty;
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.gold,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
       ),
       onPressed: () {
@@ -301,7 +301,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appointment Assign'),
-        backgroundColor: AppColors.gold,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
       ),
       body: isLoading
@@ -381,7 +381,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                                       children: [
                                         Row(
                                           children: [
-                                            const Icon(Icons.schedule, color: AppColors.gold, size: 18),
+                                            const Icon(Icons.schedule, color: AppColors.primary, size: 18),
                                             const SizedBox(width: 8),
                                             Text(
                                               appointment!['appointmentTime'] != null

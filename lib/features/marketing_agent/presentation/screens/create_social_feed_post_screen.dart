@@ -105,19 +105,19 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
   Widget build(BuildContext context) {
     final Color glareColor = _selectedType != null ? _typeColors[_selectedType!]!.withOpacity(0.15) : Colors.white10;
     final Color safeShadowColor = (_selectedType != null)
-      ? (_typeColors[_selectedType!] ?? AppColors.gold)
-      : AppColors.gold;
+      ? (_typeColors[_selectedType!] ?? AppColors.primary)
+      : AppColors.primary;
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
         title: const Text('Create Social Feed Post'),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.black, glareColor, AppColors.gold.withOpacity(0.05)],
+            colors: [AppColors.black, glareColor, AppColors.primary.withOpacity(0.05)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -152,17 +152,17 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                           value: _selectedType,
                           decoration: InputDecoration(
                             labelText: 'Type',
-                            labelStyle: TextStyle(color: _selectedType != null ? getContrastTextColor(_typeColors[_selectedType!] ?? AppColors.gold) : AppColors.gold),
+                            labelStyle: TextStyle(color: _selectedType != null ? getContrastTextColor(_typeColors[_selectedType!] ?? AppColors.primary) : AppColors.primary),
                           ),
-                          style: TextStyle(color: _selectedType != null ? getContrastTextColor(_typeColors[_selectedType!] ?? AppColors.gold) : AppColors.gold),
-                          dropdownColor: _selectedType != null ? _typeColors[_selectedType!] ?? AppColors.gold : Colors.black,
+                          style: TextStyle(color: _selectedType != null ? getContrastTextColor(_typeColors[_selectedType!] ?? AppColors.primary) : AppColors.primary),
+                          dropdownColor: _selectedType != null ? _typeColors[_selectedType!] ?? AppColors.primary : Colors.black,
                           items: _types.map((type) {
                             return DropdownMenuItem<String>(
                               value: type,
                               child: Text(
                                 type,
                                 style: TextStyle(
-                                  color: getContrastTextColor(_typeColors[type] ?? AppColors.gold),
+                                  color: getContrastTextColor(_typeColors[type] ?? AppColors.primary),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -202,11 +202,11 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.date_range, color: AppColors.gold),
+                                      Icon(Icons.date_range, color: AppColors.primary),
                                       const SizedBox(width: 8),
                                       Text(
                                         _beginDate != null ? DateFormat('yyyy-MM-dd').format(_beginDate!) : 'Begin Date',
-                                        style: TextStyle(color: AppColors.gold),
+                                        style: TextStyle(color: AppColors.primary),
                                       ),
                                     ],
                                   ),
@@ -234,11 +234,11 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.timer_off, color: AppColors.gold),
+                                      Icon(Icons.timer_off, color: AppColors.primary),
                                       const SizedBox(width: 8),
                                       Text(
                                         _expirationDate != null ? DateFormat('yyyy-MM-dd').format(_expirationDate!) : 'Expiration Date',
-                                        style: TextStyle(color: AppColors.gold),
+                                        style: TextStyle(color: AppColors.primary),
                                       ),
                                     ],
                                   ),
@@ -252,7 +252,7 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       TextFormField(
                         decoration: const InputDecoration(
                           labelText: 'Details',
-                          labelStyle: TextStyle(color: AppColors.gold),
+                          labelStyle: TextStyle(color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.white12,
                           border: OutlineInputBorder(),
@@ -267,7 +267,7 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       TextFormField(
                         decoration: const InputDecoration(
                           labelText: 'Telephone Number',
-                          labelStyle: TextStyle(color: AppColors.gold),
+                          labelStyle: TextStyle(color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.white12,
                           border: OutlineInputBorder(),
@@ -281,7 +281,7 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       TextFormField(
                         decoration: const InputDecoration(
                           labelText: 'Terms and Conditions',
-                          labelStyle: TextStyle(color: AppColors.gold),
+                          labelStyle: TextStyle(color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.white12,
                           border: OutlineInputBorder(),
@@ -295,7 +295,7 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       const SizedBox(height: 18),
                       Text(
                         'Images',
-                        style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
                       Wrap(
@@ -319,9 +319,9 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                               decoration: BoxDecoration(
                                 color: Colors.white12,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.gold, width: 2),
+                                border: Border.all(color: AppColors.primary, width: 2),
                               ),
-                              child: const Icon(Icons.add_a_photo, color: AppColors.gold, size: 32),
+                              child: const Icon(Icons.add_a_photo, color: AppColors.primary, size: 32),
                             ),
                           ),
                         ],
@@ -329,7 +329,7 @@ class _CreateSocialFeedPostScreenState extends State<CreateSocialFeedPostScreen>
                       const SizedBox(height: 28),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedType != null ? _typeColors[_selectedType!] : AppColors.gold,
+                          backgroundColor: _selectedType != null ? _typeColors[_selectedType!] : AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 10,

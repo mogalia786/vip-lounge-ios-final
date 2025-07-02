@@ -189,13 +189,13 @@ class NotificationItem extends StatelessWidget {
         Row(
           children: [
             if (displayName.isNotEmpty) ...[
-              Icon(Icons.person, color: AppColors.gold, size: 18),
+              Icon(Icons.person, color: AppColors.primary, size: 18),
               SizedBox(width: 4),
               Flexible(child: Text(displayName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
             ],
             if (ministerPhone.isNotEmpty) ...[
               SizedBox(width: 12),
-              Icon(Icons.phone, color: AppColors.gold, size: 18),
+              Icon(Icons.phone, color: AppColors.primary, size: 18),
               SizedBox(width: 2),
               GestureDetector(
                 onTap: () => NotificationItem._launchPhoneCall(ministerPhone),
@@ -242,7 +242,7 @@ class NotificationItem extends StatelessWidget {
               padding: const EdgeInsets.only(left: 20, top: 2),
               child: Row(
                 children: [
-                  Icon(Icons.phone, color: AppColors.gold, size: 16),
+                  Icon(Icons.phone, color: AppColors.primary, size: 16),
                   SizedBox(width: 4),
                   GestureDetector(
                     onTap: () => NotificationItem._launchPhoneCall(consultantPhone),
@@ -256,7 +256,7 @@ class NotificationItem extends StatelessWidget {
               padding: const EdgeInsets.only(left: 20, top: 2),
               child: Row(
                 children: [
-                  Icon(Icons.email, color: AppColors.gold, size: 16),
+                  Icon(Icons.email, color: AppColors.primary, size: 16),
                   SizedBox(width: 4),
                   GestureDetector(
                     onTap: () => _launchEmail(consultantEmail),
@@ -277,7 +277,7 @@ class NotificationItem extends StatelessWidget {
       padding: const EdgeInsets.only(left: 20, top: 2),
       child: Row(
         children: [
-          Icon(Icons.phone, color: AppColors.gold, size: 16),
+          Icon(Icons.phone, color: AppColors.primary, size: 16),
           SizedBox(width: 4),
           GestureDetector(
             onTap: () => NotificationItem._launchPhoneCall(consultantPhone),
@@ -291,7 +291,7 @@ class NotificationItem extends StatelessWidget {
       padding: const EdgeInsets.only(left: 20, top: 2),
       child: Row(
         children: [
-          Icon(Icons.email, color: AppColors.gold, size: 16),
+          Icon(Icons.email, color: AppColors.primary, size: 16),
           SizedBox(width: 4),
           GestureDetector(
             onTap: () => _launchEmail(consultantEmail),
@@ -315,7 +315,7 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
       padding: const EdgeInsets.only(left: 20, top: 2),
       child: Row(
         children: [
-          Icon(Icons.phone, color: AppColors.gold, size: 16),
+          Icon(Icons.phone, color: AppColors.primary, size: 16),
           SizedBox(width: 4),
           GestureDetector(
             onTap: () => NotificationItem._launchPhoneCall(conciergePhone),
@@ -329,7 +329,7 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
       padding: const EdgeInsets.only(left: 20, top: 2),
       child: Row(
         children: [
-          Icon(Icons.email, color: AppColors.gold, size: 16),
+          Icon(Icons.email, color: AppColors.primary, size: 16),
           SizedBox(width: 4),
           GestureDetector(
             onTap: () => _launchEmail(conciergeEmail),
@@ -492,9 +492,9 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold.withOpacity(0.13),
+                                    color: AppColors.primary.withOpacity(0.13),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppColors.gold, width: 1.2),
+                                    border: Border.all(color: AppColors.primary, width: 1.2),
                                   ),
                                   child: Text(
                                     body,
@@ -571,7 +571,7 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.gold, size: 18),
+              Icon(icon, color: AppColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
@@ -677,12 +677,12 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: Colors.black,
-            title: Text('Chat Available', style: TextStyle(color: AppColors.gold)),
+            title: Text('Chat Available', style: TextStyle(color: AppColors.primary)),
             content: Text('Please view the appointment details to chat with the minister.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('OK', style: TextStyle(color: AppColors.gold)),
+                child: Text('OK', style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -701,12 +701,12 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: Colors.black,
-            title: Text('Chat with $recipientName', style: TextStyle(color: AppColors.gold)),
+            title: Text('Chat with $recipientName', style: TextStyle(color: AppColors.primary)),
             content: Text('Please view the appointment to chat with $recipientName.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('OK', style: TextStyle(color: AppColors.gold)),
+                child: Text('OK', style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),

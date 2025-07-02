@@ -70,10 +70,10 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
       appBar: AppBar(
         title: const Text('Query Report'),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.date_range, color: AppColors.gold),
+            icon: const Icon(Icons.date_range, color: AppColors.primary),
             onPressed: () async {
               final picked = await showDateRangePicker(
                 context: context,
@@ -96,7 +96,7 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
               children: [
                 if (topStaff.isNotEmpty)
                   Card(
-                    color: AppColors.gold.withOpacity(0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -107,7 +107,7 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
                           const SizedBox(height: 8),
                           ...topStaff.take(3).map((s) => Row(
                                 children: [
-                                  Icon(Icons.emoji_events, color: AppColors.gold),
+                                  Icon(Icons.emoji_events, color: AppColors.primary),
                                   const SizedBox(width: 8),
                                   Text('${s['name']}'),
                                   const SizedBox(width: 8),
@@ -152,7 +152,7 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold,
+                                    color: AppColors.primary,
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Text('${queries.length}', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),

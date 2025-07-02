@@ -559,12 +559,12 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         elevation: 0,
         title: Text(
           'Select Appointment Time',
-          style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
-        iconTheme: IconThemeData(color: AppColors.gold),
+        iconTheme: IconThemeData(color: AppColors.primary),
       ),
       body: _isLoading 
-        ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold)))
+        ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)))
         : Column(
             children: [
               // Date and service info section at top
@@ -591,9 +591,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.gold, width: 1),
+                            border: Border.all(color: AppColors.primary, width: 1),
                           ),
-                          child: Icon(Icons.spa, color: AppColors.gold, size: 24),
+                          child: Icon(Icons.spa, color: AppColors.primary, size: 24),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -612,7 +612,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '${widget.serviceDuration} minutes',
-                                style: TextStyle(color: AppColors.gold, fontSize: 14),
+                                style: TextStyle(color: AppColors.primary, fontSize: 14),
                               ),
                             ],
                           ),
@@ -632,11 +632,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.5)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_today, color: AppColors.gold, size: 20),
+                                Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -668,11 +668,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.5)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.location_on, color: AppColors.gold, size: 20),
+                                Icon(Icons.location_on, color: AppColors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -707,12 +707,12 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Icon(Icons.access_time, color: AppColors.gold, size: 20),
+                    Icon(Icons.access_time, color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'Available Time Slots',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -730,18 +730,18 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.event_busy, color: AppColors.gold, size: 64),
+                          Icon(Icons.event_busy, color: AppColors.primary, size: 64),
                           const SizedBox(height: 16),
                           Text(
                             'Closed on this day',
-                            style: TextStyle(color: AppColors.gold, fontSize: 16),
+                            style: TextStyle(color: AppColors.primary, fontSize: 16),
                           ),
                           const SizedBox(height: 24),
                           OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.gold),
-                              foregroundColor: AppColors.gold,
+                              side: BorderSide(color: AppColors.primary),
+                              foregroundColor: AppColors.primary,
                             ),
                             child: const Text('Select Another Date'),
                           ),
@@ -753,18 +753,18 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.event_busy, color: AppColors.gold, size: 64),
+                            Icon(Icons.event_busy, color: AppColors.primary, size: 64),
                             const SizedBox(height: 16),
                             Text(
                               'No time slots available for this date',
-                              style: TextStyle(color: AppColors.gold, fontSize: 16),
+                              style: TextStyle(color: AppColors.primary, fontSize: 16),
                             ),
                             const SizedBox(height: 24),
                             OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: AppColors.gold),
-                                foregroundColor: AppColors.gold,
+                                side: BorderSide(color: AppColors.primary),
+                                foregroundColor: AppColors.primary,
                               ),
                               child: const Text('Select Another Date'),
                             ),
@@ -804,11 +804,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                           decoration: BoxDecoration(
                                             color: Colors.black,
                                             borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: AppColors.gold.withOpacity(0.7)),
+                                            border: Border.all(color: AppColors.primary.withOpacity(0.7)),
                                           ),
                                           child: Text(
                                             '$timeOfDay',
-                                            style: TextStyle(color: AppColors.gold, fontSize: 12),
+                                            style: TextStyle(color: AppColors.primary, fontSize: 12),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -840,11 +840,11 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                               border: Border.all(
                                                 color: isDisabled 
                                                   ? (isBooked ? Colors.redAccent.withOpacity(0.5) : Colors.grey) 
-                                                  : AppColors.gold,
+                                                  : AppColors.primary,
                                               ),
                                               boxShadow: isDisabled ? [] : [
                                                 BoxShadow(
-                                                  color: AppColors.gold.withOpacity(0.2),
+                                                  color: AppColors.primary.withOpacity(0.2),
                                                   blurRadius: 4,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -858,7 +858,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                                                   style: TextStyle(
                                                     color: isDisabled 
                                                       ? (isBooked ? Colors.redAccent.withOpacity(0.7) : Colors.grey) 
-                                                      : AppColors.gold,
+                                                      : AppColors.primary,
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -900,7 +900,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'Confirming your appointment...',
-                        style: TextStyle(color: AppColors.gold, fontSize: 16),
+                        style: TextStyle(color: AppColors.primary, fontSize: 16),
                       ),
                     ],
                   ),

@@ -22,7 +22,7 @@ class AppointmentsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         title: Text(
           'My Appointments',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.primary),
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -44,7 +44,7 @@ class AppointmentsScreen extends StatelessWidget {
           if (!snapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             );
           }
@@ -132,7 +132,7 @@ class AppointmentsScreen extends StatelessWidget {
                           Text(
                             'Minister Details',
                             style: TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -149,7 +149,7 @@ class AppointmentsScreen extends StatelessWidget {
                           Text(
                             'Appointment Details',
                             style: TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -187,7 +187,7 @@ class AppointmentsScreen extends StatelessWidget {
                           Text(
                             'Staff Assignment',
                             style: TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -204,7 +204,7 @@ class AppointmentsScreen extends StatelessWidget {
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.gold,
+                                  backgroundColor: AppColors.primary,
                                   padding: const EdgeInsets.symmetric(vertical: 12.0),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8.0),
@@ -432,7 +432,7 @@ class AppointmentsScreen extends StatelessWidget {
             children: [
               Text(
                 'Chat with $userName',
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(color: AppColors.primary),
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
@@ -550,7 +550,7 @@ class AppointmentsScreen extends StatelessWidget {
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: isCurrentUser
-                                          ? AppColors.gold.withOpacity(0.9)
+                                          ? AppColors.primary.withOpacity(0.9)
                                           : Colors.grey[800],
                                       borderRadius: BorderRadius.circular(12),
                                     ),

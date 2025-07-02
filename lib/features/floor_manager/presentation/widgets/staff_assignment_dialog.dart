@@ -348,7 +348,7 @@ for (var doc in consultantsSnapshot.docs) {
       backgroundColor: Colors.grey[900],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.gold, width: 1),
+        side: BorderSide(color: AppColors.primary, width: 1),
       ),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -365,7 +365,7 @@ for (var doc in consultantsSnapshot.docs) {
                     Text(
                       'Assign Staff to Appointment',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -408,7 +408,7 @@ for (var doc in consultantsSnapshot.docs) {
                     Text(
                       'Consultant',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -453,7 +453,7 @@ for (var doc in consultantsSnapshot.docs) {
                     Text(
                       'Concierge',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -497,7 +497,7 @@ for (var doc in consultantsSnapshot.docs) {
                     Text(
                       'Cleaner',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -552,7 +552,7 @@ for (var doc in consultantsSnapshot.docs) {
   _assignStaff();
 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gold,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.black,
                           ),
                           child: const Text('Assign Staff'),

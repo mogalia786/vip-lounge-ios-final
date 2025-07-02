@@ -74,7 +74,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       appBar: AppBar(
         title: const Text('Pre-Register Employee'),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -93,12 +93,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   controller: _employeeNumberController,
                   decoration: InputDecoration(
                     labelText: 'Employee Number',
-                    labelStyle: TextStyle(color: AppColors.gold),
+                    labelStyle: TextStyle(color: AppColors.primary),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.gold),
+                      borderSide: BorderSide(color: AppColors.primary),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.gold),
+                      borderSide: BorderSide(color: AppColors.primary),
                     ),
                   ),
                   style: TextStyle(color: AppColors.white),
@@ -114,12 +114,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   value: _selectedRole,
                   decoration: InputDecoration(
                     labelText: 'Role',
-                    labelStyle: TextStyle(color: AppColors.gold),
+                    labelStyle: TextStyle(color: AppColors.primary),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.gold),
+                      borderSide: BorderSide(color: AppColors.primary),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.gold),
+                      borderSide: BorderSide(color: AppColors.primary),
                     ),
                   ),
                   dropdownColor: AppColors.black,
@@ -143,7 +143,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
+                    backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: _isLoading

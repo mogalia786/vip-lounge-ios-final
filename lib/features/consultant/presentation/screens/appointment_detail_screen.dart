@@ -522,7 +522,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             content: Text('Choose capture method', style: TextStyle(color: Colors.white70)),
             actions: [
               TextButton(
-                child: Text('Camera', style: TextStyle(color: AppColors.gold)),
+                child: Text('Camera', style: TextStyle(color: AppColors.primary)),
                 onPressed: () {
                   Navigator.pop(context);
                   _captureDocumentImage(ImageSource.camera);
@@ -642,7 +642,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         elevation: 0,
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -653,7 +653,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     color: Colors.grey.shade900,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppColors.gold),
+                      side: BorderSide(color: AppColors.primary),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -777,7 +777,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                           _buildFeatureButton(
                             'Add Note',
                             Icons.note_add,
-                            AppColors.gold,
+                            AppColors.primary,
                             _showAddActivityDialog,
                           ),
                           _buildFeatureButton(
@@ -794,7 +794,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   Text(
                     'Activities & Notes',
                     style: TextStyle(
-                      color: AppColors.gold,
+                      color: AppColors.primary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -802,7 +802,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gold),
+                      border: Border.all(color: AppColors.primary),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: _activities.isEmpty
@@ -846,7 +846,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   Text(
                     'Documents',
                     style: TextStyle(
-                      color: AppColors.gold,
+                      color: AppColors.primary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -854,7 +854,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gold),
+                      border: Border.all(color: AppColors.primary),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: _documents.isEmpty
@@ -913,7 +913,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                                   style: TextStyle(color: Colors.grey),
                                 ),
                                 trailing: IconButton(
-                                  icon: Icon(Icons.open_in_new, color: AppColors.gold),
+                                  icon: Icon(Icons.open_in_new, color: AppColors.primary),
                                   onPressed: () {
                                     // Open document URL
                                     if (document['fileUrl'] != null) {
@@ -941,7 +941,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.gold, size: 18),
+          Icon(icon, color: AppColors.primary, size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -950,7 +950,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),

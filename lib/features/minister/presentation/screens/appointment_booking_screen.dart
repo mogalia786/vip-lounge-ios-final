@@ -43,7 +43,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   OutlineInputBorder _buildBorder({double width = 1.0}) {
     return OutlineInputBorder(
       borderRadius: _borderRadius,
-      borderSide: BorderSide(color: AppColors.gold, width: width),
+      borderSide: BorderSide(color: AppColors.primary, width: width),
     );
   }
 
@@ -66,19 +66,29 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
 
       print('Using minister data for booking: ${authProvider.ministerData}'); // Debug print
 
-      // Get all floor manager UIDs early in the booking process
+      // Fetch the single floor manager's ID and name from users collection
       final floorManagerQuery = await FirebaseFirestore.instance
           .collection('users')
           .where('role', isEqualTo: 'floorManager')
+          .limit(1)
           .get();
-      final floorManagerUids = floorManagerQuery.docs
-          .map((doc) => doc.data()['uid'] as String?)
-          .where((uid) => uid != null && uid.isNotEmpty)
-          .cast<String>()
-          .toList();
-      print('Floor Manager UIDs: ' + floorManagerUids.join(', '));
+      String floorManagerId = '';
+      String floorManagerName = '';
+      if (floorManagerQuery.docs.isNotEmpty) {
+        final floorManagerDoc = floorManagerQuery.docs.first;
+        floorManagerId = (floorManagerDoc.data()['uid'] ?? '').toString();
+        final firstName = (floorManagerDoc.data()['firstName'] ?? '').toString();
+        final lastName = (floorManagerDoc.data()['lastName'] ?? '').toString();
+        floorManagerName = (firstName + ' ' + lastName).trim();
+      }
+      // Fallback in case not found
+      if (floorManagerId.isEmpty) floorManagerId = 'FLOOR_MANAGER_NOT_FOUND';
+      if (floorManagerName.isEmpty) floorManagerName = 'Unknown Floor Manager';
+      print('DEBUG: floorManagerId to be written: $floorManagerId, floorManagerName: $floorManagerName');
 
       // Create appointment data
+      // Ensure floor manager fields are always present
+      print('DEBUG: About to write appointment with floorManagerId: ' + floorManagerId + ', floorManagerName: ' + floorManagerName);
       final appointmentData = {
         'ministerId': authProvider.ministerData!['uid'],
         'ministerFirstName': authProvider.ministerData!['firstName'],
@@ -96,10 +106,11 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         'duration': _selectedSubService?.maxDuration ?? _selectedService!.maxDuration,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
-        // Optionally, store the first floor manager's ID for reference
-        'assignedFloorManagerId': floorManagerUids.isNotEmpty ? floorManagerUids.first : null,
+        'floorManagerId': floorManagerId,
+        'floorManagerName': floorManagerName,
         'typeOfVip': 'VIP Client',
       };
+      print('DEBUG: appointmentData to be saved (should include floorManagerId/floorManagerName): $appointmentData');
 
       print('DEBUG: appointmentData to be saved => $appointmentData');
 
@@ -116,12 +127,10 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       // Add the appointmentId to the data for notifications
       final notificationData = Map<String, dynamic>.from(appointmentData);
       notificationData['appointmentId'] = appointmentRef.id;
-      // Also add all floor manager UIDs for downstream logic if needed
-      notificationData['floorManagerUids'] = floorManagerUids;
 
       try {
         print('Creating notification for floor manager directly in Firestore...');
-        
+
         // Create a clean version of the notification data with string values for timestamps
         final cleanNotificationData = {
           'title': 'New Appointment Request',
@@ -148,19 +157,15 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           'status': 'pending',
           'sendAsPushNotification': true,
           'timestamp': FieldValue.serverTimestamp(),
+          'assignedToId': floorManagerId,
+          'receiverId': floorManagerId,
         };
-        
-        // Create notification in Firestore for each floor manager
-        for (var floorManagerUid in floorManagerUids) {
-          print('DEBUG: Creating notification for floor manager. assignedToId: $floorManagerUid, receiverId: $floorManagerUid');
-          await FirebaseFirestore.instance.collection('notifications').add({
-            ...cleanNotificationData,
-            'assignedToId': floorManagerUid,
-            'receiverId': floorManagerUid,
-          });
-        }
-        print('Notification(s) created for all floor managers in Firestore');
-        
+
+        // Create notification in Firestore for the single floor manager
+        print('DEBUG: Creating notification for floor manager. assignedToId: $floorManagerId, receiverId: $floorManagerId');
+        await FirebaseFirestore.instance.collection('notifications').add(cleanNotificationData);
+        print('Notification created for floor manager in Firestore');
+
         // Also send through the notification service for FCM
         // Make a copy with only string values for FCM
         final fcmData = {
@@ -234,7 +239,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         focusedBorder: _buildBorder(width: 2),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: TextStyle(color: AppColors.gold),
+        textStyle: TextStyle(color: AppColors.primary),
       ),
     );
 
@@ -243,8 +248,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       fillColor: Colors.black,
     );
 
-    final dropdownStyle = TextStyle(color: AppColors.gold);
-    final dropdownIcon = Icon(Icons.arrow_drop_down, color: AppColors.gold);
+    final dropdownStyle = TextStyle(color: AppColors.primary);
+    final dropdownIcon = Icon(Icons.arrow_drop_down, color: AppColors.primary);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -256,12 +261,12 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           children: [
             Text(
               'Book Appointment',
-              style: TextStyle(color: AppColors.gold),
+              style: TextStyle(color: AppColors.primary),
             ),
             if (authProvider.ministerData != null)
               Text(
                 'Welcome, VIP ${authProvider.ministerData!['firstName']} ${authProvider.ministerData!['lastName']}',
-                style: TextStyle(color: AppColors.gold, fontSize: 14),
+                style: TextStyle(color: AppColors.primary, fontSize: 14),
               ),
           ],
         ),

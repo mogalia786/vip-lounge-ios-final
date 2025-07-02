@@ -731,7 +731,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text('Chat with $recipientName', style: TextStyle(color: AppColors.gold)),
+        title: Text('Chat with $recipientName', style: TextStyle(color: AppColors.primary)),
         content: Container(
           width: double.maxFinite,
           height: 300,
@@ -747,7 +747,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator(color: AppColors.gold));
+                      return Center(child: CircularProgressIndicator(color: AppColors.primary));
                     }
                     
                     final messages = snapshot.data!.docs;
@@ -778,7 +778,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                 margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                                 padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: isMe ? AppColors.gold : Colors.grey[800],
+                                  color: isMe ? AppColors.primary : Colors.grey[800],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
@@ -823,7 +823,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                       borderSide: BorderSide.none,
                     ),
                     suffixIcon: IconButton(
-                      icon: Icon(Icons.send, color: AppColors.gold),
+                      icon: Icon(Icons.send, color: AppColors.primary),
                       onPressed: () {
                         final message = messageController.text;
                         if (message.trim().isNotEmpty) {
@@ -890,7 +890,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: TextStyle(color: AppColors.gold)),
+            child: Text('Close', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -919,7 +919,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Message to $userName', style: TextStyle(color: AppColors.gold)),
+        title: Text('Message to $userName', style: TextStyle(color: AppColors.primary)),
         content: Container(
           width: double.maxFinite,
           height: 300,
@@ -936,7 +936,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator(color: AppColors.gold));
+                      return Center(child: CircularProgressIndicator(color: AppColors.primary));
                     }
                     
                     final messages = snapshot.data!.docs;
@@ -967,7 +967,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                 margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                                 padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: isMe ? AppColors.gold : Colors.grey[800],
+                                  color: isMe ? AppColors.primary : Colors.grey[800],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
@@ -1012,7 +1012,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                       borderSide: BorderSide.none,
                     ),
                     suffixIcon: IconButton(
-                      icon: Icon(Icons.send, color: AppColors.gold),
+                      icon: Icon(Icons.send, color: AppColors.primary),
                       onPressed: () {
                         final message = messageController.text;
                         if (message.trim().isNotEmpty) {
@@ -1077,7 +1077,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Close', style: TextStyle(color: AppColors.gold)),
+            child: Text('Close', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -1346,13 +1346,13 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
             Text(
               'Role: Floor Manager',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.verified, color: AppColors.gold, size: 22),
+            const Icon(Icons.verified, color: AppColors.primary, size: 22),
           ],
         ),
         actions: [
@@ -1390,7 +1390,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator(color: AppColors.gold));
+                  return Center(child: CircularProgressIndicator(color: AppColors.primary));
                 }
                 final appointments = snapshot.data!.docs;
                 if (appointments.isEmpty) {
@@ -1425,7 +1425,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                       decoration: BoxDecoration(
                         color: Colors.grey[900],
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.5)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1434,7 +1434,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.gold.withOpacity(0.15),
+                              color: AppColors.primary.withOpacity(0.15),
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(8),
                                 topRight: Radius.circular(8),
@@ -1450,7 +1450,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                       Text(
                                         'Minister ${appointment['ministerFirstName'] ?? ''} ${appointment['ministerLastName'] ?? ''}',
                                         style: TextStyle(
-                                          color: AppColors.gold,
+                                          color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -1618,7 +1618,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                                 child: ElevatedButton(
                                                   onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'consultant'),
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: consultantAssigned ? Colors.green : AppColors.gold,
+                                                    backgroundColor: consultantAssigned ? Colors.green : AppColors.primary,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                                     padding: const EdgeInsets.symmetric(vertical: 0),
                                                     minimumSize: Size(0, 26),
@@ -1658,7 +1658,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                                 child: ElevatedButton(
                                                   onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'cleaner'),
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: cleanerAssigned ? Colors.green : AppColors.gold,
+                                                    backgroundColor: cleanerAssigned ? Colors.green : AppColors.primary,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                                     padding: const EdgeInsets.symmetric(vertical: 0),
                                                     minimumSize: Size(0, 26),
@@ -1698,7 +1698,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                                                 child: ElevatedButton(
                                                   onPressed: () => _showStaffSelectionDialog(context, appointmentId, 'concierge'),
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: conciergeAssigned ? Colors.green : AppColors.gold,
+                                                    backgroundColor: conciergeAssigned ? Colors.green : AppColors.primary,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                                     padding: const EdgeInsets.symmetric(vertical: 0),
                                                     minimumSize: Size(0, 26),
@@ -1767,7 +1767,7 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedItemColor: AppColors.gold,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(

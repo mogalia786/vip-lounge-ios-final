@@ -34,7 +34,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
       appBar: AppBar(
         title: const Text('Marketing Agent Home'),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,

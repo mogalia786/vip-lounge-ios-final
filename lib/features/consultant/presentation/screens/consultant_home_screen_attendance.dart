@@ -660,16 +660,16 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
+                  border: Border.all(color: AppColors.primary),
                 ),
                 child: Column(
                   children: [
                     Text(
                       DateFormat('E').format(day),
                       style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
+                        color: isSelected ? Colors.black : AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -677,7 +677,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                     Text(
                       DateFormat('d').format(day),
                       style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
+                        color: isSelected ? Colors.black : AppColors.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
@@ -686,7 +686,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                   Text(
                     DateFormat('d').format(day),
                     style: TextStyle(
-                      color: isSelected ? Colors.black : AppColors.gold,
+                      color: isSelected ? Colors.black : AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
@@ -716,7 +716,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
               const Text(
                 'Appointments',
                 style: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1481,7 +1481,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: AppColors.gold),
+            icon: Icon(Icons.logout, color: AppColors.primary),
             tooltip: 'Logout',
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
@@ -1535,7 +1535,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                         children: [
                           Text(
                             'Performance Metrics',
-                            style: TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
                           DropdownButton<String>(
@@ -1572,7 +1572,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                 ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedItemColor: AppColors.gold,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,

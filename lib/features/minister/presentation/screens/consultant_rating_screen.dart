@@ -110,15 +110,15 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
         backgroundColor: Colors.black,
         title: Text(
           'Rate Your Experience',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.primary),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.gold),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: _isSubmitting
-          ? Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -127,7 +127,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                   children: [
                     Center(
                       child: CircleAvatar(
-                        backgroundColor: AppColors.gold,
+                        backgroundColor: AppColors.primary,
                         radius: 40,
                         child: Icon(
                           Icons.rate_review,
@@ -166,7 +166,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                       color: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: AppColors.gold.withOpacity(0.3)),
+                        side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -176,7 +176,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                             Text(
                               'Appointment Details',
                               style: TextStyle(
-                                color: AppColors.gold,
+                                color: AppColors.primary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -210,7 +210,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                     Text(
                       'Your Rating',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -224,7 +224,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                           return IconButton(
                             icon: Icon(
                               starValue <= _rating ? Icons.star : Icons.star_border,
-                              color: starValue <= _rating ? AppColors.gold : Colors.grey,
+                              color: starValue <= _rating ? AppColors.primary : Colors.grey,
                               size: 40,
                             ),
                             onPressed: () {
@@ -243,7 +243,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                     Text(
                       'Additional Feedback (Optional)',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: AppColors.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -264,7 +264,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppColors.gold),
+                          borderSide: BorderSide(color: AppColors.primary),
                         ),
                       ),
                       onChanged: (value) {
@@ -283,7 +283,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
                       child: ElevatedButton(
                         onPressed: _submitRating,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.gold,
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -311,7 +311,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.gold, size: 18),
+        Icon(icon, color: AppColors.primary, size: 18),
         SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -320,7 +320,7 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

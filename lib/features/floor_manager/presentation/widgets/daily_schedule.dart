@@ -104,7 +104,7 @@ class DailySchedule extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.grey[850],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
               ),
               child: IntrinsicHeight(
                 child: Row(
@@ -147,13 +147,13 @@ class DailySchedule extends StatelessWidget {
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold.withOpacity(0.2),
+                                    color: AppColors.primary.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     formattedTime,
                                     style: TextStyle(
-                                      color: AppColors.gold,
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -213,7 +213,7 @@ Padding(
     children: [
       Row(
         children: [
-          Icon(Icons.person, color: AppColors.gold, size: 16),
+          Icon(Icons.person, color: AppColors.primary, size: 16),
           SizedBox(width: 5),
           Text(
             'Consultant: ',
@@ -230,7 +230,7 @@ Padding(
       SizedBox(height: 2),
       Row(
         children: [
-          Icon(Icons.cleaning_services, color: AppColors.gold, size: 16),
+          Icon(Icons.cleaning_services, color: AppColors.primary, size: 16),
           SizedBox(width: 5),
           Text(
             'Cleaner: ',
@@ -247,7 +247,7 @@ Padding(
       SizedBox(height: 2),
       Row(
         children: [
-          Icon(Icons.room_service, color: AppColors.gold, size: 16),
+          Icon(Icons.room_service, color: AppColors.primary, size: 16),
           SizedBox(width: 5),
           Text(
             'Concierge: ',

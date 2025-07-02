@@ -66,7 +66,7 @@ class CleanerAppointmentWidget extends StatelessWidget {
               children: [
                 Text(
                   ministerName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.gold),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
                 ),
                 Text(
                   formattedDate,
@@ -83,7 +83,7 @@ class CleanerAppointmentWidget extends StatelessWidget {
               children: [
                 if (ministerPhone.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.phone, color: AppColors.gold),
+                    icon: const Icon(Icons.phone, color: AppColors.primary),
                     tooltip: 'Call Minister',
                     onPressed: () async {
                       final url = Uri(scheme: 'tel', path: ministerPhone);
@@ -94,7 +94,7 @@ class CleanerAppointmentWidget extends StatelessWidget {
                   ),
                 if (ministerEmail.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.email, color: AppColors.gold),
+                    icon: const Icon(Icons.email, color: AppColors.primary),
                     tooltip: 'Email Minister',
                     onPressed: () async {
                       final url = Uri(scheme: 'mailto', path: ministerEmail);
@@ -105,7 +105,7 @@ class CleanerAppointmentWidget extends StatelessWidget {
                   ),
                 if (onChatWithMinister != null)
                   IconButton(
-                    icon: const Icon(Icons.message, color: AppColors.gold),
+                    icon: const Icon(Icons.message, color: AppColors.primary),
                     tooltip: 'Chat with Minister',
                     onPressed: onChatWithMinister,
                   ),
@@ -144,11 +144,11 @@ class CleanerAppointmentWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.note, color: AppColors.gold),
+                    icon: const Icon(Icons.note, color: AppColors.primary),
                     label: const Text('Add/View Notes', style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
-                      side: const BorderSide(color: AppColors.gold),
+                      side: const BorderSide(color: AppColors.primary),
                     ),
                     onPressed: onAddNotes,
                   ),

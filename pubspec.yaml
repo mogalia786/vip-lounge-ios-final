@@ -78,11 +78,13 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/launchermain.png"
+  image_path: "assets/New_cc_logo.png"
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/launchermain.png"
-  remove_alpha_ios: false
+  adaptive_icon_foreground: "assets/New_cc_logo.png"
+  remove_alpha_ios: true
   min_sdk_android: 21
+  android_adaptive_icon_foreground_padding: 0
+  android_adaptive_icon_background_color: "#000000"
   web:
     generate: false
   windows:
@@ -149,6 +151,7 @@ flutter:
     - assets/cc_logo.png # Added cc_logo.png
    # - assets/launcher.png # Added launcher.png
     - assets/cc_logo_original.png
-    - assets/New_cc_logo.jpg
+    - assets/New_cc_logo.png
     - assets/shop_front.jpg
     - assets/launchermain.png # Added launcherMain.jpg
+    - assets/splash.gif

@@ -161,7 +161,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             children: [
               Text(
                 'Chat with $userName',
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(color: AppColors.primary),
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
@@ -260,7 +260,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: isCurrentUser
-                                          ? AppColors.gold.withOpacity(0.9)
+                                          ? AppColors.primary.withOpacity(0.9)
                                           : Colors.grey[800],
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -339,7 +339,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     ),
                     const SizedBox(width: 8),
                     CircleAvatar(
-                      backgroundColor: AppColors.gold,
+                      backgroundColor: AppColors.primary,
                       child: IconButton(
                         icon: const Icon(Icons.send, color: Colors.black),
                         onPressed: () async {
@@ -461,13 +461,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.gold
+                          ? AppColors.primary
                           : isToday
-                              ? AppColors.gold.withOpacity(0.3)
+                              ? AppColors.primary.withOpacity(0.3)
                               : Colors.grey[900],
                       borderRadius: BorderRadius.circular(16.0),
                       border: isToday && !isSelected
-                          ? Border.all(color: AppColors.gold, width: 1.0)
+                          ? Border.all(color: AppColors.primary, width: 1.0)
                           : null,
                     ),
                     child: Column(
@@ -523,7 +523,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           );
         }
@@ -610,7 +610,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 title: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: AppColors.gold,
+                      backgroundColor: AppColors.primary,
                       child: Text(
                         ministerName.isNotEmpty
                             ? ministerName.substring(0, 1).toUpperCase()
@@ -801,7 +801,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                         style: TextStyle(color: Colors.black),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
+                        backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),

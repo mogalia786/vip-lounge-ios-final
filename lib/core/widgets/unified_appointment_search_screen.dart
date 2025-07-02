@@ -138,7 +138,7 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appointment Search'),
-        backgroundColor: AppColors.gold,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
       ),
       backgroundColor: Colors.grey[900],
@@ -219,7 +219,7 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gold,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.black,
                           ),
                           child: Text(_selectedDate == null
@@ -236,7 +236,7 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
                         child: ElevatedButton(
                           onPressed: _performSearch,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gold,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.black,
                           ),
                           child: const Text('Search'),
@@ -249,7 +249,7 @@ class _UnifiedAppointmentSearchScreenState extends State<UnifiedAppointmentSearc
             ),
             const Divider(color: Colors.white24),
             _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : _results.isEmpty
                     ? const Center(child: Text('No results found', style: TextStyle(color: Colors.white70)))
                     : ListView.builder(

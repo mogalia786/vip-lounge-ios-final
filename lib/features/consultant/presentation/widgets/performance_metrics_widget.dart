@@ -271,7 +271,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
   Widget _buildMinisterSection(String ministerName, List<Map<String, dynamic>> appts, int index) {
     return Card(
       color: _getMinisterBgColor(index),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.primary.withOpacity(0.3))),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -280,7 +280,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
           children: [
             Text(
               ministerName,
-              style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 17),
+              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 17),
             ),
             const SizedBox(height: 8),
             ...appts.map((appt) => Row(
@@ -355,7 +355,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
     if (_isLoading && metricsData.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
         ),
       );
     }
@@ -466,7 +466,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
             Text(
               'Performance Dashboard',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
@@ -491,7 +491,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
             ),
             const SizedBox(height: 18),
             if (_futureAppointments.isNotEmpty) ...[
-              Text('Future Appointments', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text('Future Appointments', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18)),
               Card(
                 color: Colors.grey[900],
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -503,7 +503,7 @@ class _PerformanceMetricsWidgetState extends State<PerformanceMetricsWidget> {
                     children: futureMinisterMap.entries.map((entry) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(entry.key, style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(entry.key, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 4),
                         ...entry.value.map((appt) => Row(
                           children: [

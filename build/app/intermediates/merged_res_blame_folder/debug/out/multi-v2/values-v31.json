@@ -6,20 +6,20 @@
                 {
                     "source": "C:\\Development Apps\\Cascades projects\\vip_lounge_notification_bookings\\android\\app\\src\\main\\res\\values-v31\\styles.xml",
                     "from": {
-                        "startLines": "3,18",
+                        "startLines": "3,17",
                         "startColumns": "4,4",
-                        "startOffsets": "173,1132",
-                        "endLines": "11,20",
+                        "startOffsets": "173,1039",
+                        "endLines": "10,19",
                         "endColumns": "12,12",
-                        "endOffsets": "776,1296"
+                        "endOffsets": "683,1203"
                     },
                     "to": {
-                        "startLines": "2,11",
+                        "startLines": "2,10",
                         "startColumns": "4,4",
-                        "startOffsets": "55,663",
-                        "endLines": "10,13",
+                        "startOffsets": "55,570",
+                        "endLines": "9,12",
                         "endColumns": "12,12",
-                        "endOffsets": "658,827"
+                        "endOffsets": "565,734"
                     }
                 }
             ]

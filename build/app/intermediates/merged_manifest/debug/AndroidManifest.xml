@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.vip_lounge"
     android:versionCode="1"
-    android:versionName="1.3.6" >
+    android:versionName="1.4.0" >
 
     <uses-sdk
         android:minSdkVersion="21"
@@ -69,7 +69,7 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
         android:extractNativeLibs="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:label="CELLULAR citi" >
         <activity
             android:name="com.example.vip_lounge.MainActivity"

@@ -23,6 +23,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/widgets/notification_item.dart';
 import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
+import 'minister_feedback_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
 import 'package:vip_lounge/core/widgets/app_bottom_nav_bar.dart';
@@ -1215,6 +1216,71 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Divider(color: Colors.grey),
                     ),
+                    // Feedback status - shows either 'Rate my experience' or 'Feedback submitted'
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Builder(
+                        builder: (context) {
+                          final hasFeedback = appointmentData['feedbackSubmitted'] == true || 
+                                            appointmentData['status'] == 'feedback_submitted';
+                          
+                          if (hasFeedback) {
+                            // Show feedback submitted state
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Feedback submitted',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            );
+                          } else {
+                            // Show rate experience button
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MinisterFeedbackScreen(
+                                      appointmentId: appointmentId,
+                                      ministerId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                                    ),
+                                  ),
+                                ).then((_) {
+                                  // Refresh the booking card when returning from feedback screen
+                                  if (mounted) {
+                                    setState(() {});
+                                  }
+                                });
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star_rate, color: Colors.blue, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Rate my experience',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                     if (appointmentData['consultantId'] != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4.0, bottom: 2.0),
@@ -1853,13 +1919,63 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                  ),
               _buildStaffRow('Cleaner', cleanerName, cleanerId, appointmentId, appointment),
               
-              // Actions section for pending appointments
-              if (status.toLowerCase() != 'completed' && status.toLowerCase() != 'cancelled')
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
+              // Actions section
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Rate My Experience label
+                    if (status.toLowerCase() == 'completed' && 
+                        (consultantId != null || conciergeId != null))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointment);
+                            appointmentWithId['id'] = appointment['id'] ?? appointmentId;
+                            // Default to consultant if available, otherwise use concierge
+                            final role = consultantId != null ? 'consultant' : 'concierge';
+                            _showRatingDialog(context, appointmentWithId, role);
+                          },
+                          child: Text(
+                            'Rate My Experience',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    
+                    // Rating button
+                    if (status.toLowerCase() == 'completed' && 
+                        (consultantId != null || conciergeId != null))
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 180),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointment);
+                            appointmentWithId['id'] = appointment['id'] ?? appointmentId;
+                            // Default to consultant if available, otherwise use concierge
+                            final role = consultantId != null ? 'consultant' : 'concierge';
+                            _showRatingDialog(context, appointmentWithId, role);
+                          },
+                          icon: const Icon(Icons.star, size: 16),
+                          label: const Text('Rate My Experience'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.gold,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      )
+                    else if (status.toLowerCase() != 'completed' && status.toLowerCase() != 'cancelled')
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 150),
                         child: ElevatedButton(
@@ -1870,7 +1986,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           ),
                           child: const Text(
                             'Cancel Booking',
@@ -1879,9 +1995,9 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),

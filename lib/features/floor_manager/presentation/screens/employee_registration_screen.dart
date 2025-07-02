@@ -226,10 +226,10 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
         backgroundColor: Colors.black,
         title: Text(
           'Employee Registration',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.primary),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.gold),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -254,7 +254,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: AppColors.gold.withOpacity(0.5), width: 1),
+                  side: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -266,7 +266,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                         Text(
                           _isEditMode ? 'Edit Employee' : 'Register New Employee',
                           style: TextStyle(
-                            color: AppColors.gold,
+                            color: AppColors.primary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -280,7 +280,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                           decoration: InputDecoration(
                             labelText: 'Employee Number',
                             labelStyle: TextStyle(color: Colors.grey[400]),
-                            prefixIcon: Icon(Icons.badge, color: AppColors.gold),
+                            prefixIcon: Icon(Icons.badge, color: AppColors.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: Colors.grey[700]!),
@@ -291,7 +291,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.gold),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                           ),
                           enabled: !_isEditMode, // Can't change employee number when editing
@@ -314,7 +314,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                           decoration: InputDecoration(
                             labelText: 'First Name',
                             labelStyle: TextStyle(color: Colors.grey[400]),
-                            prefixIcon: Icon(Icons.person, color: AppColors.gold),
+                            prefixIcon: Icon(Icons.person, color: AppColors.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: Colors.grey[700]!),
@@ -325,7 +325,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.gold),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                           ),
                           validator: (value) {
@@ -345,7 +345,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                           decoration: InputDecoration(
                             labelText: 'Last Name',
                             labelStyle: TextStyle(color: Colors.grey[400]),
-                            prefixIcon: Icon(Icons.person, color: AppColors.gold),
+                            prefixIcon: Icon(Icons.person, color: AppColors.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: Colors.grey[700]!),
@@ -356,7 +356,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.gold),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                           ),
                           validator: (value) {
@@ -377,7 +377,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                           decoration: InputDecoration(
                             labelText: 'Role',
                             labelStyle: TextStyle(color: Colors.grey[400]),
-                            prefixIcon: Icon(Icons.work, color: AppColors.gold),
+                            prefixIcon: Icon(Icons.work, color: AppColors.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: Colors.grey[700]!),
@@ -388,7 +388,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.gold),
+                              borderSide: BorderSide(color: AppColors.primary),
                             ),
                           ),
                           onChanged: (String? newValue) {
@@ -414,7 +414,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _saveEmployee,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.black,
                               disabledBackgroundColor: Colors.grey,
                               shape: RoundedRectangleBorder(
@@ -453,7 +453,7 @@ class _EmployeeRegistrationScreenState extends State<EmployeeRegistrationScreen>
                         Text(
                           'Registered Employees',
                           style: TextStyle(
-                            color: AppColors.gold,
+                            color: AppColors.primary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),

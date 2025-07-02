@@ -4,10 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'core/providers/app_auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/minister/presentation/screens/minister_home_screen.dart';
+import 'features/minister/presentation/screens/minister_feedback_screen.dart';
 import 'features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
 import 'core/presentation/screens/standard_home_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/minister/presentation/screens/minister_choice_screen.dart';
+import 'widgets/gif_splash_screen.dart';
 import 'features/minister/presentation/screens/appointment_booking_screen.dart';
 import 'features/operational_manager/presentation/screens/operational_manager_home_screen.dart';
 import 'features/consultant/presentation/screens/consultant_home_screen_attendance.dart';
@@ -41,7 +43,6 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-
     // Complete FCM initialization after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final BuildContext? ctx = navigatorKey.currentContext;
@@ -49,43 +50,39 @@ class _AppState extends State<App> {
         FCMService().completeInitialization(ctx);
       }
     });
+    // Show black screen for 2 seconds, then GIF splash for 10 seconds
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        _showGif = true;
+      });
+      Future.delayed(const Duration(seconds: 8), () {
+        setState(() {
+          _showGif = false;
+          _ready = true;
+        });
+      });
+    });
   }
+
+  bool _showGif = true;
+  bool _ready = false;
+
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: Future.delayed(const Duration(milliseconds: 400)), // Give Firebase a moment to restore
-      builder: (context, snapshot) {
-        final appAuth = Provider.of<AppAuthProvider>(context);
-        final user = appAuth.appUser;
+    final appAuth = Provider.of<AppAuthProvider>(context);
+    final user = appAuth.appUser;
 
-        // Show splash/loading until auth state is determined
-        if (snapshot.connectionState != ConnectionState.done || (user == null && FirebaseAuth.instance.currentUser != null)) {
-          return MaterialApp(
-            home: Scaffold(
-              backgroundColor: Colors.black,
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Large logo image
-                    Image.asset(
-                      'assets/New_cc_logo.jpg',
-                      width: MediaQuery.of(context).size.width * 0.85,
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 32),
-                    // Progress indicator below image
-                    const CircularProgressIndicator(color: Colors.amber),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
+    if (_showGif) {
+      return MaterialApp(
+        home: GifSplashScreen(
+          onFinish: () {}, // No-op, handled by timer
+        ),
+      );
+    }
 
-        return MaterialApp(
+    // Proceed to app as normal
+    return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'VIP Lounge',
           theme: ThemeData(
@@ -257,8 +254,6 @@ class _AppState extends State<App> {
             return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
         }
       },
-        ); // End of MaterialApp
-      },
-    ); // End of FutureBuilder
+    );
   }
 }

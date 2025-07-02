@@ -255,7 +255,7 @@ void _showStaffAssignmentDetails(BuildContext context, Map<String, dynamic> noti
       backgroundColor: Colors.grey[900],
       title: Text(
         'Staff Assignment Details',
-        style: TextStyle(color: AppColors.gold),
+        style: TextStyle(color: AppColors.primary),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -368,7 +368,7 @@ void _showStaffAssignmentDetails(BuildContext context, Map<String, dynamic> noti
         TextButton(
           child: Text(
             'Close',
-            style: TextStyle(color: AppColors.gold),
+            style: TextStyle(color: AppColors.primary),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -458,7 +458,7 @@ void _navigateToChatWithStaff(
       backgroundColor: Colors.grey[900],
       title: Text(
         'Chat with $staffName',
-        style: TextStyle(color: AppColors.gold),
+        style: TextStyle(color: AppColors.primary),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -520,7 +520,7 @@ void _navigateToChatWithStaff(
         TextButton(
           child: Text(
             'Open Chat',
-            style: TextStyle(color: AppColors.gold),
+            style: TextStyle(color: AppColors.primary),
           ),
           onPressed: () {
             // Close the dialog

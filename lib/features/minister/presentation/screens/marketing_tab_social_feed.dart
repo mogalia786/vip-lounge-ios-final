@@ -35,7 +35,7 @@ class MarketingTabSocialFeed extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(child: Text('No posts yet.', style: TextStyle(color: Colors.white70)));
@@ -67,7 +67,7 @@ class _SocialFeedPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color typeColor = _typeColors[post.type] ?? AppColors.gold;
+    final Color typeColor = _typeColors[post.type] ?? AppColors.primary;
     final user = FirebaseAuth.instance.currentUser;
     final ministerData = Provider.of<AppAuthProvider>(context, listen: false).ministerData;
     final String ministerName = ministerData != null ? (ministerData['fullName'] ?? 'Minister') : (user?.displayName ?? 'Anonymous');
@@ -77,7 +77,7 @@ class _SocialFeedPostCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(22),
-        side: const BorderSide(color: AppColors.gold, width: 2),
+        side: const BorderSide(color: AppColors.primary, width: 2),
       ),
       color: AppColors.black.withOpacity(0.97),
       child: Column(
@@ -138,7 +138,7 @@ class _SocialFeedPostCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.phone, color: AppColors.gold, size: 20),
+                    Icon(Icons.phone, color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () async {
@@ -150,7 +150,7 @@ class _SocialFeedPostCard extends StatelessWidget {
                       child: Text(
                         post.telephoneNumber,
                         style: const TextStyle(
-                          color: AppColors.gold,
+                          color: AppColors.primary,
                           decoration: TextDecoration.underline,
                           fontWeight: FontWeight.bold,
                         ),

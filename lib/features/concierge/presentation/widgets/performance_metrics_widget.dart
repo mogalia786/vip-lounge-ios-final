@@ -169,7 +169,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
   Widget _buildMinisterSection(String ministerName, List<Map<String, dynamic>> appts) { // UI label: VIP
     return Card(
       color: Colors.grey[900],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.primary.withOpacity(0.3))),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -178,7 +178,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
           children: [
             Text(
               ministerName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.gold),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
             ),
             ...appts.map((appt) => Row(
                   children: [
@@ -219,7 +219,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
             child: Row(
               children: [
-                Flexible(child: _buildSummaryCard('Total', totalCount, AppColors.gold)),
+                Flexible(child: _buildSummaryCard('Total', totalCount, AppColors.primary)),
                 SizedBox(width: 8),
                 Flexible(child: _buildSummaryCard('Pending', pendingCount, Colors.orange)),
                 SizedBox(width: 8),
@@ -233,7 +233,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
             padding: const EdgeInsets.all(16.0),
             child: Text(
               'Performance Breakdown by VIP',
-              style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
           ListView.builder(
@@ -248,14 +248,14 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
           if (_futureAppointments.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
-              child: Text('Future Appointments', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 16)),
+              child: Text('Future Appointments', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ..._groupFutureAppointmentsByMinister().entries.map((entry) {
             final ministerName = entry.key;
             final appts = entry.value;
             return Card(
               color: Colors.grey[900],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: AppColors.primary.withOpacity(0.3))),
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -264,7 +264,7 @@ class _ConciergePerformanceMetricsWidgetState extends State<ConciergePerformance
                   children: [
                     Text(
                       ministerName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.gold),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
                     ),
                     ...appts.map((appt) => ListTile(
                           contentPadding: EdgeInsets.zero,

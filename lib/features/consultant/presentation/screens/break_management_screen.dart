@@ -263,11 +263,11 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
         backgroundColor: Colors.black,
         title: Text(
           'Break Management',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.primary),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: AppColors.gold),
+            icon: Icon(Icons.refresh, color: AppColors.primary),
             onPressed: () {
               _checkBreakStatus();
               _loadBreakHistory();
@@ -276,7 +276,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -288,7 +288,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: _isOnBreak ? Colors.red : AppColors.gold,
+                        color: _isOnBreak ? Colors.red : AppColors.primary,
                         width: _isOnBreak ? 2 : 1,
                       ),
                     ),
@@ -299,7 +299,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                           Text(
                             'Current Status',
                             style: TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.primary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -373,7 +373,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppColors.gold),
+                                      borderSide: BorderSide(color: AppColors.primary),
                                     ),
                                     counterStyle: TextStyle(color: Colors.grey),
                                   ),
@@ -406,7 +406,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                   Text(
                     'Today\'s Break History',
                     style: TextStyle(
-                      color: AppColors.gold,
+                      color: AppColors.primary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -491,7 +491,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                     color: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: AppColors.gold),
+                      side: BorderSide(color: AppColors.primary),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -501,7 +501,7 @@ class _BreakManagementScreenState extends State<BreakManagementScreen> {
                           Text(
                             'Break Policy Reminder',
                             style: TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),

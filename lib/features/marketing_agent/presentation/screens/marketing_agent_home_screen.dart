@@ -186,11 +186,11 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
         actions: [
           if (!_isOnBreak)
             IconButton(
-              icon: const Icon(Icons.add, color: AppColors.gold),
+              icon: const Icon(Icons.add, color: AppColors.primary),
               tooltip: 'Create Post',
               onPressed: () async {
                 final result = await Navigator.push(
@@ -206,7 +206,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.gold),
+            icon: const Icon(Icons.logout, color: AppColors.primary),
             onPressed: () => _handleLogout(context),
           ),
         ],
@@ -276,7 +276,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Break History', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+                child: Text('Break History', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
               ),
             ),
           if (_isClockedIn)
@@ -317,7 +317,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
             ),
           Expanded(
             child: _posts.isEmpty
-                ? const Center(child: Text('No posts yet.', style: TextStyle(color: AppColors.gold)))
+                ? const Center(child: Text('No posts yet.', style: TextStyle(color: AppColors.primary)))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _posts.length,
@@ -335,7 +335,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                             if (post['type'] != null && post['type'].toString().isNotEmpty)
                               Container(
                                 decoration: BoxDecoration(
-                                  color: kTypeColors[post['type']] ?? AppColors.gold,
+                                  color: kTypeColors[post['type']] ?? AppColors.primary,
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(18),
                                     topRight: Radius.circular(18),
@@ -345,7 +345,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                                 child: Text(
                                   post['type'],
                                   style: TextStyle(
-                                    color: getContrastTextColor(kTypeColors[post['type']] ?? AppColors.gold),
+                                    color: getContrastTextColor(kTypeColors[post['type']] ?? AppColors.primary),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                     letterSpacing: 1.1,
@@ -359,7 +359,7 @@ class _MarketingAgentHomeScreenState extends State<MarketingAgentHomeScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: Image.network(imageUrls[0], width: 60, height: 60, fit: BoxFit.cover),
                                     )
-                                  : const Icon(Icons.image, color: AppColors.gold, size: 40),
+                                  : const Icon(Icons.image, color: AppColors.primary, size: 40),
                               title: Text(
                                 post['details'] ?? '',
                                 style: const TextStyle(

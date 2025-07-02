@@ -74,7 +74,7 @@ class _TimeSlotCalendarState extends State<TimeSlotCalendar> {
                 formatButtonVisible: true,
                 titleCentered: true,
                 formatButtonDecoration: BoxDecoration(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 formatButtonTextStyle: const TextStyle(
@@ -82,33 +82,33 @@ class _TimeSlotCalendarState extends State<TimeSlotCalendar> {
                   fontWeight: FontWeight.bold,
                 ),
                 titleTextStyle: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
-                leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.gold),
-                rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.gold),
+                leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.primary),
+                rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.primary),
               ),
               calendarStyle: CalendarStyle(
                 selectedDecoration: BoxDecoration(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 todayDecoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.3),
+                  color: AppColors.primary.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
-                defaultTextStyle: TextStyle(color: AppColors.gold),
-                weekendTextStyle: TextStyle(color: AppColors.gold),
-                outsideTextStyle: TextStyle(color: AppColors.gold.withOpacity(0.5)),
-                disabledTextStyle: TextStyle(color: AppColors.gold.withOpacity(0.2)),
-                holidayTextStyle: TextStyle(color: AppColors.gold),
+                defaultTextStyle: TextStyle(color: AppColors.primary),
+                weekendTextStyle: TextStyle(color: AppColors.primary),
+                outsideTextStyle: TextStyle(color: AppColors.primary.withOpacity(0.5)),
+                disabledTextStyle: TextStyle(color: AppColors.primary.withOpacity(0.2)),
+                holidayTextStyle: TextStyle(color: AppColors.primary),
                 selectedTextStyle: const TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
                 todayTextStyle: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),

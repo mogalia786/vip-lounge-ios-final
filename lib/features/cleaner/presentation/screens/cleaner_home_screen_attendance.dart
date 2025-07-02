@@ -225,7 +225,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
         return Card(
           color: color,
           child: ListTile(
-            leading: Icon(Icons.notifications, color: AppColors.gold),
+            leading: Icon(Icons.notifications, color: AppColors.primary),
             title: Text(
               notif['title'] ?? 'Notification',
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -392,16 +392,16 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold),
+                  border: Border.all(color: AppColors.primary),
                 ),
                 child: Column(
                   children: [
                     Text(
                       DateFormat('E').format(day),
                       style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
+                        color: isSelected ? Colors.black : AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -409,7 +409,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
                     Text(
                       DateFormat('d').format(day),
                       style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.gold,
+                        color: isSelected ? Colors.black : AppColors.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
@@ -438,7 +438,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
               const Text(
                 'Appointments',
                 style: TextStyle(
-                  color: AppColors.gold,
+                  color: AppColors.primary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -492,7 +492,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('Performance Metrics', style: TextStyle(color: AppColors.gold, fontSize: 22, fontWeight: FontWeight.bold)),
+          Text('Performance Metrics', style: TextStyle(color: AppColors.primary, fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
           _buildMetricRow('Total Appointments', total.toString()),
           _buildMetricRow('Completed Appointments', completed.toString()),
@@ -510,7 +510,7 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: Colors.white, fontSize: 16)),
-          Text(value, style: TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -537,18 +537,18 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
             Text(
               'Role: Cleaner',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.verified, color: AppColors.gold, size: 22),
+            const Icon(Icons.verified, color: AppColors.primary, size: 22),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.gold),
+            icon: const Icon(Icons.logout, color: AppColors.primary),
             tooltip: 'Logout',
             onPressed: () async {
               await Provider.of<AppAuthProvider>(context, listen: false).signOut();
@@ -567,11 +567,11 @@ class _CleanerHomeScreenAttendanceState extends State<CleanerHomeScreenAttendanc
                 ],
                 body: body,
               )
-            : const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+            : const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedItemColor: AppColors.gold,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,

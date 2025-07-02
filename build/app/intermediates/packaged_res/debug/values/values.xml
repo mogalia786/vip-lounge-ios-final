@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FF0000</color>
+    <color name="ic_launcher_background">#000000</color>
     <string name="gcm_defaultSenderId" translatable="false">320766440190</string>
     <string name="google_api_key" translatable="false">AIzaSyCGc13W0AXOVu6z8dB_dyyndZw_oxKSIxc</string>
     <string name="google_app_id" translatable="false">1:320766440190:android:9d8801c42a7d9cc0842baf</string>

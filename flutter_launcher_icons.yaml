@@ -1,8 +1,15 @@
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/cc_logo.png"
-  adaptive_icon_background: "#FF0000"
-  adaptive_icon_foreground: "assets/cc_logo.png"
+  image_path: "assets/New_cc_logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/New_cc_logo.png"
+  remove_alpha_ios: true
   min_sdk_android: 21
-  padding: 0.25
+  android_adaptive_icon_foreground_padding: 0
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false

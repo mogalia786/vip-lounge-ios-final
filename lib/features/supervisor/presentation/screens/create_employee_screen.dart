@@ -74,10 +74,10 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
       appBar: AppBar(
         title: Text(
           'Create Employee',
-          style: TextStyle(color: AppColors.gold),
+          style: TextStyle(color: AppColors.primary),
         ),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.gold,
+        foregroundColor: AppColors.primary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -91,12 +91,12 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
                 dropdownColor: AppColors.black,
                 decoration: InputDecoration(
                   labelText: 'Select Role',
-                  labelStyle: TextStyle(color: AppColors.gold),
+                  labelStyle: TextStyle(color: AppColors.primary),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.primary),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold, width: 2),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
                 style: TextStyle(color: AppColors.white),
@@ -124,15 +124,15 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
                 controller: _employeeNumberController,
                 decoration: InputDecoration(
                   labelText: 'Employee Number',
-                  labelStyle: TextStyle(color: AppColors.gold),
+                  labelStyle: TextStyle(color: AppColors.primary),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.primary),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.gold),
+                    borderSide: BorderSide(color: AppColors.primary),
                   ),
                 ),
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(color: AppColors.primary),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter employee number';
@@ -144,7 +144,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleCreateEmployee,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
+                  backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
