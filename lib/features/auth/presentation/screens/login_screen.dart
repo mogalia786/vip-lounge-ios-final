@@ -141,20 +141,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 64),
+                        const SizedBox(height: 20),
+                        // Logo Image
+                        Image.asset(
+                          'assets/page_logo.png',
+                          height: 120,
+                          width: 120,
+                          fit: BoxFit.contain,
+                        ),
                         const SizedBox(height: 20),
                         Text(
                           'PREMIUM LOUNGE',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'VODAFONERGBD',
-                            fontSize: 40,
+                            fontSize: 36,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
                             letterSpacing: 2.0,
                           ),
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 30),
                         Form(
                           key: _formKey,
                           child: Column(

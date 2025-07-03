@@ -443,13 +443,32 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.black,
-          title: const Text(
-            'Staff',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Image.asset(
+                  'assets/Premium.ico',
+                  width: 24,
+                  height: 24,
+                  errorBuilder: (context, error, stackTrace) => 
+                      const Icon(Icons.star, color: Colors.amber, size: 24),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Staff',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
           ),
           bottom: _buildTabBar(),
           actions: [

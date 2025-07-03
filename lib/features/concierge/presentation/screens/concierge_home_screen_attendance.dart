@@ -686,15 +686,29 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
         elevation: 0,
         title: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Image.asset(
+                'assets/Premium.ico',
+                width: 24,
+                height: 24,
+                errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.star, color: Colors.amber, size: 24),
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
-              'Role: Concierge',
+              'Concierge',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
             ),
-            const SizedBox(width: 8),
             const Icon(Icons.verified, color: AppColors.primary, size: 22),
           ],
         ),

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">320766440190</string>
-    <string name="google_api_key" translatable="false">AIzaSyCGc13W0AXOVu6z8dB_dyyndZw_oxKSIxc</string>
-    <string name="google_app_id" translatable="false">1:320766440190:android:9d8801c42a7d9cc0842baf</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCGc13W0AXOVu6z8dB_dyyndZw_oxKSIxc</string>
-    <string name="google_storage_bucket" translatable="false">vip-lounge-f3730.firebasestorage.app</string>
-    <string name="project_id" translatable="false">vip-lounge-f3730</string>
-</resources>

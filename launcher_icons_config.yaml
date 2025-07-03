@@ -1,18 +1,26 @@
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path: "assets/New_cc_logo.png"
+  image_path: "assets/Premium.ico"
+  # Use a dark background to match the app theme
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/New_cc_logo.png"
+  adaptive_icon_foreground: "assets/Premium.ico"
   remove_alpha_ios: true
   min_sdk_android: 21
-  # Increased padding to 30% to ensure icon is fully visible
-  android_adaptive_icon_foreground_padding: "50%"
-  # Add more margin around the icon
-  padding: 15
+  # Increased padding to ensure icon is fully visible
+  android_adaptive_icon_foreground_padding: "35%"
+  # Add margin around the icon
+  padding: 20
+  # Add web configuration
   web:
-    generate: false
+    generate: true
+    image_path: "assets/Premium.ico"
+  # Windows configuration
   windows:
-    generate: false
+    generate: true
+    image_path: "assets/Premium.ico"
+    icon_size: 48
+  # macOS configuration
   macos:
-    generate: false
+    generate: true
+    image_path: "assets/Premium.ico"

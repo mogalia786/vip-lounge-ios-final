@@ -304,12 +304,31 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text(
-          'Staff Dashboards',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Image.asset(
+                'assets/Premium.ico',
+                width: 24,
+                height: 24,
+                errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.star, color: Colors.amber, size: 24),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Staff Dashboard',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         backgroundColor: AppColors.black,
         foregroundColor: AppColors.gold,
