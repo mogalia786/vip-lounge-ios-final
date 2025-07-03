@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
-import 'package:vip_lounge/features/staff/presentation/screens/staff_home_screen_test.dart';
+import 'staff/staff_home_screen.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/user_service.dart';
 import '../../../shared/utils/app_update_helper.dart';
+import '../../../../core/providers/app_auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,10 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'cleaner') {
           Navigator.pushReplacementNamed(context, '/cleaner/home');
         } else {
-          // TEST: Route staff to the new StaffHomeScreenTest for safe testing
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => StaffHomeScreenTest()),
+            MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
           );
         }
       } catch (e) {

@@ -13,7 +13,20 @@ class AppAuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get ministerData => _ministerData; // Expose minister data
   List<Map<String, dynamic>> get appointments => []; // Add a getter for appointments (dummy placeholder, replace with real logic as needed)
 
+  bool _isInitialized = false;
+
   AppAuthProvider() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    // Check for existing user first
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      await _fetchUserData(currentUser.uid);
+    }
+    
+    // Then listen for auth state changes
     _auth.authStateChanges().listen((User? user) async {
       if (user != null) {
         await _fetchUserData(user.uid);
@@ -23,21 +36,28 @@ class AppAuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
+    
+    _isInitialized = true;
   }
 
   Future<void> _fetchUserData(String uid) async {
     try {
-      print('Fetching user data for uid: $uid'); // Debug print
+      print('Fetching user data for uid: $uid');
       final doc = await _firestore.collection('users').doc(uid).get();
       
       if (doc.exists) {
         final data = doc.data() ?? {};
-        print('Raw user data from Firestore: $data'); // Debug print
+        print('Raw user data from Firestore: $data');
 
         // Get the user's email from Firebase Auth
         final firebaseUser = _auth.currentUser;
         final email = firebaseUser?.email ?? data['email'] ?? '';
-        print('User email: $email'); // Debug print
+        print('User email: $email');
+        
+        // Ensure we have the required fields
+        if (data['role'] == null) {
+          throw Exception('User document is missing required role field');
+        }
 
         // Store minister data if role is minister
         if (data['role'] == 'minister') {
@@ -49,7 +69,7 @@ class AppAuthProvider extends ChangeNotifier {
             'phoneNumber': data['phoneNumber'],
             'role': data['role'],
           };
-          print('Stored minister data: $_ministerData'); // Debug print
+          print('Stored minister data: $_ministerData');
         } else {
           _ministerData = null;
         }
@@ -82,16 +102,31 @@ class AppAuthProvider extends ChangeNotifier {
 
   Future<bool> signInWithEmail(String email, String password) async {
     try {
-      print('Attempting to sign in with email: $email'); // Debug print
+      print('Attempting to sign in with email: $email');
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      print('Sign in successful, fetching user data...'); // Debug print
-      await _fetchUserData(userCredential.user!.uid);
-      return true;
+      
+      if (userCredential.user != null) {
+        // Wait for the auth state to be updated
+        await _fetchUserData(userCredential.user!.uid);
+        
+        // Ensure the state is properly updated before returning
+        if (_appUser == null) {
+          throw Exception('Failed to load user data after sign in');
+        }
+        
+        print('Sign in successful for user: ${_appUser?.email}');
+        return true;
+      }
+      
+      return false;
     } catch (e) {
       print('Error signing in: $e');
+      _appUser = null;
+      _ministerData = null;
+      notifyListeners();
       return false;
     }
   }

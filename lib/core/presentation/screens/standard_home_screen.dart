@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../features/floor_manager/presentation/widgets/daily_schedule.dart';
 import '../../../features/floor_manager/presentation/screens/notifications_screen.dart';
 import '../../../features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
@@ -107,23 +108,54 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
       });
     }
 
-    final List<Widget> pages = [
-      // Daily Schedule Page
-      Scaffold(
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('Daily Schedule (Role: ${user.role})'),
-          backgroundColor: AppColors.primary,
+          backgroundColor: Colors.black,
+          title: Text(
+            'VIP Lounge',
+            style: TextStyle(color: Colors.white),
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
           actions: [
             IconButton(
-              icon: const Icon(Icons.dashboard),
+              icon: const Icon(Icons.dashboard, color: AppColors.primary),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew()),
                 );
               },
             ),
+            if (_unreadNotifications > 0)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_unreadNotifications',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             IconButton(
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout, color: AppColors.primary),
               onPressed: () {
                 Provider.of<AppAuthProvider>(context, listen: false).signOut();
                 Navigator.of(context).pushReplacementNamed('/login');
@@ -131,87 +163,10 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            // Date scroll bar
-            SizedBox(
-              height: 60,
-              // Date scroll removed as per user instruction
-              child: SizedBox(),
-            ),
-            Expanded(
-              child: DailySchedule(selectedDate: _selectedDate),
-            ),
-          ],
+        body: Container(
+          color: Colors.black.withOpacity(0.6), // Semi-transparent overlay for better text readability
+          child: DailySchedule(selectedDate: _selectedDate),
         ),
-      ),
-
-      // Notifications Page
-      NotificationsScreen(userRole: user.role),
-    ];
-
-    final int navLength = 2; // Only 2 pages defined above
-
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex < navLength ? _selectedIndex : 0,
-        children: pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Staff',
-          ),
-          BottomNavigationBarItem(
-            icon: Stack(
-              children: [
-                const Icon(Icons.notifications),
-                if (_unreadNotifications > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 14,
-                        minHeight: 14,
-                      ),
-                      child: Text(
-                        '$_unreadNotifications',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            label: 'Notifications',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index < navLength ? index : 0;
-          });
-        },
       ),
     );
   }

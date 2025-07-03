@@ -1465,16 +1465,24 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        _buildMainContent(context),
-      ],
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        children: [
+          _buildMainContent(context),
+        ],
+      ),
     );
   }
 
   Widget _buildMainContent(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Consultant Home'),
         backgroundColor: Colors.black,

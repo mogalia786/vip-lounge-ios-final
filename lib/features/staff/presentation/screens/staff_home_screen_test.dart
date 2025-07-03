@@ -89,7 +89,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
       appBar: _tabController.index == 0
         ? AppBar(
             backgroundColor: Colors.black,
-            title: const Text('Staff Dashboards',
+            title: const Text('Staffs Dashboards',
                 style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -181,7 +181,7 @@ class _StaffHomeScreenTestState extends State<StaffHomeScreenTest> with SingleTi
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.richGold,
               tabs: const [
-                Tab(text: 'Staff'),
+                Tab(text: 'Staf'),
                 Tab(text: 'Consultant'),
               ],
             ),

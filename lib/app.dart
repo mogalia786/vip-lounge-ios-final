@@ -16,7 +16,7 @@ import 'features/consultant/presentation/screens/consultant_home_screen_attendan
 import 'features/concierge/presentation/screens/concierge_home_screen_attendance.dart' as concierge_attendance;
 import 'features/cleaner/presentation/screens/cleaner_home_screen_attendance.dart';
 import 'features/marketing_agent/presentation/screens/marketing_agent_home_screen.dart';
-import 'features/staff/presentation/screens/staff_home_screen.dart';
+import 'features/auth/presentation/screens/staff/staff_home_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/fcm_service.dart';
 import 'core/services/vip_notification_service.dart';
@@ -125,6 +125,8 @@ class _AppState extends State<App> {
               return MaterialPageRoute(builder: (_) => const concierge_attendance.ConciergeHomeScreenAttendance());
             case 'cleaner':
               return MaterialPageRoute(builder: (_) => const CleanerHomeScreenAttendance());
+            case 'staff':
+              return MaterialPageRoute(builder: (_) => const StaffHomeScreen());
             default:
               return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
           }

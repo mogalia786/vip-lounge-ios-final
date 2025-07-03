@@ -161,9 +161,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 child: Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: AppColors.richGold, width: 2),
+                    side: BorderSide(color: AppColors.gold, width: 2),
                   ),
-                  color: AppColors.black,
+                  color: Colors.black,
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -181,9 +181,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               sliver: SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primary, width: 2),
+                    border: Border.all(color: Colors.amber, width: 2),
                     borderRadius: BorderRadius.circular(18),
-                    color: AppColors.black,
                   ),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -199,13 +198,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                             decoration: BoxDecoration(
                               gradient: isSelected
-                                ? LinearGradient(colors: [AppColors.primary, AppColors.primary])
-                                : LinearGradient(colors: [AppColors.black, AppColors.black]),
+                                ? LinearGradient(colors: [AppColors.gold, Colors.orange.shade700])
+                                : LinearGradient(colors: [Colors.black87, Colors.grey.shade800]),
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: isSelected
-                                ? [BoxShadow(color: AppColors.primary.withOpacity(0.25), blurRadius: 12, offset: Offset(0, 2))]
+                                ? [BoxShadow(color: Colors.amber.withOpacity(0.25), blurRadius: 12, offset: Offset(0, 2))]
                                 : [],
-                              border: isSelected ? Border.all(color: AppColors.primary, width: 3) : null,
+                              border: isSelected ? Border.all(color: Colors.deepOrange, width: 3) : null,
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -213,7 +212,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                 Text(
                                   DateFormat('EEE').format(date),
                                   style: TextStyle(
-                                    color: isSelected ? AppColors.white : AppColors.primary,
+                                    color: isSelected ? Colors.deepOrange : AppColors.gold,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -222,7 +221,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                 Text(
                                   DateFormat('d').format(date),
                                   style: TextStyle(
-                                    color: isSelected ? AppColors.white : AppColors.primary,
+                                    color: isSelected ? Colors.amber[900] : Colors.amber[100],
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                   ),
@@ -295,8 +294,15 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.black,
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text(
           'Staff Dashboards',
@@ -306,20 +312,20 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           ),
         ),
         backgroundColor: AppColors.black,
-        foregroundColor: AppColors.primary,
+        foregroundColor: AppColors.gold,
         actions: [
           // Notification bell icon with badge
           IconButton(
             icon: Stack(
               children: [
-                const Icon(Icons.notifications, color: AppColors.primary),
+                const Icon(Icons.notifications, color: AppColors.gold),
                 Positioned(
                   right: 0,
                   top: 0,
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     constraints: const BoxConstraints(
@@ -329,7 +335,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                     child: const Text(
                       '!',
                       style: TextStyle(
-                        color: AppColors.black,
+                        color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -351,7 +357,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           IconButton(
             icon: Stack(
               children: [
-                const Icon(Icons.inbox, color: AppColors.primary),
+                const Icon(Icons.inbox, color: AppColors.gold),
                 Positioned(
                   right: 0,
                   top: 0,
@@ -371,7 +377,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.calendar_today, color: AppColors.primary),
+            icon: const Icon(Icons.calendar_today, color: AppColors.gold),
             tooltip: 'Select Month',
             onPressed: () async {
               final now = DateTime.now();
@@ -393,26 +399,26 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.primary),
+            icon: const Icon(Icons.logout, color: AppColors.gold),
             onPressed: () => _handleLogout(context),
           ),
         ],
       ),
       body: _getTabBody(),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.black,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.primary,
+        backgroundColor: Colors.black,
+        selectedItemColor: AppColors.gold,
+        unselectedItemColor: Colors.white70,
         currentIndex: _selectedIndex,
         onTap: _onNavTap,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home, color: AppColors.primary), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt, color: AppColors.primary), label: 'My Daily Activities'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_note, color: AppColors.primary), label: 'My Scheduled Activities'),
-          BottomNavigationBarItem(icon: Icon(Icons.inbox, color: AppColors.primary), label: 'Inbox'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart, color: AppColors.primary), label: 'Performance'),
+          BottomNavigationBarItem(icon: Icon(Icons.home, color: AppColors.gold), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt, color: AppColors.gold), label: 'My Daily Activities'),
+          BottomNavigationBarItem(icon: Icon(Icons.event_note, color: AppColors.gold), label: 'My Scheduled Activities'),
+          BottomNavigationBarItem(icon: Icon(Icons.inbox, color: AppColors.gold), label: 'Inbox'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart, color: AppColors.gold), label: 'Performance'),
         ],
       ),
     );
@@ -435,13 +441,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: AppColors.richGold),
+              Icon(icon, size: 48, color: AppColors.gold),
               const SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.richGold,
+                  color: AppColors.gold,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

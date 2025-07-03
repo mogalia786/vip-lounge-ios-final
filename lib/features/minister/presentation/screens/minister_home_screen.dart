@@ -723,39 +723,46 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     
     print('MinisterHomeScreen - Minister Data: $ministerData'); // Debug print
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.question_answer),
-            label: 'Query',
-          ),
-          BottomNavigationBarItem(
-            icon: Builder(
-              builder: (context) {
-                final userId = Provider.of<AppAuthProvider>(context, listen: false).appUser?.uid ?? '';
-                return NotificationBellBadge(userId: userId);
-              },
-            ),
-            label: 'Notifications',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Marketing',
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
       ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        bottomNavigationBar: AppBottomNavBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment),
+              label: 'Bookings',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.question_answer),
+              label: 'Query',
+            ),
+            BottomNavigationBarItem(
+              icon: Builder(
+                builder: (context) {
+                  final userId = Provider.of<AppAuthProvider>(context, listen: false).appUser?.uid ?? '';
+                  return NotificationBellBadge(userId: userId);
+                },
+              ),
+              label: 'Notifications',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.campaign),
+              label: 'Marketing',
+            ),
+          ],
+        ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Column(
@@ -843,42 +850,44 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           ),
         ],
       ),
-      body: _selectedIndex == 3 
-        ? _buildNotificationsView() 
-        : _selectedIndex == 4 
-          ? MarketingTabSocialFeed()           : Column(
-              children: [
-                // Tab controller for Marketing and Bookings
-                Expanded(
-                  child: DefaultTabController(
-                    length: 2,
-                    child: Column(
-                      children: [
-                        TabBar(
-                          labelColor: AppColors.gold,
-                          unselectedLabelColor: Colors.grey,
-                          indicatorColor: AppColors.gold,
-                          tabs: const [
-                            Tab(text: 'My Broadcast', icon: Icon(Icons.campaign)),
-                            Tab(text: 'MY BOOKINGS', icon: Icon(Icons.calendar_today)),
-                          ],
-                        ),
-                        Expanded(
-                          child: TabBarView(
-                            children: [
-                              // Marketing tab
-                              MarketingTabSocialFeed(),
-                              // Bookings tab
-                              _buildBookingsTab(),
+        body: _selectedIndex == 3 
+          ? _buildNotificationsView() 
+          : _selectedIndex == 4 
+            ? const MarketingTabSocialFeed()
+            : Column(
+                children: [
+                  // Tab controller for Marketing and Bookings
+                  Expanded(
+                    child: DefaultTabController(
+                      length: 2,
+                      child: Column(
+                        children: [
+                          TabBar(
+                            labelColor: AppColors.gold,
+                            unselectedLabelColor: Colors.grey,
+                            indicatorColor: AppColors.gold,
+                            tabs: const [
+                              Tab(text: 'My Broadcast', icon: Icon(Icons.campaign)),
+                              Tab(text: 'MY BOOKINGS', icon: Icon(Icons.calendar_today)),
                             ],
                           ),
-                        ),
-                      ],
-                    ), // <-- closes Column
-                  ), // <-- closes DefaultTabController
-                ), // <-- closes Expanded
-              ],
-            )
+                          Expanded(
+                            child: TabBarView(
+                              children: [
+                                // Marketing tab
+                                const MarketingTabSocialFeed(),
+                                // Bookings tab
+                                _buildBookingsTab(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 

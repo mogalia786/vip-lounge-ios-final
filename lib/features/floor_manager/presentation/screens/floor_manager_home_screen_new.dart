@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'feedback_management_screen.dart';
 import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_list_screen.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
@@ -18,10 +17,8 @@ import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
 import 'employee_registration_screen.dart';
 import 'floor_manager_query_inbox_screen.dart';
-import 'floor_manager_chat_list_screen.dart';
 import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import '../../widgets/attendance_actions_widget.dart';
-import '../widgets/message_icon_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../screens/closed_days_screen.dart';
@@ -41,13 +38,6 @@ class FloorManagerHomeScreenNew extends StatefulWidget {
 }
 
 class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
-  void _openFeedbackManagementScreen() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FeedbackManagementScreen(),
-      ),
-    );
-  }
   int _unreadNotifications = 0;
   DateTime _selectedDate = DateTime.now();
   final ScrollController _horizontalScrollController = ScrollController();
@@ -202,7 +192,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 backgroundColor: Colors.black,
                 title: Text(
                   'Select $staffType',
-                  style: TextStyle(color: AppColors.primary),
+                  style: TextStyle(color: AppColors.gold),
                 ),
                 content: Container(
                   height: 300,
@@ -237,7 +227,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                 staffName.isNotEmpty ? staffName : 'Staff #$index',
                                 style: TextStyle(color: Colors.white),
                               ),
-                              trailing: Icon(Icons.arrow_forward, color: AppColors.primary),
+                              trailing: Icon(Icons.arrow_forward, color: AppColors.gold),
                               onTap: () async {
                                 await _assignStaff(appointmentId, staffType, staffName, staffId);
                                 setState(() {}); // Triggers UI refresh
@@ -250,7 +240,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: TextStyle(color: AppColors.primary)),
+                    child: Text('Cancel', style: TextStyle(color: AppColors.gold)),
                   ),
                 ],
               ),
@@ -263,7 +253,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 backgroundColor: Colors.black,
                 title: Text(
                   'Select $staffType',
-                  style: TextStyle(color: AppColors.primary),
+                  style: TextStyle(color: AppColors.gold),
                 ),
                 content: Container(
                   height: 300,
@@ -275,7 +265,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                        return Center(child: CircularProgressIndicator(color: AppColors.gold));
                       }
 
                       final staffList = snapshot.data!.docs;
@@ -295,7 +285,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                               staffName.isNotEmpty ? staffName : 'Staff #$index',
                               style: TextStyle(color: Colors.white),
                             ),
-                            trailing: Icon(Icons.arrow_forward, color: AppColors.primary),
+                            trailing: Icon(Icons.arrow_forward, color: AppColors.gold),
                             onTap: () async {
                               await _assignStaff(appointmentId, staffType, staffName, staffId);
                               setState(() {}); // Triggers UI refresh
@@ -310,7 +300,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: TextStyle(color: AppColors.primary)),
+                    child: Text('Cancel', style: TextStyle(color: AppColors.gold)),
                   ),
                 ],
               ),
@@ -434,7 +424,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
     // Role colors for visual identification
     final Map<String, Color> roleColors = {
       'minister': Colors.purple,
-      'floor_manager': AppColors.primary,
+      'floor_manager': AppColors.gold,
       'consultant': Colors.blue,
       'concierge': Colors.green,
       'cleaner': Colors.orange,
@@ -488,13 +478,13 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
               title: Text(
                 'Chat with $ministerName',
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: AppColors.gold,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               leading: IconButton(
-                icon: Icon(Icons.arrow_back, color: AppColors.primary),
+                icon: Icon(Icons.arrow_back, color: AppColors.gold),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -524,7 +514,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                         SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, color: AppColors.primary, size: 14),
+                            Icon(Icons.calendar_today, color: AppColors.gold, size: 14),
                             SizedBox(width: 4),
                             Text(
                               '$appointmentDateFormatted, $appointmentTimeFormatted',
@@ -536,7 +526,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                           SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.phone, color: AppColors.primary, size: 14),
+                              Icon(Icons.phone, color: AppColors.gold, size: 14),
                               SizedBox(width: 4),
                               Text(
                                 ministerPhone,
@@ -561,7 +551,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                           .snapshots(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                          return Center(child: CircularProgressIndicator(color: AppColors.gold));
                         }
                         
                         if (snapshot.hasError) {
@@ -603,7 +593,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                 : CrossAxisAlignment.start;
                             
                             final bubbleColor = isFromFloorManager 
-                                ? AppColors.primary.withOpacity(0.2) 
+                                ? AppColors.gold.withOpacity(0.2) 
                                 : Colors.grey[800]!;
                             
                             final textColor = isFromFloorManager 
@@ -611,7 +601,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                 : Colors.white;
                             
                             final borderColor = isFromFloorManager 
-                                ? AppColors.primary.withOpacity(0.5) 
+                                ? AppColors.gold.withOpacity(0.5) 
                                 : Colors.grey[700]!;
                             
                             return Padding(
@@ -802,7 +792,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                           height: 24,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: AppColors.primary,
+                                            color: AppColors.gold,
                                           ),
                                           child: Center(
                                             child: Text(
@@ -854,7 +844,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.send, color: AppColors.primary),
+                          icon: Icon(Icons.send, color: AppColors.gold),
                           onPressed: () {
                             final message = messageController.text;
                             if (message.trim().isNotEmpty) {
@@ -1046,7 +1036,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
       builder: (context, snapshot) {
         // First attempt with timestamp range
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: AppColors.primary));
+          return Center(child: CircularProgressIndicator(color: AppColors.gold));
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -1059,7 +1049,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 .snapshots(),
             builder: (context, dateStrSnapshot) {
               if (dateStrSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                return Center(child: CircularProgressIndicator(color: AppColors.gold));
               }
 
               if (!dateStrSnapshot.hasData || dateStrSnapshot.data!.docs.isEmpty) {
@@ -1072,7 +1062,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                       .snapshots(),
                   builder: (context, dateStrAltSnapshot) {
                     if (dateStrAltSnapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                      return Center(child: CircularProgressIndicator(color: AppColors.gold));
                     }
 
                     if (!dateStrAltSnapshot.hasData || dateStrAltSnapshot.data!.docs.isEmpty) {
@@ -1132,7 +1122,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                               SizedBox(height: 16),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
+                                  backgroundColor: AppColors.gold,
                                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 ),
                                 onPressed: () {
@@ -1223,7 +1213,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: hasMessages ? AppColors.primary : Colors.grey[800]!,
+                color: hasMessages ? AppColors.gold : Colors.grey[800]!,
                 width: hasMessages ? 2 : 1,
               ),
             ),
@@ -1265,7 +1255,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.schedule, color: AppColors.primary, size: 18),
+                            Icon(Icons.schedule, color: AppColors.gold, size: 18),
                             SizedBox(width: 8),
                             Text(
                               appointmentTimeDisplay,
@@ -1347,7 +1337,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                             Container(
                               padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: hasMessages ? AppColors.primary : Colors.grey[800],
+                                color: hasMessages ? AppColors.gold : Colors.grey[800],
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: hasMessages ? Colors.amber : Colors.grey[600]!,
@@ -1481,7 +1471,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Icon(icon, size: 16, color: AppColors.gold),
           SizedBox(width: 8),
           Expanded(
             child: RichText(
@@ -1767,36 +1757,39 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        children: [
+          _buildMainContent(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context) {
     final currentUser = Provider.of<AppAuthProvider>(context).appUser;
     final userName = currentUser != null ? currentUser.name ?? 'Floor Manager' : 'Floor Manager';
     final floorManagerId = currentUser?.uid;
     final floorManagerName = currentUser?.name ?? 'Floor Manager';
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.arrow_back, color: AppColors.primary),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
         title: Row(
           children: [
-            IconButton(
-              icon: Icon(Icons.feedback_outlined, color: AppColors.primary),
-              tooltip: 'Create Feedback',
-              onPressed: () {
-                // TODO: Implement feedback creation dialog/screen
-              },
-            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Welcome, $userName',
-                    style: TextStyle(color: AppColors.primary, fontSize: 16),
+                    style: TextStyle(color: AppColors.gold, fontSize: 16),
                   ),
                   Text(
                     DateFormat('EEEE, MMMM d').format(DateTime.now()),
@@ -1810,11 +1803,6 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.note_add, color: Colors.deepPurpleAccent),
-            tooltip: 'Feedback Management',
-            onPressed: _openFeedbackManagementScreen,
-          ),
           IconButton(
             icon: Icon(Icons.search),
             onPressed: () {
@@ -1831,7 +1819,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 context: context,
                 builder: (context) => AlertDialog(
                   backgroundColor: Colors.black,
-                  title: Text('Confirm Location Change', style: TextStyle(color: AppColors.primary)),
+                  title: Text('Confirm Location Change', style: TextStyle(color: AppColors.gold)),
                   content: Text(
                     'Are you sure you want to change the business address to your current location? This action cannot be undone.',
                     style: TextStyle(color: Colors.white),
@@ -1843,7 +1831,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: Text('Yes', style: TextStyle(color: AppColors.primary)),
+                      child: Text('Yes', style: TextStyle(color: AppColors.gold)),
                     ),
                   ],
                 ),
@@ -1920,7 +1908,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                     builder: (context, setState) {
                       return AlertDialog(
                         backgroundColor: Colors.black,
-                        title: Text('Set Business Hours', style: TextStyle(color: AppColors.primary)),
+                        title: Text('Set Business Hours', style: TextStyle(color: AppColors.gold)),
                         content: SizedBox(
                           width: 320,
                           child: Column(
@@ -1948,7 +1936,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                           });
                                         },
                                       ),
-                                      Text('Closed', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                                      Text('Closed', style: TextStyle(color: AppColors.gold, fontSize: 12)),
                                       if (!(businessHours[day]!['closed'] ?? false)) ...[
                                         TextButton(
                                           onPressed: () async {
@@ -2005,7 +1993,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                             child: Text('Cancel', style: TextStyle(color: Colors.grey)),
                           ),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
                             onPressed: () async {
                               // Prepare Firestore structure
                               Map<String, dynamic> toSave = {};
@@ -2140,7 +2128,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.gold,
         unselectedItemColor: Colors.grey,
         currentIndex: _selectedIndex,
         onTap: (index) {
@@ -2171,11 +2159,10 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                 ),
               );
               break;
-            case 4: // Messages
-              print('DEBUG: Navigating to FloorManagerChatListScreen');
+            case 4: // Employee Registration
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => FloorManagerChatListScreen()),
+                MaterialPageRoute(builder: (context) => EmployeeRegistrationScreen()),
               );
               break;
           }
@@ -2205,15 +2192,8 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
             label: 'Inbox',
           ),
           BottomNavigationBarItem(
-            icon: MessageIconWidget(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => FloorManagerChatListScreen()),
-                );
-              },
-            ),
-            label: 'Messages',
+            icon: Icon(Icons.person_add),
+            label: 'Register',
           ),
         ],
       ),

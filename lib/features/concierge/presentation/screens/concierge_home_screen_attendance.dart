@@ -65,9 +65,17 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
   }
 
   @override
- Widget build(BuildContext context) {
-  return _buildMainContent(context);
-}
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/page_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: _buildMainContent(context),
+    );
+  }
 
   String _performanceTimeframe = 'Month';
   DateTime _getPerformanceDateForTimeframe(String timeframe) {
@@ -672,7 +680,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
       body = _buildPerformanceTab();
     }
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
