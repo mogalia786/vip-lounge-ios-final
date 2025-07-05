@@ -119,31 +119,38 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/page_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
+    return DefaultTabController(
+      length: 2, // Number of tabs (Staff and Consultants)
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          title: const Text(
-            'Staff Dashboards',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          title: Row(
+            children: [
+              Image.asset(
+                'assets/Premium.ico',
+                width: 40,
+                height: 40,
+                errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.star, color: Colors.amber, size: 40),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Staff Dashboard',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.gold,
+                ),
+              ),
+            ],
           ),
-          backgroundColor: AppColors.black,
-          foregroundColor: AppColors.gold,
+          backgroundColor: Colors.black,
           actions: [
             // Notification bell icon with badge
             IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.notifications, color: AppColors.gold),
+                  const Icon(Icons.notifications, color: AppColors.gold, size: 28),
                   Positioned(
                     right: 0,
                     top: 0,
@@ -169,7 +176,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   ),
                 ],
               ),
-              tooltip: 'Notifications',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -179,10 +185,11 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 );
               },
             ),
+            // Queries inbox icon
             IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.inbox, color: AppColors.gold),
+                  const Icon(Icons.inbox, color: AppColors.gold, size: 28),
                   Positioned(
                     right: 0,
                     top: 0,
@@ -201,36 +208,39 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 );
               },
             ),
+            // Logout button
             IconButton(
-              icon: const Icon(Icons.calendar_today, color: AppColors.gold),
-              tooltip: 'Select Month',
-              onPressed: () async {
-                final now = DateTime.now();
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime(_selectedDate.year, _selectedDate.month, 1),
-                  firstDate: DateTime(now.year - 5, 1),
-                  lastDate: DateTime(now.year + 1, 12),
-                  initialEntryMode: DatePickerEntryMode.calendarOnly,
-                  selectableDayPredicate: (day) => day.day == 1,
-                  helpText: 'Select Month',
-                );
-                if (picked != null) {
-                  setState(() {
-                    _selectedDate = DateTime(picked.year, picked.month, 1);
-                    _selectedIndex = 4; // Switch to Performance tab
-                  });
-                }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout, color: AppColors.gold),
+              icon: const Icon(Icons.logout, color: AppColors.gold, size: 28),
               onPressed: () => _handleLogout(context),
             ),
           ],
+          bottom: TabBar(
+            labelColor: AppColors.gold,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: AppColors.gold,
+            tabs: const [
+              Tab(text: 'Staff'),
+              Tab(text: 'Consultants'),
+            ],
+          ),
         ),
-        body: _getTabBody(),
-        bottomNavigationBar: BottomNavigationBar(
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/page_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: TabBarView(
+            children: [
+              // Staff Tab Content
+              _getTabBody(),
+              // Consultants Tab Content
+              const Center(child: Text('Consultants Content', style: TextStyle(color: Colors.white))),
+            ],
+          ),
+        ),
+          bottomNavigationBar: BottomNavigationBar(
           backgroundColor: Colors.black,
           selectedItemColor: AppColors.gold,
           unselectedItemColor: Colors.white70,

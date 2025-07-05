@@ -771,18 +771,11 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Image.asset(
-                    'assets/Premium.ico',
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.contain,
-                  ),
+                Image.asset(
+                  'assets/Premium.ico',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(width: 8),
                 Text(

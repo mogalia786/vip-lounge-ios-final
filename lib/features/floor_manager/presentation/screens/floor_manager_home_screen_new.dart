@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_list_screen.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_chat_list_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -1799,7 +1800,17 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.check_circle, color: Colors.blue, size: 22),
+            IconButton(
+              icon: const Icon(Icons.message, color: Colors.blue, size: 24),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FloorManagerChatListScreen(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
         actions: [

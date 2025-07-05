@@ -39,18 +39,24 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-    _tabController.addListener(() {
-      setState(() {
-        _selectedIndex = _tabController.index;
-      });
-    });
+    // Total number of tabs (Home, Consultant, Daily, Scheduled, Performance)
+    _tabController = TabController(length: 5, vsync: this, initialIndex: 0);
+    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) {
+      setState(() {
+        _selectedIndex = _tabController.index;
+      });
+    }
   }
 
   PreferredSizeWidget _buildTabBar() {
@@ -69,7 +75,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
             Tab(icon: Icon(Icons.people), text: 'Consultant'),
             Tab(icon: Icon(Icons.list_alt), text: 'Daily'),
             Tab(icon: Icon(Icons.event_note), text: 'Scheduled'),
-            Tab(icon: Icon(Icons.inbox), text: 'Inbox'),
+            Tab(icon: Icon(Icons.bar_chart), text: 'Performance'),
           ],
         ),
       ),
@@ -239,49 +245,97 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
   }
 
   Widget _buildBottomNavBar() {
+    // Map tab indices to match between TabBar and BottomNavigationBar
+    final tabToNavIndex = {
+      0: 0, // Home
+      1: 1, // Consultant
+      2: 2, // Daily
+      3: 3, // Scheduled
+      4: 5, // Performance (index 5 in bottom nav)
+    };
+
+    // Map navigation indices back to tab indices
+    final navToTabIndex = {
+      0: 0, // Home
+      1: 1, // Consultant
+      2: 2, // Daily
+      3: 3, // Scheduled
+      5: 4, // Performance (tab index 4 corresponds to nav index 5)
+    };
+
     return BottomNavigationBar(
       backgroundColor: Colors.black,
-      selectedItemColor: AppColors.primary,
+      selectedItemColor: AppColors.gold,
       unselectedItemColor: Colors.white70,
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        switch (index) {
-          case 0: // Dashboard
-          case 1: // Daily
-          case 2: // Scheduled
-          case 4: // Performance
-            setState(() => _selectedIndex = index);
-            break;
-          case 3: // Inbox
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => StaffQueryInboxScreen(currentStaffUid: _userId ?? ''),
-              ),
-            );
-            break;
+      currentIndex: tabToNavIndex[_selectedIndex] ?? 0,
+      onTap: (navIndex) {
+        // Handle Inbox navigation (special case)
+        if (navIndex == 4) { // Inbox tab
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StaffQueryInboxScreen(currentStaffUid: _userId ?? ''),
+            ),
+          );
+          return;
+        }
+
+        // For other tabs, update both the tab controller and selected index
+        final tabIndex = navToTabIndex[navIndex] ?? 0;
+        if (_tabController.index != tabIndex) {
+          setState(() {
+            _selectedIndex = tabIndex;
+            _tabController.animateTo(tabIndex);
+          });
         }
       },
       type: BottomNavigationBarType.fixed,
       elevation: 8,
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
       items: [
-        const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        const BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Consultant'),
-        const BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Daily'),
-        const BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'Scheduled'),
+        // Home
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.home, size: 24),
+          label: 'Home',
+        ),
+        // Consultant
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.people, size: 24),
+          label: 'Consultant',
+        ),
+        // Daily
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.list_alt, size: 24),
+          label: 'Daily',
+        ),
+        // Scheduled
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.event_note, size: 24),
+          label: 'Scheduled',
+        ),
+        // Inbox (special tab that doesn't correspond to a main tab)
         BottomNavigationBarItem(
           icon: Stack(
+            clipBehavior: Clip.none,
             children: [
-              const Icon(Icons.inbox),
+              const Icon(Icons.inbox, size: 24),
               Positioned(
-                right: 0,
-                child: StaffQueryBadge(currentStaffUid: _userId ?? ''),
+                right: -4,
+                top: -4,
+                child: StaffQueryBadge(
+                  currentStaffUid: _userId ?? '',
+                ),
               ),
             ],
           ),
           label: 'Inbox',
         ),
-        const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Performance'),
+        // Performance
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart, size: 24),
+          label: 'Performance',
+        ),
       ],
     );
   }
@@ -341,8 +395,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
   Widget _buildTabView() {
     return TabBarView(
       controller: _tabController,
+      physics: const NeverScrollableScrollPhysics(), // Prevent horizontal swiping
       children: [
-        // Dashboard Tab
+        // Home Tab
         _buildDashboardTab(),
         
         // Consultant Tab with Unified Appointment Cards
@@ -350,6 +405,40 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
           color: Colors.transparent,
           padding: const EdgeInsets.all(16.0),
           child: _buildConsultantAppointmentsList(),
+        ),
+        
+        // Daily Activities Tab
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: StaffDailyActivitiesListWidget(
+            userId: _userId ?? '',
+            selectedDate: _selectedDate,
+          ),
+        ),
+        
+        // Scheduled Activities Tab
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: StaffScheduledActivitiesListWidget(
+            userId: _userId ?? '',
+            selectedDate: _selectedDate,
+          ),
+        ),
+        
+        // Performance Tab
+        SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - kToolbarHeight - kBottomNavigationBarHeight - 32,
+              ),
+              child: StaffPerformanceMetricsWidget(
+                userId: _userId ?? '',
+                selectedDate: _selectedDate,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -405,138 +494,186 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
   }
 
   Widget _getTabBody() {
-    switch (_selectedIndex) {
-      case 0: // Home/Dashboard
-        return _buildDashboardTab();
-      case 1: // Consultant/Appointments
-        return _buildTabView();
-      case 2: // Daily Activities
-        return ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            StaffDailyActivitiesListWidget(userId: _userId ?? '', selectedDate: _selectedDate),
+    return _buildTabView();
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
           ],
+        ),
+      );
+
+      if (confirmed == true) {
+        final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
+        await authProvider.signOut();
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error during logout: ${e.toString()}')),
         );
-      case 4: // Performance
-        return ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            StaffPerformanceMetricsWidget(userId: _userId ?? '', selectedDate: _selectedDate),
-          ],
-        );
-      default:
-        return const SizedBox.shrink();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/page_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Image.asset(
-                  'assets/Premium.ico',
-                  width: 24,
-                  height: 24,
-                  errorBuilder: (context, error, stackTrace) => 
-                      const Icon(Icons.star, color: Colors.amber, size: 24),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Staff',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/page_bg.png'),
+            fit: BoxFit.cover,
           ),
-          bottom: _buildTabBar(),
-          actions: [
-            IconButton(
-              icon: Stack(
+        ),
+        child: Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Column(
                 children: [
-                  const Icon(Icons.notifications, color: AppColors.primary),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: StaffQueryBadge(currentStaffUid: _userId ?? ''),
+                  AppBar(
+                    backgroundColor: Colors.black,
+                    title: const Text(
+                      'Staff',
+                      style: TextStyle(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.logout,
+                        color: AppColors.gold,
+                        size: 28.0,
+                      ),
+                      tooltip: 'Logout',
+                      onPressed: _handleLogout,
+                    ),
+                    elevation: 0,
+                    actions: [
+                      // Notification Button
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                        child: IconButton(
+                          icon: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(
+                                Icons.notifications_outlined,
+                                color: AppColors.gold,
+                                size: 32.0,
+                              ),
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: const Text(
+                                    '!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NotificationsScreen(
+                                  userRole: 'staff',
+                                  userId: _userId ?? '',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      
+                      // Inbox Button
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0, left: 4.0, top: 8.0, bottom: 8.0),
+                        child: IconButton(
+                          icon: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(
+                                Icons.inbox_outlined,
+                                color: AppColors.gold,
+                                size: 32.0,
+                              ),
+                              Positioned(
+                                right: -4,
+                                top: -4,
+                                child: StaffQueryBadge(
+                                  currentStaffUid: _userId ?? '',
+                                ),
+                              ),
+                            ],
+                          ),
+                          tooltip: 'Queries Inbox',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StaffQueryInboxScreen(
+                                  currentStaffUid: _userId ?? '',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
+                  _buildTabBar(),
                 ],
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsScreen(),
-                  ),
-                );
-              },
             ),
-            IconButton(
-              icon: const Icon(Icons.logout, color: AppColors.primary),
-              tooltip: 'Logout',
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
+            Expanded(
+              child: _getTabBody(),
             ),
-          ],
-        ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // Home Tab
-            _getTabBody(),
-            // Consultant Tab
-            _buildConsultantAppointmentsList(),
-            // Daily Tab
-            ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                StaffDailyActivitiesListWidget(userId: _userId ?? '', selectedDate: _selectedDate),
-              ],
-            ),
-            // Scheduled Tab
-            ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                StaffScheduledActivitiesListWidget(
-                  userId: _userId ?? '',
-                  selectedDate: _selectedDate,
-                ),
-              ],
-            ),
-            // Inbox Tab
-            const StaffQueryInboxScreen(currentStaffUid: ''),
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 }

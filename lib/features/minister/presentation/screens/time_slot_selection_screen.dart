@@ -517,6 +517,30 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       final guaranteedUtc = _selectedTimeSlot!.subtract(_selectedTimeSlot!.timeZoneOffset);
       print('[DEBUG] guaranteedUtc: ' + guaranteedUtc.toIso8601String());
 
+      // Get floor manager details
+      Map<String, dynamic>? floorManagerData;
+      try {
+        final floorManagerQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'floor_manager')
+            .limit(1)
+            .get();
+            
+        if (floorManagerQuery.docs.isNotEmpty) {
+          final doc = floorManagerQuery.docs.first;
+          floorManagerData = {
+            'floorManagerId': doc.id,
+            'floorManagerFirstName': doc.data()['firstName'] ?? '',
+            'floorManagerLastName': doc.data()['lastName'] ?? '',
+          };
+          print('[DEBUG] Found floor manager: ${floorManagerData['floorManagerFirstName']} ${floorManagerData['floorManagerLastName']}');
+        } else {
+          print('[WARNING] No floor manager found in the system');
+        }
+      } catch (e) {
+        print('[ERROR] Error fetching floor manager: $e');
+      }
+
       // Create appointment data with base fields
       final appointmentData = {
         'ministerId': ministerData['uid'],
@@ -536,6 +560,12 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         'typeOfVip': 'VIP Client', // Add fixed value for type of VIP
+        // Add floor manager data if available
+        if (floorManagerData != null) ...{
+          'floorManagerId': floorManagerData['floorManagerId'],
+          'floorManagerFirstName': floorManagerData['floorManagerFirstName'],
+          'floorManagerLastName': floorManagerData['floorManagerLastName'],
+        },
       };
       
       // Only add consultant fields if a specific consultant was selected (not 'No preference')
@@ -562,14 +592,23 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       
       // Send FCM to Floor Managers (always)
       final notificationService = NotificationService();
-      await notificationService.sendFCMToFloorManager(
-        title: 'New Appointment',
-        body: 'A new appointment has been booked by ${ministerData['firstName']} ${ministerData['lastName']}',
-        data: {
-          'type': 'booking',
-          'bookingId': appointmentId,
-        },
-      );
+      try {
+        await notificationService.sendFCMToFloorManager(
+          title: 'New Appointment',
+          body: 'A new appointment has been booked by ${ministerData['firstName']} ${ministerData['lastName']}',
+          data: {
+            'type': 'booking',
+            'bookingId': appointmentId,
+            'appointmentTime': _selectedTimeSlot!.toIso8601String(),
+            'serviceName': widget.selectedService.name,
+            'ministerName': '${ministerData['firstName']} ${ministerData['lastName']}',
+            'floorManagerId': floorManagerData?['floorManagerId'],
+          },
+        );
+        print('[DEBUG] Sent FCM notification to floor managers');
+      } catch (e) {
+        print('[ERROR] Failed to send FCM to floor managers: $e');
+      }
       
       // Only send FCM to consultant if one is selected
       if (_selectedConsultantId != null && _selectedConsultantId!.isNotEmpty) {
