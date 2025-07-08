@@ -30,6 +30,15 @@ class _SignupScreenState extends State<SignupScreen> {
   UserRole? _selectedRole;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  
+  // Client type options for minister users
+  final List<String> _clientTypes = [
+    'influencer_celebrity',
+    'high_profile_customer',
+    'corporate_executive',
+    'other',
+  ];
+  String? _selectedClientType;
   bool get _requiresEmployeeNumber {
     return _selectedRole != null && _selectedRole != UserRole.minister;
   }
@@ -101,8 +110,73 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  // Build client type dropdown for minister role
+  Widget _buildClientTypeDropdown() {
+    if (_selectedRole != UserRole.minister) {
+      return const SizedBox.shrink();
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _selectedClientType,
+          dropdownColor: const Color(0xFF182848),
+          iconEnabledColor: Colors.white.withOpacity(0.7),
+          decoration: InputDecoration(
+            labelText: 'Client Type',
+            labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+            hintText: 'Select client type',
+            hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+            ),
+          ),
+          items: _clientTypes.map((type) {
+            String displayName = type.split('_').map((word) => 
+              '${word[0].toUpperCase()}${word.substring(1)}'
+            ).join(' ');
+            return DropdownMenuItem(
+              value: type,
+              child: Text(displayName, 
+                style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold)
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedClientType = value;
+            });
+          },
+          validator: (value) {
+            if (_selectedRole == UserRole.minister && (value == null || value.isEmpty)) {
+              return 'Please select a client type';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Additional validation for minister client type
+    if (_selectedRole == UserRole.minister && (_selectedClientType == null || _selectedClientType!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a client type'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     if (_requiresEmployeeNumber && !_isVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -112,24 +186,31 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       return;
     }
+    
     setState(() => _isLoading = true);
     try {
       final userId = await _authService.signUpWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
       );
-      await _userService.createUser(
-        userId,
-        {
-          'firstName': _firstNameController.text,
-          'lastName': _lastNameController.text,
-          'email': _emailController.text,
-          'phoneNumber': _phoneNumber.phoneNumber,
-          'role': _selectedRole!.name,
-          'employeeNumber': _requiresEmployeeNumber ? _employeeNumberController.text : null,
-          'createdAt': DateTime.now(),
-        },
-      );
+      
+      // Prepare user data with client type if applicable
+      final userData = {
+        'firstName': _firstNameController.text,
+        'lastName': _lastNameController.text,
+        'email': _emailController.text,
+        'phoneNumber': _phoneNumber.phoneNumber,
+        'role': _selectedRole!.name,
+        'employeeNumber': _requiresEmployeeNumber ? _employeeNumberController.text : null,
+        'createdAt': DateTime.now(),
+      };
+      
+      // Add client type if user is a client
+      if (_selectedRole == UserRole.minister && _selectedClientType != null) {
+        userData['clientType'] = _selectedClientType!;
+      }
+      
+      await _userService.createUser(userId, userData);
       if (_requiresEmployeeNumber) {
         await _employeeRoleService.markEmployeeAsSignedUp(_employeeNumberController.text);
       }
@@ -292,6 +373,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   items: UserRole.values.map((role) {
                     String displayName = role.name;
                     switch (role) {
+                      case UserRole.minister:
+                        displayName = 'Client';
+                        break;
                       case UserRole.floorManager:
                         displayName = 'Floor Manager';
                         break;
@@ -316,6 +400,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       _employeeNumberController.clear();
                       _firstNameController.clear();
                       _lastNameController.clear();
+                      _selectedClientType = null;
                     });
                   },
                   validator: (value) {
@@ -327,6 +412,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 _buildEmployeeNumberField(),
                 _buildNameFields(),
+                _buildClientTypeDropdown(),
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(

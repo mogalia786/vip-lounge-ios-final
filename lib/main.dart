@@ -11,16 +11,21 @@ import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Configure Firebase Auth to handle reCAPTCHA
+  // Configure Firebase Auth
   await FirebaseAuth.instance.setSettings(
     appVerificationDisabledForTesting: true, // Enable this for testing
   );
 
+  // Initialize dependencies
   final user = FirebaseAuth.instance.currentUser;
 
   // Initialize the app (create supervisor user)

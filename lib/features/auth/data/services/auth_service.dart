@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../presentation/screens/minister/minister_home_screen.dart';
-import '../../../../features/floor_manager/presentation/screens/floor_manager_home_screen.dart';
+import '../../../../features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
 import '../../presentation/screens/operational_manager/operational_manager_home_screen.dart';
 import '../../presentation/screens/staff/staff_home_screen.dart';
 import '../../presentation/screens/consultant/consultant_home_screen.dart';
@@ -119,7 +119,7 @@ class AuthService {
       case UserRole.minister:
         return const MinisterHomeScreen();
       case UserRole.floorManager:
-        return const FloorManagerHomeScreen();
+        return const FloorManagerHomeScreenNew();
       case UserRole.operationalManager:
         return const OperationalManagerHomeScreen();
       case UserRole.consultant:

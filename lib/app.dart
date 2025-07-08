@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/providers/app_auth_provider.dart';
+import 'features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'features/admin/presentation/screens/client_types_screen.dart';
+import 'features/admin/presentation/screens/pickup_locations_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/minister/presentation/screens/minister_home_screen.dart';
 import 'features/minister/presentation/screens/minister_feedback_screen.dart';
@@ -159,6 +162,7 @@ class _AppState extends State<App> {
             return MaterialPageRoute(builder: (_) => const MarketingAgentHomeScreen());
           case '/staff/home':
             return MaterialPageRoute(builder: (_) => const StaffHomeScreen());
+
           case '/minister/home/chat':
             // Extract appointmentId from arguments
             final args = settings.arguments as Map<String, dynamic>?;
@@ -251,7 +255,18 @@ class _AppState extends State<App> {
               return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
             }
           case '/unified_appointment_search':
-            return MaterialPageRoute(builder: (_) => UnifiedAppointmentSearchScreen());
+            return MaterialPageRoute(builder: (_) => const UnifiedAppointmentSearchScreen());
+            
+          // Admin routes
+          case '/admin-dashboard':
+            return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+            
+          case '/pickup-locations':
+            return MaterialPageRoute(builder: (_) => const PickupLocationsScreen());
+            
+          case '/client-types':
+            return MaterialPageRoute(builder: (_) => const ClientTypesScreen());
+
           default:
             return MaterialPageRoute(builder: (_) => const StandardHomeScreen());
         }

@@ -1199,6 +1199,16 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                 _infoRow(context, 'ID', safeAppointmentId, accentColor, textColor: Colors.orange, valueFlex: 3),
                 _infoRow(context, 'Service', serviceName, accentColor, textColor: textColor, valueFlex: 3),
                 _infoRow(context, 'Venue', venue, accentColor, textColor: textColor, valueFlex: 3),
+                _infoRow(
+                  context, 
+                  'Pickup Point', 
+                  appointmentData['pickupLocation'] is Map 
+                      ? (appointmentData['pickupLocation']['name'] ?? 'Store')
+                      : (appointmentData['pickupLocation']?.toString() ?? 'Store'), 
+                  accentColor, 
+                  textColor: textColor, 
+                  valueFlex: 3
+                ),
                 if (ministerPhone != '')
                   _infoRow(context, 'Phone', ministerPhone, accentColor, isLink: true, textColor: textColor, valueFlex: 3),
                 if (ministerEmail != '')

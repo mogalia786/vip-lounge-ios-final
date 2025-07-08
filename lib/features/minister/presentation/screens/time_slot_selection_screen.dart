@@ -63,6 +63,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
   final NotificationService _notificationService = NotificationService();
   final WorkflowService _workflowService = WorkflowService();
   
+  // Pickup location selection
+  Map<String, dynamic>? _selectedPickupLocation;
+  
   // Consultant selection
   String? _selectedConsultantId;
   String? _selectedConsultantName;
@@ -228,6 +231,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       'close': '17:00',
     };
     _fetchClosedDaysAndHours().then((_) => _loadTimeSlots());
+    _fetchConsultantsAndStaff(); // Pre-load consultants
   }
 
   Future<void> _loadTimeSlots() async {
@@ -475,16 +479,345 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     }
   }
 
-  // When a time slot is selected - simply show consultant dropdown, no booking yet
+  // When a time slot is selected - show pickup location selection first
   Future<void> _handleTimeSlotSelection(DateTime selectedTime) async {
-    // Store the selected time and show loading
     setState(() {
       _selectedTimeSlot = selectedTime;
-      _isLoadingConsultants = true;
+      _selectedPickupLocation = null; // Reset pickup location when time slot changes
     });
     
-    // Load consultants for dropdown - no navigation or booking happens yet
-    await _updateConsultantAvailability(selectedTime);
+    // Show pickup location selection dialog
+    await _showPickupLocationDialog();
+  }
+  
+  // Show pickup location selection dialog
+  Future<void> _showPickupLocationDialog() async {
+    final locations = await _fetchPickupLocations();
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Pickup Location'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: locations.length,
+            itemBuilder: (context, index) {
+              final location = locations[index];
+              final imageUrl = location['imageUrl'] as String?;
+              final name = location['name'] as String;
+              final description = location['description'] as String?;
+              
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(8),
+                  leading: imageUrl != null && imageUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            imageUrl,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => 
+                                const Icon(Icons.broken_image, size: 30),
+                          ),
+                        )
+                      : const Icon(Icons.location_on, size: 30, color: Colors.blue),
+                  title: Text(name),
+                  subtitle: description?.isNotEmpty == true ? Text(description!) : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedPickupLocation = location;
+                    });
+                    Navigator.pop(context);
+                    _showConsultantSelection();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Show consultant selection after pickup location is selected
+  Future<void> _showConsultantSelection() async {
+    setState(() => _isLoadingConsultants = true);
+    
+    // Load consultants for dropdown
+    await _updateConsultantAvailability(_selectedTimeSlot!);
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          side: BorderSide(color: AppColors.richGold, width: 2.0),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Title
+              Text(
+                'Select a Consultant',
+                style: TextStyle(
+                  color: AppColors.richGold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              
+              // Loading indicator or content
+              _isLoadingConsultants
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.richGold),
+                      ),
+                    )
+                  : ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // No preference option
+                            Card(
+                              color: Colors.grey[900],
+                              margin: const EdgeInsets.only(bottom: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                                side: BorderSide(color: AppColors.richGold, width: 1.0),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: Icon(Icons.person_outline, color: AppColors.richGold, size: 28),
+                                title: Text(
+                                  'No preference', 
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'The floor manager will assign a consultant',
+                                  style: TextStyle(color: Colors.grey[400]),
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedConsultantId = null;
+                                    _selectedConsultantName = null;
+                                    _selectedConsultantEmail = null;
+                                  });
+                                  Navigator.pop(context);
+                                  _showBookingConfirmation();
+                                },
+                              ),
+                            ),
+                            
+                            // List of consultants and staff
+                            ..._consultantsAndStaff.map((consultant) {
+                              final isAvailable = consultant['isAvailable'] == true;
+                              final role = (consultant['role'] as String?)?.toLowerCase() ?? '';
+                              
+                              // Skip if not a consultant or staff
+                              if (role != 'consultant' && role != 'staff') return const SizedBox.shrink();
+                              
+                              return Card(
+                                color: isAvailable ? Colors.grey[900] : Colors.grey[800],
+                                margin: const EdgeInsets.only(bottom: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  side: BorderSide(
+                                    color: isAvailable ? AppColors.richGold : Colors.grey[700]!,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Opacity(
+                                  opacity: isAvailable ? 1.0 : 0.6,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    leading: CircleAvatar(
+                                      backgroundColor: isAvailable 
+                                          ? AppColors.richGold.withOpacity(0.2) 
+                                          : Colors.grey[700],
+                                      child: isAvailable
+                                          ? Text(
+                                              consultant['name'].toString().substring(0, 1).toUpperCase(),
+                                              style: TextStyle(
+                                                color: AppColors.richGold,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            )
+                                          : Icon(Icons.block, color: Colors.grey[500]),
+                                    ),
+                                    title: Text(
+                                      consultant['name'] ?? 'Unknown',
+                                      style: TextStyle(
+                                        color: isAvailable ? Colors.white : Colors.grey[500],
+                                        fontWeight: FontWeight.bold,
+                                        decoration: isAvailable ? null : TextDecoration.lineThrough,
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${consultant['role'] ?? 'Staff'}',
+                                          style: TextStyle(
+                                            color: isAvailable ? Colors.grey[400] : Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        if (!isAvailable) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(Icons.block, size: 14, color: Colors.red[400]),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Not available',
+                                                style: TextStyle(
+                                                  color: Colors.red[400],
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    trailing: isAvailable
+                                        ? Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.richGold)
+                                        : null,
+                                    onTap: isAvailable
+                                        ? () {
+                                            setState(() {
+                                              _selectedConsultantId = consultant['id'];
+                                              _selectedConsultantName = consultant['name'];
+                                              _selectedConsultantEmail = consultant['email'];
+                                            });
+                                            Navigator.pop(context);
+                                            _showBookingConfirmation();
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            }).where((widget) => widget != const SizedBox.shrink()).toList(),
+                          ],
+                        ),
+                      ),
+                    ),
+              
+              // Close button
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    side: BorderSide(color: AppColors.richGold, width: 1.0),
+                  ),
+                ),
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(
+                    color: AppColors.richGold,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).then((_) {
+      setState(() => _isLoadingConsultants = false);
+    });
+  }
+  
+  // Show booking confirmation dialog
+  Future<void> _showBookingConfirmation() {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Service: ${widget.selectedService.name}'),
+            Text('Date: ${DateFormat('EEEE, MMMM d, yyyy').format(_selectedTimeSlot!)}'),
+            Text('Time: ${DateFormat('h:mm a').format(_selectedTimeSlot!)}'),
+            if (_selectedPickupLocation != null) 
+              Text('Pickup: ${_selectedPickupLocation!['name']}'),
+            if (_selectedConsultantName != null)
+              Text('Consultant: $_selectedConsultantName')
+            else
+              const Text('Consultant: No preference (will be assigned)'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleBookAppointment();
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Fetch pickup locations from Firestore
+  Future<List<Map<String, dynamic>>> _fetchPickupLocations() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('pickup_locations')
+          .orderBy('name')
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? '',
+          'description': data['description'],
+          'imageUrl': data['imageUrl'],
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching pickup locations: $e');
+      return [];
+    }
   }
   
   // Handle the booking process
@@ -492,6 +825,14 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     if (_selectedTimeSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a time slot first')),
+      );
+      return;
+    }
+    
+    // Check if pickup location is selected
+    if (_selectedPickupLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a pickup location')),
       );
       return;
     }
@@ -559,7 +900,14 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         'subServiceName': widget.subServiceName,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
-        'typeOfVip': 'VIP Client', // Add fixed value for type of VIP
+        'typeOfVip': ministerData['clientType'] ?? 'VIP Client', // Use clientType from user data
+        // Add pickup location data
+        'pickupLocation': {
+          'id': _selectedPickupLocation!['id'],
+          'name': _selectedPickupLocation!['name'],
+          'description': _selectedPickupLocation!['description'],
+          'imageUrl': _selectedPickupLocation!['imageUrl'],
+        },
         // Add floor manager data if available
         if (floorManagerData != null) ...{
           'floorManagerId': floorManagerData['floorManagerId'],

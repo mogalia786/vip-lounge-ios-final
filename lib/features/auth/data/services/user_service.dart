@@ -31,23 +31,30 @@ class UserService {
     Map<String, dynamic> userData,
   ) async {
     // Normalize role formatting for consistency
-    String role = userData['role'] ?? '';
+    String role = (userData['role'] ?? '').toString().toLowerCase();
+    
+    // Handle role normalization
     if (role == 'floorManager' || role == 'floor-manager') {
       role = 'floor_manager';
       print('Normalizing floor manager role: ${userData['role']} -> $role');
     }
+    // Keep 'minister' role as is
     
     print('Creating user with role: $role, uid: $uid');
     
+    // Prepare user document data
     final Map<String, dynamic> userDoc = {
       'firstName': userData['firstName'] ?? '',
       'lastName': userData['lastName'] ?? '',
       'email': userData['email'] ?? '',
       'phoneNumber': userData['phoneNumber'] ?? '',
-      'role': (role ?? '').toString(),
+      'role': role,
       'employeeNumber': userData['employeeNumber'] ?? '',
       'createdAt': userData['createdAt'] ?? FieldValue.serverTimestamp(),
       'lastLoginAt': FieldValue.serverTimestamp(),
+      
+      // Add clientType if provided (for client/minister users)
+      if (userData['clientType'] != null) 'clientType': userData['clientType'],
       'isActive': true,
       'isSupervisor': (role ?? '') == 'operationalManager',
       'uid': uid ?? '',

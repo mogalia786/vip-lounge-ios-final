@@ -87,7 +87,7 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
     // Debug print user role
     print('👉 STANDARD HOME SCREEN - USER ROLE: ${user.role}'); 
 
-    // Automatically redirect to FloorManagerHomeScreenNew for floor_manager
+    // Automatically redirect to FloorManagerHomeScreen for floor_manager
     if (user.role == 'floor_manager') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacement(
@@ -98,7 +98,7 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Automatically redirect to FloorManagerHomeScreenNew
+    // Handle unknown/empty role
     if (user.role == 'unknown' || user.role.isEmpty) {
       // If we're here, probably the role wasn't set correctly in database
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -119,53 +119,95 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.black,
-          title: Row(
-            children: [
-              Image.asset(
-                'assets/Premium.ico',
-                width: 40,
-                height: 40,
-                errorBuilder: (context, error, stackTrace) => 
-                    const Icon(Icons.star, color: Colors.amber, size: 40),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'VIP Lounge',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
+          title: Image.asset(
+            'assets/Premium.ico',
+            width: 40,
+            height: 40,
+            errorBuilder: (context, error, stackTrace) => 
+                const Icon(Icons.star, color: Colors.amber, size: 40),
           ),
           iconTheme: IconThemeData(color: Colors.white),
           actions: [
+            // Pickup Locations Management
             IconButton(
-              icon: const Icon(Icons.dashboard, color: AppColors.primary),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew()),
-                );
-              },
+              icon: const Icon(Icons.location_on, color: Colors.blue),
+              tooltip: 'Manage Pickup Locations',
+              onPressed: () => Navigator.pushNamed(context, '/pickup-locations'),
             ),
+            
+            // Client Types Management
+            IconButton(
+              icon: const Icon(Icons.people, color: Colors.green),
+              tooltip: 'Manage Client Types',
+              onPressed: () => Navigator.pushNamed(context, '/client-types'),
+            ),
+            
+            // Floor Manager Dashboard
+            IconButton(
+              icon: const Icon(Icons.dashboard, color: Colors.purple),
+              tooltip: 'Floor Manager Dashboard',
+              onPressed: () => Navigator.pushNamed(context, '/floor_manager/home'),
+            ),
+            
+            // Notifications
             if (_unreadNotifications > 0)
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$_unreadNotifications',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications, color: Colors.orange),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NotificationsScreen(
+                            userId: user.uid,
+                            userRole: user.role,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$_unreadNotifications',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
+            if (_unreadNotifications == 0)
+              IconButton(
+                icon: const Icon(Icons.notifications_none, color: AppColors.primary),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NotificationsScreen(
+                        userId: user.uid,
+                        userRole: user.role,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(width: 8),
+            
+            // Logout button
             IconButton(
               icon: const Icon(Icons.logout, color: AppColors.primary),
               onPressed: () {

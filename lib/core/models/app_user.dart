@@ -7,6 +7,7 @@ class AppUser {
   final String lastName;
   final String email;
   final String? phoneNumber;
+  final String? clientType; // For minister users, stores their type (e.g., 'influencer_celebrity', 'corporate_executive')
 
   AppUser({
     required this.uid,
@@ -15,15 +16,15 @@ class AppUser {
     required this.lastName,
     required this.email,
     this.phoneNumber,
+    this.clientType,
   });
 
   String get name => '$firstName $lastName';
-
-  // Add fullName getter for compatibility
   String get fullName => '$firstName $lastName';
-
-  // Add id getter to maintain compatibility with code that expects id
   String get id => uid;
+  
+  // Helper to check if user is a minister
+  bool get isMinister => role == 'minister';
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     return AppUser(
@@ -33,6 +34,7 @@ class AppUser {
       lastName: map['lastName'] ?? '',
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'],
+      clientType: map['clientType'],
     );
   }
 
@@ -44,6 +46,28 @@ class AppUser {
       'lastName': lastName,
       'email': email,
       'phoneNumber': phoneNumber,
+      if (clientType != null) 'clientType': clientType,
     };
+  }
+  
+  // Create a copyWith method for easy updates
+  AppUser copyWith({
+    String? uid,
+    String? role,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phoneNumber,
+    String? clientType,
+  }) {
+    return AppUser(
+      uid: uid ?? this.uid,
+      role: role ?? this.role,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      clientType: clientType ?? this.clientType,
+    );
   }
 }

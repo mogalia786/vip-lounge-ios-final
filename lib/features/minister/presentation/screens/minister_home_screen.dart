@@ -783,7 +783,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                   style: TextStyle(
                     color: AppColors.red,
                     fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                    fontSize: 18,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -794,7 +794,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
             if (ministerData != null)
               Text(
                 '${ministerData['firstName']} ${ministerData['lastName']}',
-                style: TextStyle(color: AppColors.gold, fontSize: 14),
+                style: TextStyle(color: Colors.white, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
           ],

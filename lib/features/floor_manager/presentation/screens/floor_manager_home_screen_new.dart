@@ -6,6 +6,7 @@ import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_list_screen.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_chat_list_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/feedback_management_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -1782,42 +1783,44 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome, $userName',
-                    style: TextStyle(color: AppColors.gold, fontSize: 16),
-                  ),
-                  Text(
-                    DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
+            Text(
+              'Welcome, $userName',
+              style: TextStyle(color: AppColors.gold, fontSize: 16),
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.message, color: Colors.blue, size: 24),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FloorManagerChatListScreen(),
-                  ),
-                );
-              },
+            Text(
+              DateFormat('EEEE, MMMM d').format(DateTime.now()),
+              style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
         ),
         actions: [
+          // Messages icon moved here
           IconButton(
-            icon: Icon(Icons.search),
+            icon: const Icon(Icons.message, color: Colors.blue, size: 24),
+            tooltip: 'Messages from Ministers',
             onPressed: () {
-              Navigator.pushNamed(context, '/unified_appointment_search');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FloorManagerChatListScreen(),
+                ),
+              );
+            },
+          ),
+          // Feedback management icon
+          IconButton(
+            icon: const Icon(Icons.feedback, color: Colors.blue, size: 24),
+            tooltip: 'Manage Feedback Questions',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedbackManagementScreen(),
+                ),
+              );
             },
           ),
           // Icons: Set Business Location, Set Business Hours, Register, Set Closed Days

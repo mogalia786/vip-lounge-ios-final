@@ -694,7 +694,7 @@ if (conciergeName.isNotEmpty || conciergePhone.isNotEmpty || conciergeEmail.isNo
   // Open chat dialog for floor manager
   void _openFloorManagerChatDialog(BuildContext context, String appointmentId, 
                                 String recipientRole, String recipientId, String recipientName) {
-    // Get the FloorManagerHomeScreen state to access its _openChatDialog method
+    // Get the FloorManagerHomeScreenNew state to access its _openChatDialog method
     Navigator.pushNamed(context, '/floor_manager/home').then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(

@@ -1,0 +1,66 @@
+{
+  "name": "iPhone 13",
+  "brand": "Apple",
+  "model": "A2487",
+  "released": "2021, September 24",
+  "dimensions": "146.7 x 71.5 x 7.7 mm",
+  "weight": "174 g",
+  "display": {
+    "type": "Super Retina XDR OLED, HDR10, 800 nits (HBM), 1200 nits (peak)",
+    "size": "6.1 inches",
+    "resolution": "1170 x 2532 pixels",
+    "protection": "Ceramic Shield glass"
+  },
+  "platform": {
+    "os": "iOS 15",
+    "chipset": "Apple A15 Bionic (5 nm)",
+    "cpu": "Hexa-core (2x3.23 GHz Avalanche + 4x1.82 GHz Blizzard)",
+    "gpu": "Apple GPU (4-core graphics)"
+  },
+  "memory": {
+    "card_slot": "No",
+    "internal": "128GB 4GB RAM, 256GB 4GB RAM, 512GB 4GB RAM, 1TB 4GB RAM"
+  },
+  "main_camera": {
+    "dual": "12 MP, f/1.6, 26mm (wide), 1.7µm, dual pixel PDAF, sensor-shift OIS\n12 MP, f/2.4, 13mm, 120˚ (ultrawide)",
+    "features": "Dual-LED dual-tone flash, HDR (photo/panorama)",
+    "video": "4K@24/30/60fps, 1080p@30/60/120/240fps, HDR, Dolby Vision HDR (up to 60fps), stereo sound rec."
+  },
+  "selfie_camera": {
+    "single": "12 MP, f/2.2, 23mm (wide), 1/3.6"
+  },
+  "sound": {
+    "loudspeaker": "Yes, with stereo speakers",
+    "3.5mm_jack": "No"
+  },
+  "comms": {
+    "wlan": "Wi-Fi 802.11 a/b/g/n/ac/6, dual-band, hotspot",
+    "bluetooth": "5.0, A2DP, LE",
+    "gps": "Yes, with A-GPS, GLONASS, GALILEO, QZSS",
+    "nfc": "Yes",
+    "radio": "No",
+    "usb": "Lightning, USB 2.0"
+  },
+  "features": {
+    "sensors": "Face ID, accelerometer, gyro, proximity, compass, barometer",
+    "other": "Siri natural language commands and dictation, iCloud cloud service"
+  },
+  "battery": {
+    "type": "Li-Ion 3240 mAh, non-removable (12.41 Wh)",
+    "charging": "Fast charging 20W, 50% in 30 min (advertised)",
+    "talk_time": "Up to 19 h (multimedia)"
+  },
+  "misc": {
+    "colors": "Black, White, Red, Green, Blue, Pink",
+    "models": "A2487, A2631, A2634, A2635, A2633, A2632, iphone13,1",
+    "sar": "1.18 W/kg (head)     1.19 W/kg (body)",
+    "price": "$799.99"
+  },
+  "tests": {
+    "performance": "AnTuTu: 785,000 (v9)",
+    "display": "Contrast ratio: 2000000:1 (nominal)",
+    "camera": "Photo / Video",
+    "loudspeaker": "-26.0 LUFS (Very good)",
+    "battery_life": "Endurance rating 82h"
+  }
+}

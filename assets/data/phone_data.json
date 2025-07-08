@@ -1,0 +1,30 @@
+{
+  "brands": [
+    {"id": "apple", "name": "Apple"},
+    {"id": "samsung", "name": "Samsung"},
+    {"id": "xiaomi", "name": "Xiaomi"},
+    {"id": "huawei", "name": "Huawei"},
+    {"id": "oppo", "name": "Oppo"},
+    {"id": "vivo", "name": "Vivo"},
+    {"id": "oneplus", "name": "OnePlus"},
+    {"id": "nokia", "name": "Nokia"},
+    {"id": "sony", "name": "Sony"},
+    {"id": "lg", "name": "LG"}
+  ],
+  "models": {
+    "apple": [
+      {"id": "iphone-15", "name": "iPhone 15"},
+      {"id": "iphone-14", "name": "iPhone 14"},
+      {"id": "iphone-13", "name": "iPhone 13"},
+      {"id": "iphone-12", "name": "iPhone 12"},
+      {"id": "iphone-11", "name": "iPhone 11"}
+    ],
+    "samsung": [
+      {"id": "galaxy-s23", "name": "Galaxy S23"},
+      {"id": "galaxy-s22", "name": "Galaxy S22"},
+      {"id": "galaxy-s21", "name": "Galaxy S21"},
+      {"id": "galaxy-a54", "name": "Galaxy A54"},
+      {"id": "galaxy-a34", "name": "Galaxy A34"}
+    ]
+  }
+}
