@@ -682,27 +682,33 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/Premium.ico',
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) => 
-                  const Icon(Icons.star, color: Colors.amber, size: 40),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/page_logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Concierge',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 36,
+                    fontFamily: 'Cinzel',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Concierge',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            const Icon(Icons.verified, color: AppColors.primary, size: 22),
           ],
         ),
         actions: [

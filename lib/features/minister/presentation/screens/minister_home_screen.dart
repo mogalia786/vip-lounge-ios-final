@@ -765,94 +765,126 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
         ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Column(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
+            Image.asset(
+              'assets/page_logo.png',
+              width: 40,
+              height: 40,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                  'assets/Premium.ico',
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.contain,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/vodacom_ball.png',
+                      width: 10,
+                      height: 10,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Premium Lounge',
+                      style: TextStyle(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontFamily: 'Cinzel',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Premium Lounge',
-                  style: TextStyle(
-                    color: AppColors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                if (ministerData != null)
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Text(
+                      'Sandton',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        height: 1.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
             ),
-            if (ministerData != null)
-              Text(
-                '${ministerData['firstName']} ${ministerData['lastName']}',
-                style: TextStyle(color: Colors.white, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
           ],
         ),
         iconTheme: IconThemeData(color: AppColors.gold),
         actions: [
+          const SizedBox(width: 8.0), // Reduced space before first icon
           IconButton(
-            icon: Icon(Icons.directions, color: Colors.blue),
-            tooltip: 'Get Directions to Business',
-            onPressed: () async {
-              try {
-                // 1. Get minister's current location
-                double? ministerLat;
-                double? ministerLng;
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Icon(Icons.directions, color: Colors.blue),
+              tooltip: 'Get Directions to Business',
+              onPressed: () async {
                 try {
-                  final LatLng? userLocation = await DeviceLocationService.getCurrentUserLocation(context);
-                  if (userLocation == null) {
+                  // 1. Get minister's current location
+                  double? ministerLat;
+                  double? ministerLng;
+                  try {
+                    final LatLng? userLocation = await DeviceLocationService.getCurrentUserLocation(context);
+                    if (userLocation == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not get your current location. Please enable location services.')),
+                      );
+                      return;
+                    }
+                    ministerLat = userLocation.latitude;
+                    ministerLng = userLocation.longitude;
+                  } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not get your current location. Please enable location services.')),
+                      const SnackBar(content: Text('Could not get your current location. Please enable location services.')),
                     );
                     return;
                   }
-                  ministerLat = userLocation.latitude;
-                  ministerLng = userLocation.longitude;
+                  // 2. Fetch business address from Firestore
+                  final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
+                  if (!doc.exists || doc['latitude'] == null || doc['longitude'] == null) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Business address not set.')),
+                      );
+                    }
+                    return;
+                  }
+                  final double businessLat = (doc['latitude'] as num).toDouble();
+                  final double businessLng = (doc['longitude'] as num).toDouble();
+                  // 3. Launch Google Maps with directions
+                  final url = 'https://www.google.com/maps/dir/?api=1&origin=${ministerLat},${ministerLng}&destination=${businessLat},${businessLng}&travelmode=driving';
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open Google Maps.')),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not get your current location. Please enable location services.')),
-                  );
-                  return;
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error launching directions: $e')),
+                    );
+                  }
                 }
-                // 2. Fetch business address from Firestore
-                final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
-                if (!doc.exists || doc['latitude'] == null || doc['longitude'] == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Business address not set.')),
-                  );
-                  return;
-                }
-                final double businessLat = (doc['latitude'] as num).toDouble();
-                final double businessLng = (doc['longitude'] as num).toDouble();
-                // 3. Launch Google Maps with directions
-                final url = 'https://www.google.com/maps/dir/?api=1&origin=${ministerLat},${ministerLng}&destination=${businessLat},${businessLng}&travelmode=driving';
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not open Google Maps.')),
-                  );
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error launching directions: $e')),
-                );
-              }
-            },
-          ),
+              },
+            ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
             icon: Icon(Icons.logout, color: AppColors.gold),
             onPressed: () {
               final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
@@ -862,7 +894,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           ),
         ],
       ),
-        body: _selectedIndex == 3 
+      body: _selectedIndex == 3 
           ? _buildNotificationsView() 
           : _selectedIndex == 4 
             ? const MarketingTabSocialFeed()
@@ -1195,6 +1227,8 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    _buildPickupLocation(appointmentData['pickupLocation']),
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -1687,7 +1721,106 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   
   String _capitalize(String text) {
     if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1);
+    return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
+  }
+
+  Widget _buildPickupLocation(dynamic pickupLocation) {
+    if (pickupLocation == null) {
+      return _buildPickupLocationItem(
+        'Store',
+        'assets/shop_front.jpg', // Default image
+      );
+    }
+
+    if (pickupLocation is Map) {
+      final name = pickupLocation['name'] ?? 'Pickup Location';
+      final imageUrl = pickupLocation['imageUrl'] as String?;
+      
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        // Use network image if URL is available
+        return _buildPickupLocationItem(
+          name,
+          null,
+          imageUrl: imageUrl,
+        );
+      } else {
+        // Fallback to default image if no URL
+        return _buildPickupLocationItem(
+          name,
+          'assets/shop_front.jpg',
+        );
+      }
+    } else if (pickupLocation is String) {
+      // Handle case where pickupLocation is just a string
+      return _buildPickupLocationItem(
+        pickupLocation,
+        'assets/shop_front.jpg',
+      );
+    }
+    
+    // Default fallback
+    return _buildPickupLocationItem(
+      'Store',
+      'assets/shop_front.jpg',
+    );
+  }
+  
+  Widget _buildPickupLocationItem(String locationName, String? assetImage, {String? imageUrl}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blueGrey[700]!),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Image container
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              image: DecorationImage(
+                image: imageUrl != null
+                    ? NetworkImage(imageUrl) as ImageProvider
+                    : AssetImage(assetImage!),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Location info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pickup Point',
+                  style: TextStyle(
+                    color: Colors.blueGrey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  locationName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAppointmentCard(Map<String, dynamic> appointment) {

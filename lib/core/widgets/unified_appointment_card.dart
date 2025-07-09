@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/vip_notification_service.dart';
 import 'rating_utils.dart';
 
@@ -703,17 +704,19 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   }
 
   Color _statusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'in-progress':
-        return Colors.green;
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return Colors.green[400]!;
       case 'completed':
-        return Colors.blue;
+        return Colors.blue[400]!;
       case 'cancelled':
-        return Colors.red;
+        return Colors.red[400]!;
+      case 'in-progress':
+        return Colors.blue[600]!;
+      case 'pending':
+        return Colors.blue[300]!;
       default:
-        return Colors.grey;
+        return Colors.grey[400]!;
     }
   }
 
@@ -739,21 +742,65 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   }
 
   Widget _infoRow(BuildContext context, String label, String value, Color accentColor, {bool isLink = false, required Color textColor, int valueFlex = 1}) {
+    if (value.isEmpty) return const SizedBox.shrink();
+    
+    // Determine text color based on content
+    final Color valueColor;
+    if (isLink) {
+      valueColor = Colors.blue[300]!; // Blue for links
+    } else if (value.toLowerCase() == 'completed' || value.toLowerCase() == 'confirmed') {
+      valueColor = Colors.green[400]!; // Green for positive status
+    } else if (value.toLowerCase() == 'cancelled' || value.toLowerCase() == 'rejected') {
+      valueColor = Colors.red[400]!; // Red for negative status
+    } else {
+      valueColor = Colors.blue[100]!; // Light blue for regular text
+    }
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label: ', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+          Text(
+            '$label: ',
+            style: TextStyle(
+              color: Colors.red[400], // Red for labels
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
           Expanded(
             flex: valueFlex,
             child: isLink
                 ? GestureDetector(
-                    onTap: () {
-                      // Implement phone/email tap if needed
+                    onTap: () async {
+                      final url = 'tel:$value';
+                      if (await canLaunch(url)) {
+                        await launch(url);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Could not launch $url')),
+                        );
+                      }
                     },
-                    child: Text(value, style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline)),
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: valueColor,
+                        decoration: TextDecoration.underline,
+                        fontSize: 14,
+                      ),
+                    ),
                   )
-                : Text(value, style: TextStyle(color: textColor)),
+                : Text(
+                    value,
+                    style: TextStyle(
+                      color: valueColor,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
           ),
         ],
       ),
@@ -818,14 +865,14 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5),
           child: OutlinedButton.icon(
-            icon: const Icon(Icons.sticky_note_2, color: Colors.amber),
+            icon: const Icon(Icons.sticky_note_2, color: Colors.blue),
             label: Text(
               notesValue == null || notesValue.isEmpty ? 'Add Notes' : 'View Notes',
-              style: const TextStyle(color: Colors.amber),
+              style: const TextStyle(color: Colors.blue),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.amber),
-              foregroundColor: Colors.amber,
+              side: const BorderSide(color: Colors.blue),
+              foregroundColor: Colors.blue,
             ),
             onPressed: () {
               // DEBUG PRINT FOR STAFF/CONSULTANT NOTES BUTTON
@@ -982,7 +1029,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     final String safeAppointmentId = widget.appointmentId;
     final ministerPhone = appointmentData['ministerPhone'] ?? '';
     final ministerEmail = appointmentData['ministerEmail'] ?? '';
-    final accentColor = Colors.amber[600]!;
+    final accentColor = Colors.blue[600]!;
     final textColor = Colors.white;
 
     // Assigned to user full name (consultant, concierge, or cleaner)
@@ -1030,10 +1077,10 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0, bottom: 2),
                 child: Chip(
-                  backgroundColor: Colors.amber.shade700,
+                  backgroundColor: Colors.blue[800],
                   label: Text(
                     '$role review: ${avg.toStringAsFixed(1)}',
-                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               );
@@ -1058,10 +1105,10 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
             return Padding(
               padding: const EdgeInsets.only(right: 8.0, bottom: 2),
               child: Chip(
-                backgroundColor: Colors.amber.shade700,
+                backgroundColor: Colors.blue[800],
                 label: Text(
                   'review: ${avg.toStringAsFixed(1)}',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             );
@@ -1074,26 +1121,19 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.amber.shade700,
-          width: 3.5,
+          color: Colors.blue[900]!,
+          width: 2.0,
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withOpacity(0.25),
-            blurRadius: 14,
-            spreadRadius: 2,
-            offset: Offset(0, 4),
+            color: Colors.blue[900]!.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 1,
+            offset: const Offset(0, 2),
           ),
         ],
-        gradient: LinearGradient(
-          colors: [
-            Colors.black,
-            Colors.amber.shade900.withOpacity(0.12),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.grey[900],
       ),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       constraints: const BoxConstraints(minWidth: 0, maxWidth: double.infinity),
@@ -1153,50 +1193,12 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                       ),
                     ),
                     // Add chat icon for consultant/concierge if ministerId exists
-                    if (!widget.viewOnly && (widget.role == 'consultant' || widget.role == 'concierge' || widget.role == 'cleaner') && (widget.ministerId != null && widget.ministerId!.isNotEmpty))
-                      IconButton(
-                        icon: Icon(Icons.chat_bubble_outline, color: Colors.amber[600], size: 26),
-                        tooltip: 'Chat with Minister',
-                        onPressed: () {
-                          // Navigate to chat screen with minister for all roles
-                          String route;
-                          Map<String, dynamic> args = {
-                            'appointmentId': widget.appointmentId,
-                            'ministerId': widget.ministerId,
-                            'ministerName': safeMinisterName,
-                          };
-                          if (widget.role == 'consultant') {
-                            route = '/consultant/chat';
-                            args.addAll({
-                              'consultantId': widget.appointmentInfo['consultantId'] ?? '',
-                              'consultantName': widget.appointmentInfo['consultantName'] ?? '',
-                              'consultantRole': 'consultant',
-                            });
-                          } else if (widget.role == 'concierge') {
-                            route = '/concierge/chat';
-                            args.addAll({
-                              'conciergeId': widget.appointmentInfo['conciergeId'] ?? '',
-                              'conciergeName': widget.appointmentInfo['conciergeName'] ?? '',
-                              'conciergeRole': 'concierge',
-                            });
-                          } else if (widget.role == 'cleaner') {
-                            route = '/cleaner/chat';
-                            args.addAll({
-                              'cleanerId': widget.appointmentInfo['cleanerId'] ?? '',
-                              'cleanerName': widget.appointmentInfo['cleanerName'] ?? '',
-                              'cleanerRole': 'cleaner',
-                            });
-                          } else {
-                            route = '/chat';
-                          }
-                          Navigator.of(context).pushNamed(route, arguments: args);
-                        },
-                      ),
+                    // Chat icon removed as per requirements
                   ],
                 ),
                 const SizedBox(height: 8),
                 // Info rows: make value take all available space and not wrap unnecessarily
-                _infoRow(context, 'ID', safeAppointmentId, accentColor, textColor: Colors.orange, valueFlex: 3),
+                _infoRow(context, 'ID', safeAppointmentId, accentColor, textColor: Colors.blue, valueFlex: 3),
                 _infoRow(context, 'Service', serviceName, accentColor, textColor: textColor, valueFlex: 3),
                 _infoRow(context, 'Venue', venue, accentColor, textColor: textColor, valueFlex: 3),
                 _infoRow(
@@ -1241,7 +1243,7 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                               child: Text(
                                 option['label'] ?? '',
                                 style: TextStyle(
-                                  color: Colors.amber[600],
+                                  color: Colors.blue[600],
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1258,11 +1260,11 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                 const SizedBox(height: 10),
                 if (!widget.viewOnly) ...[
                   ElevatedButton.icon(
-                    icon: Icon(Icons.note_add, color: Colors.amber[600]),
-                    label: Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    icon: const Icon(Icons.note_add, color: Colors.white),
+                    label: const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[800],
-                      side: BorderSide(color: Colors.amber[600]!),
+                      backgroundColor: Colors.blue[800],
+                      side: BorderSide(color: Colors.blue[900]!),
                     ),
                     onPressed: () {
                       _showNotesDialog(context, _appointmentData);

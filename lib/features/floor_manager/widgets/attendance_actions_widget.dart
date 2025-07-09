@@ -436,21 +436,7 @@ class _AttendanceActionsWidgetState extends State<AttendanceActionsWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // TEST MODE CHECKBOX (DEV ONLY)
-              Row(
-                children: [
-                  Checkbox(
-                    value: _isTestMode,
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _isTestMode = val;
-                        });
-                      }
-                    },
-                  ),
-                  const Text('Test Mode', style: TextStyle(color: Colors.amber)),
-                ],
-              ),
+              
               Padding(
                 padding: const EdgeInsets.only(bottom: 6.0),
                 child: Row(

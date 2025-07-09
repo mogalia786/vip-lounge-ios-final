@@ -540,139 +540,135 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/page_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Column(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  AppBar(
-                    backgroundColor: Colors.black,
-                    title: const Text(
-                      'Staff',
-                      style: TextStyle(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.logout,
-                        color: AppColors.gold,
-                        size: 28.0,
-                      ),
-                      tooltip: 'Logout',
-                      onPressed: _handleLogout,
-                    ),
-                    elevation: 0,
-                    actions: [
-                      // Notification Button
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-                        child: IconButton(
-                          icon: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              const Icon(
-                                Icons.notifications_outlined,
-                                color: AppColors.gold,
-                                size: 32.0,
-                              ),
-                              Positioned(
-                                right: -2,
-                                top: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: const Text(
-                                    '!',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => NotificationsScreen(
-                                  userRole: 'staff',
-                                  userId: _userId ?? '',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      
-                      // Inbox Button
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0, left: 4.0, top: 8.0, bottom: 8.0),
-                        child: IconButton(
-                          icon: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              const Icon(
-                                Icons.inbox_outlined,
-                                color: AppColors.gold,
-                                size: 32.0,
-                              ),
-                              Positioned(
-                                right: -4,
-                                top: -4,
-                                child: StaffQueryBadge(
-                                  currentStaffUid: _userId ?? '',
-                                ),
-                              ),
-                            ],
-                          ),
-                          tooltip: 'Queries Inbox',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => StaffQueryInboxScreen(
-                                  currentStaffUid: _userId ?? '',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/page_logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Staff',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 36,
+                    fontFamily: 'Cinzel',
                   ),
-                  _buildTabBar(),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _getTabBody(),
+                ),
+              ],
             ),
           ],
         ),
+        actions: [
+          // Notification Button
+          IconButton(
+            padding: const EdgeInsets.all(4.0),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.blue,  // Changed to blue
+                  size: 24.0,  // Reduced size
+                ),
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 14,
+                      minHeight: 14,
+                    ),
+                    child: const Text(
+                      '!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NotificationsScreen(
+                    userRole: 'staff',
+                    userId: _userId ?? '',
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Inbox Button
+          IconButton(
+            padding: const EdgeInsets.only(right: 4.0, left: 4.0),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.inbox_outlined,
+                  color: Colors.green,
+                  size: 24.0,
+                ),
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: StaffQueryBadge(
+                    currentStaffUid: _userId ?? '',
+                  ),
+                ),
+              ],
+            ),
+            tooltip: 'Queries Inbox',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StaffQueryInboxScreen(
+                    currentStaffUid: _userId ?? '',
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Logout Button
+          IconButton(
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.red,
+              size: 24.0,
+            ),
+            tooltip: 'Logout',
+            onPressed: _handleLogout,
+          ),
+        ],
+        bottom: _buildTabBar(),
       ),
+      body: _getTabBody(),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }

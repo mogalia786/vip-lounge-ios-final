@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class CleanerHomeScreen extends StatelessWidget {
   const CleanerHomeScreen({super.key});
@@ -7,28 +10,35 @@ class CleanerHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Image.asset(
-                'assets/Premium.ico',
-                width: 24,
-                height: 24,
-                errorBuilder: (context, error, stackTrace) => 
-                    const Icon(Icons.star, color: Colors.amber, size: 24),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/page_logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Cleaner',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 36,
+                    fontFamily: 'Cinzel',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Text('Cleaner Home'),
           ],
         ),
-        backgroundColor: Colors.black,
-        elevation: 0,
       ),
       body: const Center(
         child: Text('Cleaner Home Screen'),

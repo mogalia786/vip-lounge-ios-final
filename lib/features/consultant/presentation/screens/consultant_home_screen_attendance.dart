@@ -1484,21 +1484,37 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Row(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/Premium.ico',
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) => 
-                  const Icon(Icons.star, color: Colors.amber, size: 40),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/page_logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                Center(
+                  child: Text(
+                    'Consultant',
+                    style: TextStyle(
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 36,
+                      fontFamily: 'Cinzel',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Text('Consultant Home'),
           ],
         ),
-        backgroundColor: Colors.black,
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(Icons.logout, color: AppColors.primary),

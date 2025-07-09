@@ -120,6 +120,7 @@ flutter:
   assets:
     - assets/
     - assets/data/
+    - assets/vodacom_ball.png
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

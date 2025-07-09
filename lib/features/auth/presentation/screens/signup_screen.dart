@@ -5,6 +5,9 @@ import '../../data/services/user_service.dart';
 import '../../data/services/employee_role_service.dart';
 import '../../../../core/enums/user_role.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../features/admin/data/services/client_type_service.dart';
 
 class SignupScreen extends StatefulWidget {
   SignupScreen({Key? key}) : super(key: key);
@@ -31,16 +34,28 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   
+  // Client type service
+  late final ClientTypeService _clientTypeService = ClientTypeService();
+  
   // Client type options for minister users
-  final List<String> _clientTypes = [
-    'influencer_celebrity',
-    'high_profile_customer',
-    'corporate_executive',
-    'other',
-  ];
   String? _selectedClientType;
+  bool _isClientTypeValid = false;
   bool get _requiresEmployeeNumber {
     return _selectedRole != null && _selectedRole != UserRole.minister;
+  }
+
+  // Helper method to get a field value trying multiple possible field names
+  String _getFieldValue(Map<String, dynamic> data, List<String> possibleKeys) {
+    for (final key in possibleKeys) {
+      final value = data[key];
+      if (value != null) {
+        final strValue = value.toString().trim();
+        if (strValue.isNotEmpty) {
+          return strValue;
+        }
+      }
+    }
+    return '';
   }
 
   @override
@@ -116,65 +131,208 @@ class _SignupScreenState extends State<SignupScreen> {
       return const SizedBox.shrink();
     }
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          value: _selectedClientType,
-          dropdownColor: const Color(0xFF182848),
-          iconEnabledColor: Colors.white.withOpacity(0.7),
-          decoration: InputDecoration(
-            labelText: 'Client Type',
-            labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-            hintText: 'Select client type',
-            hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
-            ),
-          ),
-          items: _clientTypes.map((type) {
-            String displayName = type.split('_').map((word) => 
-              '${word[0].toUpperCase()}${word.substring(1)}'
-            ).join(' ');
-            return DropdownMenuItem(
-              value: type,
-              child: Text(displayName, 
-                style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold)
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedClientType = value;
-            });
-          },
-          validator: (value) {
-            if (_selectedRole == UserRole.minister && (value == null || value.isEmpty)) {
-              return 'Please select a client type';
+    return StreamBuilder<QuerySnapshot>(
+      stream: _clientTypeService.getClientTypes(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Error loading client types', style: TextStyle(color: Colors.red)),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final clientTypes = snapshot.data?.docs ?? [];
+        
+        // Process client types to ensure unique values
+        final processedClientTypes = <String, String>{}; // code -> name
+        
+        // Debug: Log all received client types
+        debugPrint('Total client types from Firestore: ${clientTypes.length}');
+        
+        for (final doc in clientTypes) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            
+            // Try different field names for code and name
+            final code = _getFieldValue(data, ['code', 'id', 'type']);
+            final name = _getFieldValue(data, ['name', 'title', 'typeName', 'label']) ?? 'Unnamed Type';
+            
+            // Generate a code from name if code is empty
+            final finalCode = code.isNotEmpty 
+                ? code 
+                : name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+            
+            // Debug: Log each client type data
+            debugPrint('Client type - Code: "$finalCode", Name: "$name"');
+            debugPrint('Full document data: $data');
+            
+            if (finalCode.isNotEmpty) {
+              processedClientTypes[finalCode] = name;
+            } else {
+              debugPrint('Skipping empty code for name: $name');
             }
-            return null;
-          },
-        ),
-      ],
+          } catch (e) {
+            debugPrint('Error processing client type: $e');
+            debugPrint('Document data: ${doc.data()}');
+          }
+        }
+        
+        // Debug: Log processed client types
+        debugPrint('Processed ${processedClientTypes.length} valid client types');
+        
+        // Show raw client type data for debugging
+        if (clientTypes.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Available Client Types:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...clientTypes.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ID: ${doc.id}'),
+                      ...data.entries.map((e) => Text('${e.key}: ${e.value}')),
+                      const Divider(),
+                      Text('Processed: ${processedClientTypes.entries.where((e) => e.value == data['name'] || e.key == data['code']).isNotEmpty ? 'YES' : 'NO'}')
+                    ],
+                  ),
+                );
+              }).toList(),
+              if (processedClientTypes.isEmpty) 
+                const Text('No valid client types could be processed from the above data', style: TextStyle(color: Colors.red)),
+            ],
+          );
+        }
+        
+        // Convert to list of DropdownMenuItem
+        final dropdownItems = processedClientTypes.entries.map((entry) {
+          return DropdownMenuItem<String>(
+            value: entry.key,
+            child: Text(
+              entry.value,
+              style: const TextStyle(
+                color: Color(0xFFD7263D),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          );
+        }).toList();
+        
+        // Ensure the current selection is valid
+        if (_selectedClientType != null && !processedClientTypes.containsKey(_selectedClientType)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedClientType = null;
+                _isClientTypeValid = false;
+              });
+            }
+          });
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedClientType,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF182848),
+              iconEnabledColor: Colors.white.withOpacity(0.7),
+              decoration: InputDecoration(
+                labelText: 'Client Type',
+                labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                hintText: 'Select client type',
+                hintStyle: const TextStyle(color: Color(0xFFD7263D)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  borderSide: BorderSide(color: Colors.grey.shade400, width: 2.2),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
+                ),
+                filled: true,
+                fillColor: Colors.transparent,
+                errorText: _selectedRole == UserRole.minister && !_isClientTypeValid
+                    ? 'Please select a client type'
+                    : null,
+              ),
+              hint: const Text(
+                'Select client type',
+                style: TextStyle(
+                  color: Color(0xFFD7263D),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              items: dropdownItems,
+              onChanged: _selectedRole == UserRole.minister ? (String? value) {
+                if (value != null && value.isNotEmpty) {
+                  setState(() {
+                    _selectedClientType = value;
+                    _isClientTypeValid = true;
+                  });
+                } else {
+                  setState(() {
+                    _selectedClientType = null;
+                    _isClientTypeValid = false;
+                  });
+                }
+              } : null,
+              validator: (value) {
+                if (_selectedRole == UserRole.minister && (value == null || value.isEmpty)) {
+                  return 'Please select a client type';
+                }
+                return null;
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
   Future<void> _handleSignup() async {
+    // First validate the main form
     if (!_formKey.currentState!.validate()) return;
     
-    // Additional validation for minister client type
-    if (_selectedRole == UserRole.minister && (_selectedClientType == null || _selectedClientType!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a client type'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+    // Then validate the client type if needed
+    if (_selectedRole == UserRole.minister) {
+      // Check if client type is selected
+      if (_selectedClientType == null || _selectedClientType!.isEmpty) {
+        setState(() {
+          _isClientTypeValid = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a client type'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
     
     if (_requiresEmployeeNumber && !_isVerified) {

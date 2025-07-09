@@ -161,16 +161,27 @@ class _ClientTypesScreenState extends State<ClientTypesScreen> {
                   itemCount: types.length,
                   itemBuilder: (context, index) {
                     final type = types[index];
-                    final imageUrl = type['imageUrl'] as String?;
-                    final name = type['name'] as String;
-                    final description = type['description'] as String?;
+                    final data = type.data() as Map<String, dynamic>;
+                    final imageUrl = data['imageUrl'] as String?;
+                    final name = data['name'] as String? ?? 'Unnamed Client Type';
+                    final description = data['description'] as String?;
                     
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       elevation: 2,
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(8),
-                        leading: const Icon(Icons.person, size: 40, color: Colors.green),
+                        leading: imageUrl?.isNotEmpty == true
+                            ? CircleAvatar(
+                                radius: 20,
+                                backgroundImage: NetworkImage(imageUrl!),
+                                onBackgroundImageError: (_, __) {
+                                  // Error handling - we can't return a widget here
+                                  // The error will cause the CircleAvatar to show nothing
+                                },
+                                child: const Icon(Icons.person, size: 20, color: Colors.white),
+                              )
+                            : const Icon(Icons.person, size: 40, color: Colors.green),
                         title: Text(
                           name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -240,7 +251,7 @@ class _ClientTypesScreenState extends State<ClientTypesScreen> {
     }
   }
 
-  Future<void> _deleteClientType(String id, String? imageUrl) async {
+  Future<void> _deleteClientType(String id, [String? imageUrl]) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
