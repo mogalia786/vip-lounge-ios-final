@@ -125,103 +125,48 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  // Build client type dropdown for minister role
+  // Build the client type dropdown
   Widget _buildClientTypeDropdown() {
     if (_selectedRole != UserRole.minister) {
       return const SizedBox.shrink();
     }
-    
+
     return StreamBuilder<QuerySnapshot>(
       stream: _clientTypeService.getClientTypes(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('Error loading client types', style: TextStyle(color: Colors.red)),
+          return const Text(
+            'Error loading client types',
+            style: TextStyle(color: Colors.red),
           );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: CircularProgressIndicator(),
-          );
+          return const CircularProgressIndicator();
         }
 
-        final clientTypes = snapshot.data?.docs ?? [];
+        // Process the documents into a map of id -> name
+        final clientTypes = <String, String>{};
         
-        // Process client types to ensure unique values
-        final processedClientTypes = <String, String>{}; // code -> name
-        
-        // Debug: Log all received client types
-        debugPrint('Total client types from Firestore: ${clientTypes.length}');
-        
-        for (final doc in clientTypes) {
-          try {
+        if (snapshot.hasData) {
+          for (var doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
-            
-            // Try different field names for code and name
-            final code = _getFieldValue(data, ['code', 'id', 'type']);
-            final name = _getFieldValue(data, ['name', 'title', 'typeName', 'label']) ?? 'Unnamed Type';
-            
-            // Generate a code from name if code is empty
-            final finalCode = code.isNotEmpty 
-                ? code 
-                : name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
-            
-            // Debug: Log each client type data
-            debugPrint('Client type - Code: "$finalCode", Name: "$name"');
-            debugPrint('Full document data: $data');
-            
-            if (finalCode.isNotEmpty) {
-              processedClientTypes[finalCode] = name;
-            } else {
-              debugPrint('Skipping empty code for name: $name');
+            if (data['name'] != null && data['name'].toString().isNotEmpty) {
+              clientTypes[doc.id] = data['name'].toString();
             }
-          } catch (e) {
-            debugPrint('Error processing client type: $e');
-            debugPrint('Document data: ${doc.data()}');
           }
         }
         
-        // Debug: Log processed client types
-        debugPrint('Processed ${processedClientTypes.length} valid client types');
-        
-        // Show raw client type data for debugging
-        if (clientTypes.isNotEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Available Client Types:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...clientTypes.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('ID: ${doc.id}'),
-                      ...data.entries.map((e) => Text('${e.key}: ${e.value}')),
-                      const Divider(),
-                      Text('Processed: ${processedClientTypes.entries.where((e) => e.value == data['name'] || e.key == data['code']).isNotEmpty ? 'YES' : 'NO'}')
-                    ],
-                  ),
-                );
-              }).toList(),
-              if (processedClientTypes.isEmpty) 
-                const Text('No valid client types could be processed from the above data', style: TextStyle(color: Colors.red)),
-            ],
+        // If no valid client types found, show a message
+        if (clientTypes.isEmpty) {
+          return const Text(
+            'No client types available. Please contact support.',
+            style: TextStyle(color: Colors.red),
           );
         }
         
         // Convert to list of DropdownMenuItem
-        final dropdownItems = processedClientTypes.entries.map((entry) {
+        final dropdownItems = clientTypes.entries.map((entry) {
           return DropdownMenuItem<String>(
             value: entry.key,
             child: Text(
@@ -236,7 +181,7 @@ class _SignupScreenState extends State<SignupScreen> {
         }).toList();
         
         // Ensure the current selection is valid
-        if (_selectedClientType != null && !processedClientTypes.containsKey(_selectedClientType)) {
+        if (_selectedClientType != null && !clientTypes.containsKey(_selectedClientType)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {

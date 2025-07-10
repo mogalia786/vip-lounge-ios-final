@@ -102,7 +102,6 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     'completionRate': 0,
   };
   bool _isLoadingMetrics = false;
-  Timer? _metricsUpdateTimer;
   Map<String, Map<String, dynamic>> _performanceHistory = {};
 
   String _conciergeId = '';
@@ -138,7 +137,6 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
     _loadConciergeDetails();
     _setupNotificationListener();
     _setupMessageListener();
-    _metricsUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) => _updatePerformanceMetrics());
   }
 
   void _updatePerformanceMetrics() {
@@ -474,138 +472,249 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
 }
 
   Future<void> _endSession(String appointmentId) async {
+    if (!mounted) return;
+    
     try {
       final appointmentDoc = await FirebaseFirestore.instance
           .collection('appointments')
           .doc(appointmentId)
           .get();
+          
       if (!appointmentDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: Appointment not found')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error: Appointment not found')),
+          );
+        }
         return;
       }
+      
       final appointmentData = appointmentDoc.data()!;
+      final clientType = appointmentData['clientType']?.toString() ?? 'Minister';
+      final clientName = appointmentData['ministerName']?.toString() ?? 'Client';
+      final consultantId = appointmentData['consultantId']?.toString() ?? 
+                          appointmentData['assignedConsultantId']?.toString();
+      final ministerId = appointmentData['ministerId']?.toString() ?? 
+                        appointmentData['userId']?.toString();
+      final floorManagerId = appointmentData['floorManagerId']?.toString();
+      final venue = appointmentData['venue']?.toString() ?? 
+                   appointmentData['venueName']?.toString() ?? 'the venue';
+      final conciergeName = appointmentData['conciergeName']?.toString() ?? 'the concierge';
 
-      // Fetch user details for enrichment
-      Future<Map<String, dynamic>> getUserDetails(String? userId) async {
-        if (userId == null || userId.isEmpty) return {};
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-        if (!userDoc.exists) return {};
-        final data = userDoc.data() ?? {};
-        return {
-          'id': userId,
-          'firstName': data['firstName'] ?? '',
-          'lastName': data['lastName'] ?? '',
-          'phone': data['phone'] ?? data['phoneNumber'] ?? '',
-          'email': data['email'] ?? '',
-        };
-      }
-
-      final ministerId = appointmentData['ministerId'] ?? appointmentData['ministerUid'];
-      final consultantId = appointmentData['consultantId'] ?? appointmentData['assignedConsultantId'];
-      final conciergeId = appointmentData['conciergeId'] ?? appointmentData['assignedConciergeId'];
-
-      final ministerDetails = await getUserDetails(ministerId?.toString());
-      final consultantDetails = await getUserDetails(consultantId?.toString());
-      final conciergeDetails = await getUserDetails(conciergeId?.toString());
-
-      // Mark appointment as completed
+      // Update the appointment status
       await FirebaseFirestore.instance
           .collection('appointments')
           .doc(appointmentId)
           .update({
+        'conciergeSessionEnded': true,
+        'conciergeEndTime': FieldValue.serverTimestamp(),
         'status': 'completed',
-        'conciergeEndTime': DateTime.now(),
       });
 
-      // Build enriched appointment data for notifications
-      Map<String, dynamic> fullDetails = {
+      // Get user details in parallel
+      final futures = <Future>[];
+      final consultantDetails = <String, dynamic>{};
+      final ministerDetails = <String, dynamic>{};
+
+      if (consultantId != null && consultantId.isNotEmpty) {
+        futures.add(getUserDetails(consultantId).then((details) {
+          consultantDetails.addAll(details);
+        }));
+      }
+
+      if (ministerId != null && ministerId.isNotEmpty) {
+        futures.add(getUserDetails(ministerId).then((details) {
+          ministerDetails.addAll(details);
+        }));
+      }
+
+      // Wait for all user details to be fetched
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
+
+      // Build notification data with all available details
+      final notificationData = <String, dynamic>{
         ...appointmentData,
         'appointmentId': appointmentId,
-        'minister': ministerDetails,
+        'notificationType': 'session_ended',
+        'conciergeEndTime': DateTime.now().toIso8601String(),
         'consultant': consultantDetails,
-        'concierge': conciergeDetails,
+        'minister': ministerDetails,
+        'venue': venue,
+        'clientType': clientType,
+        'clientName': clientName,
       };
 
-      final venue = appointmentData['venue'] ?? appointmentData['venueName'] ?? 'Venue not specified';
-
-      // Notify consultant
-      if (consultantId != null && consultantId.toString().isNotEmpty) {
-        await _notificationService.createNotification(
-          title: 'Session Ended',
-          body: 'Concierge has ended the session at $venue.',
-          data: {
-            ...fullDetails,
-            'notificationType': 'session_ended',
-          },
-          role: 'consultant',
-          assignedToId: consultantId,
-          notificationType: 'session_ended',
-        );
+      // Notify consultant if exists
+      if (consultantId != null && consultantId.isNotEmpty) {
+        try {
+          await _notificationService.createNotification(
+            title: 'Session Ended',
+            body: '$clientType $clientName has been successfully escorted out of the lounge.',
+            data: notificationData,
+            role: 'consultant',
+            assignedToId: consultantId,
+            notificationType: 'session_ended',
+          );
+          debugPrint('Notified consultant $consultantId of session end');
+        } catch (e) {
+          debugPrint('Error notifying consultant: $e');
+        }
       }
 
-      // Notify all floor managers
-      final floorManagers = await FirebaseFirestore.instance
-          .collection('users')
-          .where('role', isEqualTo: 'floor_manager')
-          .get();
-      for (var doc in floorManagers.docs) {
-        await _notificationService.createNotification(
-          title: 'Minister Departure',
-          body: 'The minister has left the venue ($venue). Please review the appointment details.',
-          data: {
-            ...fullDetails,
-            'notificationType': 'minister_departure',
-          },
-          role: 'floor_manager',
-          assignedToId: doc.id,
-          notificationType: 'minister_departure',
-        );
+      // Notify floor manager if exists
+      if (floorManagerId != null && floorManagerId.isNotEmpty) {
+        try {
+          await _notificationService.createNotification(
+            title: '$clientType Escorted Out',
+            body: '$clientType $clientName has been successfully escorted out of the lounge by $conciergeName.',
+            data: notificationData,
+            role: 'floor_manager',
+            assignedToId: floorManagerId,
+            notificationType: 'client_escorted_out',
+          );
+          debugPrint('Notified floor manager $floorManagerId of escort completion');
+        } catch (e) {
+          debugPrint('Error notifying floor manager: $e');
+        }
       }
 
-      // Send thank you notification to minister with consultant name and contact details
-      final consultantName = consultantDetails['firstName'] != null && consultantDetails['lastName'] != null
-          ? (consultantDetails['firstName'] + ' ' + consultantDetails['lastName']).trim()
-          : (appointmentData['consultantName'] ?? 'Consultant');
-      final consultantPhone = consultantDetails['phone'] ?? appointmentData['consultantPhone'] ?? '';
-      final consultantEmail = consultantDetails['email'] ?? appointmentData['consultantEmail'] ?? '';
-      final appointmentTime = appointmentData['appointmentTime'] is DateTime
-          ? appointmentData['appointmentTime']
-          : (appointmentData['appointmentTime'] is Timestamp)
-              ? (appointmentData['appointmentTime'] as Timestamp).toDate()
-              : appointmentData['appointmentTime'];
-      final formattedTime = appointmentTime is DateTime
-          ? DateFormat('yyyy-MM-dd HH:mm').format(appointmentTime)
-          : appointmentTime?.toString() ?? '';
-      Map<String, dynamic> fullThankYouDetails = {
-        ...fullDetails,
-        'appointmentTimeFormatted': formattedTime,
-        'consultantPhone': consultantPhone,
-        'consultantEmail': consultantEmail,
-      };
-      if (ministerId != null && ministerId.toString().isNotEmpty) {
-        await _notificationService.createNotification(
-          title: 'Thank You',
-          body: '$consultantName thanks you for visiting. If you have questions, contact me at $consultantPhone or $consultantEmail.',
-          data: {
-            ...fullThankYouDetails,
-            'notificationType': 'thank_you',
-          },
-          role: 'minister',
-          assignedToId: ministerId,
-          notificationType: 'thank_you',
+      // Send thank you notification to minister
+      if (ministerId != null && ministerId.isNotEmpty) {
+        try {
+          final consultantName = consultantDetails.isNotEmpty && 
+              (consultantDetails['firstName'] != null || consultantDetails['lastName'] != null)
+              ? '${consultantDetails['firstName'] ?? ''} ${consultantDetails['lastName'] ?? ''}'.trim()
+              : appointmentData['consultantName']?.toString().trim() ?? 'Your consultant';
+              
+          final consultantPhone = (consultantDetails['phone']?.toString().isNotEmpty == true)
+              ? consultantDetails['phone']?.toString()
+              : appointmentData['consultantPhone']?.toString();
+              
+          final consultantEmail = (consultantDetails['email']?.toString().isNotEmpty == true)
+              ? consultantDetails['email']?.toString()
+              : appointmentData['consultantEmail']?.toString();
+              
+          final notificationMsg = consultantPhone != null && consultantPhone.isNotEmpty
+              ? '$consultantName thanks you for visiting. If you have any questions, feel free to contact us at $consultantPhone.'
+              : '$consultantName thanks you for visiting. If you have any questions, feel free to contact us.';
+              
+          final ministerNotificationData = Map<String, dynamic>.from(notificationData)
+            ..addAll({
+              'consultantPhone': consultantPhone,
+              'consultantEmail': consultantEmail,
+              'notificationType': 'thank_you',
+              'showRating': true,
+            });
+              
+          await _notificationService.createNotification(
+            title: 'Thank You',
+            body: notificationMsg,
+            data: ministerNotificationData,
+            role: 'minister',
+            assignedToId: ministerId,
+            notificationType: 'thank_you',
+          );
+          debugPrint('Sent thank you notification to minister $ministerId');
+        } catch (e) {
+          debugPrint('Error sending thank you notification: $e');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$clientType $clientName has been marked as escorted out')),
         );
+        _loadAppointments();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error ending session: $e')),
-      );
+      debugPrint('Error in _endSession: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error ending session. Please try again.')),
+        );
+      }
     }
   }
 
-  void _chatWithMinister(Map<String, dynamic> appointment) {}
-  void _changeStatus(Map<String, dynamic> appointment, String? val) {}
+  // Helper method to get user details (kept for backward compatibility)
+  Future<Map<String, dynamic>> getUserDetails(String? userId) async {
+    if (userId == null || userId.isEmpty) return {};
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (!userDoc.exists) return {};
+      final data = userDoc.data() ?? {};
+      return {
+        'id': userId,
+        'firstName': data['firstName']?.toString() ?? '',
+        'lastName': data['lastName']?.toString() ?? '',
+        'phone': (data['phone'] ?? data['phoneNumber'] ?? '').toString(),
+        'email': data['email']?.toString() ?? '',
+      };
+    } catch (e) {
+      debugPrint('Error getting user details for $userId: $e');
+      return {};
+    }
+  }
+
+  void _chatWithMinister(Map<String, dynamic> appointment) {
+    final ministerId = appointment['ministerId'] ?? appointment['userId'];
+    if (ministerId != null) {
+      Navigator.pushNamed(
+        context,
+        '/chat',
+        arguments: {
+          'receiverId': ministerId,
+          'receiverName': appointment['ministerName'] ?? 'Minister',
+        },
+      );
+    }
+  }
+  
+  void _changeStatus(Map<String, dynamic> appointment, String? status) {
+    if (status == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Status'),
+        content: Text('Change status to $status?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await FirebaseFirestore.instance
+                    .collection('appointments')
+                    .doc(appointment['id'])
+                    .update({
+                  'status': status,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+                if (mounted) {
+                  setState(() {
+                    _loadAppointments();
+                  });
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to update status')),
+                  );
+                }
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _sendMinisterArrivedNotification(Map<String, dynamic> appointment) async {
     final consultantId = appointment['consultantId'] ?? appointment['assignedConsultantId'];
@@ -703,7 +812,7 @@ class _ConciergeHomeScreenAttendanceState extends State<ConciergeHomeScreenAtten
                   style: TextStyle(
                     color: AppColors.gold,
                     fontWeight: FontWeight.bold,
-                    fontSize: 36,
+                    fontSize: 18,
                     fontFamily: 'Cinzel',
                   ),
                 ),

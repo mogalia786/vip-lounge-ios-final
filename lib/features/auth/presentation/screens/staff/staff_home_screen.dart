@@ -563,7 +563,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
                   style: TextStyle(
                     color: AppColors.gold,
                     fontWeight: FontWeight.bold,
-                    fontSize: 36,
+                    fontSize: 18,
                     fontFamily: 'Cinzel',
                   ),
                 ),

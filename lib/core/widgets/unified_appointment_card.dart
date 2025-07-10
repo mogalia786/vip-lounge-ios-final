@@ -42,31 +42,71 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   // Local UI state for button hiding/disabling
   bool _hideConsultantSessionButton = false;
   bool _hideConciergeSessionButton = false;
+  bool _forceHideConciergeButton = false; // New flag to force hide concierge button
+
+  // Helper method to send notifications with error handling
+  Future<void> _sendNotification({
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+    required String role,
+    required String assignedToId,
+  }) async {
+    try {
+      await VipNotificationService().createNotification(
+        title: title,
+        body: body,
+        data: data,
+        role: role,
+        assignedToId: assignedToId,
+        notificationType: data['notificationType'] ?? 'general',
+      );
+    } catch (e) {
+      print('Error sending notification: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send notification')),
+        );
+      }
+    }
+  }
 
   void _updateSessionButtonStateFromData(Map<String, dynamic> data) {
-    if (widget.role == 'consultant') {
+    final role = widget.role;
+    
+    if (role == 'consultant') {
+      final consultantStarted = data['consultantSessionStarted'] == true;
       final consultantEnded = data['consultantSessionEnded'] == true;
+      final conciergeStarted = data['conciergeSessionStarted'] == true;
+      
       setState(() {
+        // Only hide if session was properly ended
         _hideConsultantSessionButton = consultantEnded;
+        
+        // Debug logs
+        print('[BUTTON STATE] Consultant - started: $consultantStarted, ended: $consultantEnded');
+        print('[BUTTON STATE] Concierge started: $conciergeStarted');
       });
-    } else if (widget.role == 'concierge') {
+      
+    } else if (role == 'concierge') {
       final conciergeEnded = data['conciergeSessionEnded'] == true;
       final conciergeStarted = data['conciergeSessionStarted'] == true;
       final consultantEnded = data['consultantSessionEnded'] == true;
       
-      // If session was previously ended, never show the button again
-      // This prevents toggling back after ending a session
-      if (_hideConciergeSessionButton && conciergeEnded) {
-        // Already hidden and ended, don't change state
-        print('[BUTTON STATE] Concierge button already hidden and will remain hidden permanently');
-        return;
-      }
-      
       setState(() {
+        // Only hide if session was properly ended
         _hideConciergeSessionButton = conciergeEnded;
-        // Debug print for concierge button state
-        print('[BUTTON STATE] Concierge role: ${widget.role}, button hidden: $conciergeEnded');
-        print('[BUTTON STATE DETAILS] conciergeSessionStarted: $conciergeStarted, conciergeSessionEnded: ${data['conciergeSessionEnded']}, consultantEnded: $consultantEnded');
+        
+        // If concierge has ended session, make sure it stays hidden
+        if (conciergeEnded) {
+          _forceHideConciergeButton = true;
+        } else {
+          _forceHideConciergeButton = false;
+        }
+        
+        // Debug logs
+        print('[BUTTON STATE] Concierge - started: $conciergeStarted, ended: $conciergeEnded, forceHide: $_forceHideConciergeButton');
+        print('[BUTTON STATE] Consultant ended: $consultantEnded');
       });
     }
   }
@@ -135,6 +175,103 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
   void dispose() {
     _sessionSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _showNotesDialog(BuildContext context, Map<String, dynamic> appointmentData) async {
+    final role = widget.role;
+    final appointmentId = appointmentData['appointmentId'] ?? 
+                         appointmentData['id'] ?? 
+                         widget.appointmentId;
+    
+    if (appointmentId == null || appointmentId.toString().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot add notes: Missing appointment ID')),
+        );
+      }
+      debugPrint('[NOTES] Error: Missing appointment ID');
+      return;
+    }
+
+    // Determine the correct field based on role
+    String field = 'notes';
+    if (role == 'concierge') {
+      field = 'conciergeNotes';
+    } else if (role == 'consultant' || role == 'staff') {
+      field = 'consultantNotes';
+    } else if (role == 'cleaner') {
+      field = 'cleanerNotes';
+    }
+
+    // Get current notes
+    final currentNotes = appointmentData[field]?.toString() ?? '';
+    final notesController = TextEditingController(text: currentNotes);
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('${currentNotes.isEmpty ? 'Add' : 'Edit'} Notes'),
+          content: SingleChildScrollView(
+            child: TextField(
+              controller: notesController,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                hintText: 'Enter your notes here...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Save'),
+              onPressed: () async {
+                if (notesController.text.trim().isNotEmpty) {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('appointments')
+                        .doc(appointmentId.toString())
+                        .update({
+                      field: notesController.text.trim(),
+                      '${field}UpdatedAt': FieldValue.serverTimestamp(),
+                    });
+                    
+                    // Update local state
+                    _updateLocalFields({
+                      field: notesController.text.trim(),
+                      '${field}UpdatedAt': DateTime.now(),
+                    });
+                    
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Notes saved successfully')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error saving notes: $e')),
+                      );
+                    }
+                  }
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _fetchSessionStateFromFirestore() async {
@@ -269,45 +406,15 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
         SnackBar(content: Text('Error updating status: $e')),
       );
     }
-  }
-
-  Future<void> _showNotesDialog(BuildContext context, Map<String, dynamic> appointment) async {
-    final String role = widget.role;
-    // Fallback logic: prefer 'appointmentId', then 'id', then 'docId'
-    dynamic idRaw = appointment['appointmentId'];
-    if (idRaw == null || idRaw.toString().isEmpty) {
-      idRaw = appointment['id'];
-      if (idRaw != null && idRaw.toString().isNotEmpty) {
-        debugPrint('[WARN] appointmentId missing, falling back to id: '+idRaw.toString());
-      }
-    }
-    if (idRaw == null || idRaw.toString().isEmpty) {
-      idRaw = appointment['docId'];
-      if (idRaw != null && idRaw.toString().isNotEmpty) {
-        debugPrint('[WARN] appointmentId/id missing, falling back to docId: '+idRaw.toString());
-      }
-    }
-    if (idRaw == null || idRaw.toString().isEmpty) {
-      debugPrint('Error: appointmentId, id, and docId all missing in _showNotesDialog. Appointment: $appointment');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot show notes: Appointment ID missing.')),
-      );
-      return;
-    }
-    final String appointmentId = idRaw.toString();
-    // Defensive: ensure _appointmentData always has appointmentId
-    if (!_appointmentData.containsKey('appointmentId') || (_appointmentData['appointmentId']?.toString().isEmpty ?? true)) {
-      debugPrint('[INFO] Setting _appointmentData["appointmentId"] = $appointmentId');
-      _appointmentData['appointmentId'] = appointmentId;
-    }
     String field = 'notes';
-    if (role == 'concierge') field = 'conciergeNotes';
-    if (role == 'consultant') field = 'consultantNotes';
-    if (role == 'cleaner') field = 'cleanerNotes';
-    if (!appointment.containsKey(field)) {
-      debugPrint('Warning: Field "$field" not found in appointment. Available keys: ${appointment.keys.toList()}');
+    final currentRole = widget.role;
+    if (currentRole == 'concierge') field = 'conciergeNotes';
+    if (currentRole == 'consultant') field = 'consultantNotes';
+    if (currentRole == 'cleaner') field = 'cleanerNotes';
+    if (!_appointmentData.containsKey(field)) {
+      debugPrint('Warning: Field "$field" not found in appointment. Available keys: ${_appointmentData.keys.toList()}');
     }
-    final currentNotes = (appointment[field] ?? '').toString();
+    final currentNotes = (_appointmentData[field] ?? '').toString();
     final TextEditingController notesController = TextEditingController(text: currentNotes);
     await showDialog(
       context: context,
@@ -326,7 +433,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
               final notes = notesController.text.trim();
               if (notes.isNotEmpty) {
                 try {
-                  await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({field: notes});
+                  await FirebaseFirestore.instance.collection('appointments').doc(widget.appointmentId).update({field: notes});
                   _updateLocalFields({field: notes});
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -351,7 +458,10 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
 
   Future<void> _handleStartSession(BuildContext context, Map<String, dynamic> appointment) async {
     final role = widget.role;
-    final appointmentId = appointment['id'] ?? appointment['docId'] ?? appointment['appointmentId'];
+    final appointmentId = appointment['appointmentId']?.toString() ?? 
+                         appointment['id']?.toString() ?? 
+                         appointment['docId']?.toString() ?? 
+                         widget.appointmentId?.toString() ?? '';
     if (appointmentId != null && appointmentId.toString().isNotEmpty) {
       try {
         final doc = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
@@ -368,7 +478,23 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           startField = 'cleanerSessionStarted';
           endField = 'cleanerSessionEnded';
         }
-        if (data != null && data[startField] != true) {
+        bool canStartSession = true;
+      
+      // If consultant or staff is trying to start, check if concierge has already started
+      if ((role == 'consultant' || role == 'staff') && data != null) {
+        final conciergeStarted = data['conciergeSessionStarted'] == true;
+        final consultantStarted = data['consultantSessionStarted'] == true;
+        canStartSession = !consultantStarted; // Can only start if not already started
+        
+        if (!conciergeStarted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please wait for the minister to arrive before starting the session.')),
+          );
+          return;
+        }
+      }
+      
+      if (data != null && (data[startField] != true || role == 'consultant')) {
           // Start session logic
           await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
             startField: true,
@@ -382,7 +508,8 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           final notificationService = VipNotificationService();
           // Send notification to all parties with contact info
           if (role == 'concierge') {
-            // Notify consultant and minister
+            // Notify consultant, staff and minister
+            // Notify consultant
             if (_appointmentData['consultantId'] != null && _appointmentData['consultantId'].toString().isNotEmpty) {
               await notificationService.createNotification(
                 title: 'VIP Has Arrived',
@@ -406,31 +533,31 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 assignedToId: _appointmentData['consultantId'],
                 notificationType: 'vip_arrived',
               );
-              // Helper method to format appointment time from Timestamp or DateTime
-  String _formatAppointmentTime(dynamic appointmentTime) {
-    if (appointmentTime == null) return 'Unknown time';
-    DateTime dateTime;
-    if (appointmentTime is Timestamp) {
-      dateTime = appointmentTime.toDate();
-    } else if (appointmentTime is DateTime) {
-      dateTime = appointmentTime;
-    } else {
-      return 'Unknown time format';
-    }
-    return DateFormat('EEE, MMM d, yyyy - h:mm a').format(dateTime.toLocal());
-  }
-  
-  // Helper method to get venue details as string
-  String _getVenueDetails() {
-    final venueName = _appointmentData['venueName'] ?? 'Unknown venue';
-    final venueAddress = _appointmentData['venueAddress'] ?? '';
-    return venueAddress.isNotEmpty ? '$venueName ($venueAddress)' : venueName;
-  }
-  
-  await notificationService.sendFCMToUser(
+                          // Helper method to format appointment time from Timestamp or DateTime
+              String formatAppointmentTime(dynamic appointmentTime) {
+                if (appointmentTime == null) return 'Unknown time';
+                DateTime dateTime;
+                if (appointmentTime is Timestamp) {
+                  dateTime = appointmentTime.toDate();
+                } else if (appointmentTime is DateTime) {
+                  dateTime = appointmentTime;
+                } else {
+                  return 'Unknown time format';
+                }
+                return DateFormat('EEE, MMM d, yyyy - h:mm a').format(dateTime.toLocal());
+              }
+              
+              // Helper method to get venue details as string
+              String getVenueDetails() {
+                final venueName = _appointmentData['venueName'] ?? 'Unknown venue';
+                final venueAddress = _appointmentData['venueAddress'] ?? '';
+                return venueAddress.isNotEmpty ? '$venueName ($venueAddress)' : venueName;
+              }
+              
+              await notificationService.sendFCMToUser(
                 userId: _appointmentData['consultantId'],
                 title: 'VIP Arrival: ${_appointmentData['ministerName'] ?? 'Client'}',
-                body: 'VIP ${_appointmentData['ministerName'] ?? 'Client'} has arrived for ${_appointmentData['serviceName'] ?? 'appointment'} at ${_getVenueDetails()} scheduled for ${_formatAppointmentTime(_appointmentData['appointmentTime'])}.',
+                body: 'VIP ${_appointmentData['ministerName'] ?? 'Client'} has arrived for ${_appointmentData['serviceName'] ?? 'appointment'} at ${_getVenueDetails(_appointmentData)} scheduled for ${_formatAppointmentTime(_appointmentData)}.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_arrived',
@@ -448,6 +575,30 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 },
                 messageType: 'vip_arrived',
               );
+              // If there's a staff member assigned, notify them as well
+              if (_appointmentData['staffId'] != null && _appointmentData['staffId'].toString().isNotEmpty) {
+                await notificationService.sendFCMToUser(
+                  userId: _appointmentData['staffId'],
+                  title: 'VIP Arrival: ${_appointmentData['ministerName'] ?? 'Client'}',
+                  body: 'VIP ${_appointmentData['ministerName'] ?? 'Client'} has arrived for ${_appointmentData['serviceName'] ?? 'appointment'} at ${_getVenueDetails(_appointmentData)} scheduled for ${_formatAppointmentTime(_appointmentData)}.',
+                  data: {
+                    'appointmentId': appointmentId,
+                    'notificationType': 'minister_arrived',
+                    'ministerName': _appointmentData['ministerName'] ?? '',
+                    'serviceName': _appointmentData['serviceName'] ?? '',
+                    'venueName': _appointmentData['venueName'] ?? '',
+                    'appointmentTime': _appointmentData['appointmentTime'],
+                    'staffId': _appointmentData['staffId'],
+                    'staffName': _appointmentData['staffName'] ?? '',
+                    'staffPhone': _appointmentData['staffPhone'] ?? '',
+                    'staffEmail': _appointmentData['staffEmail'] ?? '',
+                    'conciergeName': _appointmentData['conciergeName'] ?? '',
+                    'conciergePhone': _appointmentData['conciergePhone'] ?? '',
+                    'conciergeEmail': _appointmentData['conciergeEmail'] ?? '',
+                  },
+                  messageType: 'vip_arrived',
+                );
+              }
             }
             if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
               await notificationService.createNotification(
@@ -467,11 +618,12 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             }
             _updateLocalFields({'conciergeSessionStarted': true});
           }
-          if (role == 'consultant') {
+          if (role == 'consultant' || role == 'staff') {
             // Notify minister and concierge
             if (_appointmentData['ministerId'] != null && _appointmentData['ministerId'].toString().isNotEmpty) {
+              final consultantTitle = role == 'staff' ? 'Staff' : 'Consultant';
               await notificationService.createNotification(
-                title: 'Consultant Session Started',
+                title: '$consultantTitle Session Started',
                 body: 'Your session with ${_appointmentData['consultantName'] ?? 'your consultant'} for ${_appointmentData['serviceName'] ?? 'your appointment'} has started at ${_getVenueDetails(_appointmentData)}.',
                 data: {
                   'appointmentId': appointmentId,
@@ -509,18 +661,38 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
           if (role == 'concierge') {
             newStatus = 'completed';
           }
-          await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
+          
+          final updateData = {
             endField: true,
-            '${role}EndTime': DateTime.now(),
+            '${role}EndTime': FieldValue.serverTimestamp(),
             'status': newStatus,
-          });
-          _updateLocalFields({endField: true, 'status': newStatus, '${role}EndTime': DateTime.now()});
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Session ended')), // TODO: Localize
-          );
-
-          // --- SEND NOTIFICATIONS ON CONSULTANT SESSION END ---
+            '${role}SessionEnded': true,
+          };
+          
+          // If consultant ends session, enable concierge to end their session
           if (role == 'consultant') {
+            updateData['enableConciergeEndSession'] = true;
+          }
+          
+          await FirebaseFirestore.instance
+              .collection('appointments')
+              .doc(appointmentId)
+              .update(updateData);
+              
+          // Update local state
+          _updateLocalFields({
+            ...updateData,
+            '${role}EndTime': DateTime.now(),
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Session ended')),
+            );
+          }
+
+          // --- SEND NOTIFICATIONS ON SESSION END ---
+          if (role == 'consultant' || role == 'staff') {
             final notificationService = VipNotificationService();
             final appointmentData = {...data ?? {}, ..._appointmentData};
             // 1. Notify concierge to escort minister out
@@ -560,9 +732,14 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             }
             // 2. Thank minister for attendance (with full details)
             if (appointmentData['ministerId'] != null && appointmentData['ministerId'].toString().isNotEmpty) {
+              final consultantName = appointmentData['${role}Name'] ?? appointmentData['consultantName'] ?? '';
+              final consultantContact = role == 'staff' 
+                  ? 'Staff: ${appointmentData['staffName']} (${appointmentData['staffPhone'] ?? 'No phone'})' 
+                  : 'Consultant: ${appointmentData['consultantName']} (${appointmentData['consultantPhone'] ?? 'No phone'})';
+                  
               await notificationService.createNotification(
                 title: 'Thank You for Your Visit',
-                body: 'Thank you for attending your ${appointmentData['serviceName'] ?? 'appointment'} with consultant ${appointmentData['consultantName'] ?? ''} at ${_getVenueDetails(appointmentData)} on ${_formatAppointmentTime(appointmentData['appointmentTime'])}. Status: ${_statusLabel(appointmentData['status'] ?? '')}. We hope you enjoyed your experience!',
+                body: 'Thank you for attending your ${appointmentData['serviceName'] ?? 'appointment'} with $consultantName at ${_getVenueDetails(appointmentData)} on ${_formatAppointmentTime(appointmentData['appointmentTime'])}. Status: ${_statusLabel(appointmentData['status'] ?? '')}. We hope you enjoyed your experience!',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'thank_minister',
@@ -603,9 +780,10 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
             }
             // 3. Notify floor manager
             if (appointmentData['floorManagerId'] != null && appointmentData['floorManagerId'].toString().isNotEmpty) {
+              final sessionType = role == 'staff' ? 'Staff' : 'Consultant';
               await notificationService.createNotification(
-                title: 'Minister Session Completed',
-                body: 'Minister ${appointmentData['ministerName'] ?? ''}\'s session has been completed. Status: ${_statusLabel(appointmentData['status'] ?? '')}.',
+                title: 'VIP Session Completed',
+                body: '${appointmentData['ministerName'] ?? 'VIP Client'}\'s session with $sessionType ${appointmentData['${role}Name'] ?? appointmentData['consultantName'] ?? ''} has been completed. Status: ${_statusLabel(appointmentData['status'] ?? '')}.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_session_completed',
@@ -618,10 +796,11 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 assignedToId: appointmentData['floorManagerId'],
                 notificationType: 'minister_session_completed',
               );
+              // Reuse the sessionType variable from above
               await notificationService.sendFCMToUser(
                 userId: appointmentData['floorManagerId'],
-                title: 'Minister Session Completed',
-                body: 'Minister ${appointmentData['ministerName'] ?? ''}\'s session has been completed.',
+                title: 'VIP Session Completed',
+                body: '${appointmentData['ministerName'] ?? 'VIP Client'}\'s session with $sessionType ${appointmentData['${role}Name'] ?? appointmentData['consultantName'] ?? ''} has been completed.',
                 data: {
                   'appointmentId': appointmentId,
                   'notificationType': 'minister_session_completed',
@@ -753,18 +932,18 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     } else if (value.toLowerCase() == 'cancelled' || value.toLowerCase() == 'rejected') {
       valueColor = Colors.red[400]!; // Red for negative status
     } else {
-      valueColor = Colors.blue[100]!; // Light blue for regular text
+      valueColor = Colors.white; // Changed to white for regular text
     }
     
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$label: ',
             style: TextStyle(
-              color: Colors.red[400], // Red for labels
+              color: Colors.red, // Changed to red for labels
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -786,7 +965,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                     child: Text(
                       value,
                       style: TextStyle(
-                        color: valueColor,
+                        color: Colors.white, // Changed to white for values
                         decoration: TextDecoration.underline,
                         fontSize: 14,
                       ),
@@ -795,7 +974,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 : Text(
                     value,
                     style: TextStyle(
-                      color: valueColor,
+                      color: Colors.white, // Changed to white for values
                       fontSize: 14,
                     ),
                     maxLines: 2,
@@ -884,6 +1063,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
       );
     }
 
+    // Show session buttons if session hasn't ended and user has appropriate role
     if (!sessionEnded && (isConsultant || isConcierge)) {
       sessionButtons.add(
         Padding(
@@ -906,9 +1086,40 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   'consultantSessionStarted': true,
                 });
                 _updateLocalFields({'consultantSessionStarted': true});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Session started.')),
-                );
+                
+                // Notify minister and floor manager about session start
+                if (_appointmentData['ministerId'] != null) {
+                  await _sendNotification(
+                    title: 'Session Started',
+                    body: 'Your consultant has started the session.',
+                    data: {
+                      'appointmentId': widget.appointmentId,
+                      'notificationType': 'session_started',
+                    },
+                    role: 'minister',
+                    assignedToId: _appointmentData['ministerId'],
+                  );
+                }
+                
+                // Notify floor manager
+                if (_appointmentData['floorManagerId'] != null) {
+                  await _sendNotification(
+                    title: 'Session Update',
+                    body: 'Consultant has started the session with ${_appointmentData['ministerName'] ?? 'the minister'}.',
+                    data: {
+                      'appointmentId': widget.appointmentId,
+                      'notificationType': 'staff_update',
+                    },
+                    role: 'floorManager',
+                    assignedToId: _appointmentData['floorManagerId'],
+                  );
+                }
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Session started. Notifications sent.')),
+                  );
+                }
               } else if (isConcierge) {
                 if (data['conciergeSessionStarted'] == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -919,9 +1130,57 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                     'conciergeSessionStarted': true,
                   });
                   _updateLocalFields({'conciergeSessionStarted': true});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Minister has arrived.')),
-                  );
+                  
+                  // Notify minister and floor manager about arrival
+                  if (_appointmentData['ministerId'] != null) {
+                    await _sendNotification(
+                      title: 'Welcome',
+                      body: 'You have arrived at the VIP lounge. Your consultant will be with you shortly.',
+                      data: {
+                        'appointmentId': widget.appointmentId,
+                        'notificationType': 'arrival_confirmed',
+                      },
+                      role: 'minister',
+                      assignedToId: _appointmentData['ministerId'],
+                    );
+                  }
+                  
+                  // Notify floor manager and consultant
+                  final List<Future<void>> notifications = [];
+                  
+                  if (_appointmentData['floorManagerId'] != null) {
+                    notifications.add(_sendNotification(
+                      title: 'Minister Arrival',
+                      body: '${_appointmentData['ministerName'] ?? 'A minister'} has arrived.',
+                      data: {
+                        'appointmentId': widget.appointmentId,
+                        'notificationType': 'staff_update',
+                      },
+                      role: 'floorManager',
+                      assignedToId: _appointmentData['floorManagerId'],
+                    ));
+                  }
+                  
+                  if (_appointmentData['consultantId'] != null) {
+                    notifications.add(_sendNotification(
+                      title: 'Minister Arrival',
+                      body: '${_appointmentData['ministerName'] ?? 'Your minister'} has arrived.',
+                      data: {
+                        'appointmentId': widget.appointmentId,
+                        'notificationType': 'session_update',
+                      },
+                      role: 'consultant',
+                      assignedToId: _appointmentData['consultantId'],
+                    ));
+                  }
+                  
+                  await Future.wait(notifications);
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Minister arrival confirmed. Notifications sent.')),
+                    );
+                  }
                 }
               }
             },
@@ -969,14 +1228,21 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                 }
               } else if (isConcierge) {
                 if (data['consultantSessionEnded'] == true && data['conciergeSessionEnded'] != true) {
+                  // First update Firestore
                   await FirebaseFirestore.instance.collection('appointments').doc(widget.appointmentId).update({
                     'conciergeSessionEnded': true,
+                    'conciergeEndTime': FieldValue.serverTimestamp(),
+                    'status': 'completed',
                   });
-                  // Update local fields AND hide button permanently
-                  _updateLocalFields({'conciergeSessionEnded': true});
+                  
+                  // Then update local state to reflect the changes immediately
                   setState(() {
-                    _hideConciergeSessionButton = true;
+                    _appointmentData['conciergeSessionEnded'] = true;
+                    _appointmentData['conciergeEndTime'] = DateTime.now();
+                    _appointmentData['status'] = 'completed';
+                    _hideConciergeSessionButton = true; // Ensure button is hidden
                   });
+                  
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Session ended.')),
                   );
@@ -1042,12 +1308,25 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
       assignedToName = appointmentData['cleanerName'];
     }
 
-    // Logic for role-based controls
-    // Expanded: Allow session logic for all staff roles except 'minister' and 'vip'
-final List<String> sessionStaffRoles = [
-  'consultant', 'concierge', 'cleaner', 'marketingAgent', 'marketing_agent', 'staff', 'generalStaff', 'general_staff', 'floorManager', 'floor_manager'
-];
-final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget.viewOnly;
+    // Define session staff roles for role-based controls
+    final sessionStaffRoles = const [
+      'consultant', 'concierge', 'cleaner', 'marketingAgent',
+      'staff', 'generalStaff', 'floorManager'
+    ];
+    
+    // Show start session button if:
+    // - For consultant: when session hasn't ended
+    // - For concierge: when session hasn't started and hasn't ended
+    final showStartSession = (isConsultant && !_hideConsultantSessionButton) || 
+                           (isConcierge && 
+                            !_appointmentData['conciergeSessionStarted'] && 
+                            !_appointmentData['conciergeSessionEnded']);
+    
+    // Debug log for button visibility
+    print('[DEBUG] Button visibility - role: ${widget.role}');
+    print('[DEBUG] Consultant - started: ${_appointmentData['consultantSessionStarted']}, ended: ${_appointmentData['consultantSessionEnded']}');
+    print('[DEBUG] Concierge - started: ${_appointmentData['conciergeSessionStarted']}, ended: ${_appointmentData['conciergeSessionEnded']}');
+    print('[DEBUG] showStartSession: $showStartSession');
 
     // --- REVIEW LABELS ---
     List<Widget> reviewLabels = [];
@@ -1121,7 +1400,7 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.blue[900]!,
+          color: Colors.white,
           width: 2.0,
         ),
         borderRadius: BorderRadius.circular(18),
@@ -1181,7 +1460,7 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('$formattedDate · $formattedTime', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurpleAccent, fontSize: 17)),
+                Text('$formattedDate · $formattedTime', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 17)),
                 const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1189,7 +1468,7 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                     Expanded(
                       child: Text(
                         safeMinisterName,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: accentColor, fontSize: 20),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
                       ),
                     ),
                     // Add chat icon for consultant/concierge if ministerId exists
@@ -1218,6 +1497,8 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
 
                 if (assignedToName.isNotEmpty)
                   _infoRow(context, 'Assigned To', assignedToName, accentColor, textColor: textColor, valueFlex: 3),
+                if (appointmentData['floorManagerName'] != null && appointmentData['floorManagerName'].toString().isNotEmpty)
+                  _infoRow(context, 'Floor Manager', appointmentData['floorManagerName'], accentColor, textColor: textColor, valueFlex: 3),
                 const SizedBox(height: 10),
                 if (!widget.viewOnly && widget.role == 'consultant')
                   Row(
@@ -1260,11 +1541,11 @@ final bool showStartSession = sessionStaffRoles.contains(widget.role) && !widget
                 const SizedBox(height: 10),
                 if (!widget.viewOnly) ...[
                   ElevatedButton.icon(
-                    icon: const Icon(Icons.note_add, color: Colors.white),
-                    label: const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                    icon: const Icon(Icons.note_add, color: Colors.blue),
+                    label: const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                      side: BorderSide(color: Colors.blue[900]!),
+                      backgroundColor: Colors.white,
+                      side: BorderSide(color: Colors.blue),
                     ),
                     onPressed: () {
                       _showNotesDialog(context, _appointmentData);

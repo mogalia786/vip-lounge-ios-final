@@ -272,6 +272,9 @@ if (!enrichedData.containsKey('showRating')) {
       final formattedDateTime = DateFormat('EEEE, MMMM d, y, h:mm a').format(appointmentTime);
       final serviceName = appointmentData['serviceName'] ?? 'Unknown Service';
       
+      // Get client type with fallback to 'Minister'
+      final clientType = ministerData['clientType'] ?? 'Minister';
+      
       // Make sure we have all appointment details
       final fullAppointmentData = {
         ...appointmentData,
@@ -280,6 +283,7 @@ if (!enrichedData.containsKey('showRating')) {
         'ministerEmail': ministerData['email'] ?? '',
         'ministerFirstName': ministerData['firstName'] ?? '',
         'ministerLastName': ministerData['lastName'] ?? '',
+        'clientType': clientType,
       };
       
       // Add phone numbers to notification data
@@ -295,7 +299,7 @@ if (!enrichedData.containsKey('showRating')) {
         final consultantName = consultant['name'] ?? '';
         await createNotification(
           title: 'New Appointment Assigned',
-          body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
+          body: 'You have been assigned to a new appointment. ${fullAppointmentData['clientType']}: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
           data: {
             ...fullAppointmentData,
             'appointmentId': appointmentId,
@@ -311,7 +315,7 @@ if (!enrichedData.containsKey('showRating')) {
         await sendFCMToUser(
           userId: consultantId,
           title: 'New Appointment Assigned',
-          body: 'You have been assigned to a new appointment. Minister: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
+          body: 'You have been assigned to a new appointment. ${fullAppointmentData['clientType']}: ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}, Venue: ${fullAppointmentData['venueName']}, Time: $formattedDateTime.',
           data: convertToStringMap({
             ...fullAppointmentData,
             'appointmentId': appointmentId,
@@ -333,7 +337,7 @@ if (!enrichedData.containsKey('showRating')) {
         final conciergeName = concierge['name'] ?? '';
         await createNotification(
           title: 'New Appointment Assigned',
-          body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
+          body: 'You have been assigned to receive ${fullAppointmentData['clientType']} ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
           data: {
             ...fullAppointmentData,
             'appointmentId': appointmentId,
@@ -348,7 +352,7 @@ if (!enrichedData.containsKey('showRating')) {
         await sendFCMToUser(
           userId: conciergeId,
           title: 'New Appointment Assigned',
-          body: 'You have been assigned to receive Minister ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
+          body: 'You have been assigned to receive ${fullAppointmentData['clientType']} ${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']} on $formattedDateTime. Consultant: ${consultant != null ? (consultant['name'] ?? '') : ''}, Phone: $consultantPhone',
           data: convertToStringMap({
             ...fullAppointmentData,
             'appointmentId': appointmentId,
@@ -370,7 +374,7 @@ if (!enrichedData.containsKey('showRating')) {
         final cleanerName = cleaner['name'] ?? '';
         await createNotification(
           title: 'New Appointment Assigned',
-          body: "You have been assigned to prepare the venue for Minister "+
+          body: "You have been assigned to prepare the venue for ${fullAppointmentData['clientType']} "+
                 "${fullAppointmentData['ministerFirstName']} ${fullAppointmentData['ministerLastName']}'s appointment on $formattedDateTime",
           data: fullAppointmentData,
           role: 'cleaner',
@@ -457,8 +461,9 @@ if (!enrichedData.containsKey('showRating')) {
     try {
       // Get the minister's full details to include in notifications
       final ministerDetails = await _getMinisterDetails(appointmentData['ministerId']);
+      final clientType = ministerDetails['clientType'] ?? 'Minister';
       final ministerName = ministerDetails['name'] ?? 
-                          '${ministerDetails['firstName'] ?? 'Unknown'} ${ministerDetails['lastName'] ?? 'Minister'}';
+                          '${ministerDetails['firstName'] ?? 'Unknown'} ${ministerDetails['lastName'] ?? clientType}';
       
       // Format appointment time for readable display
       final appointmentTimestamp = appointmentData['appointmentTime'] as Timestamp?;
@@ -477,6 +482,7 @@ if (!enrichedData.containsKey('showRating')) {
         'ministerPhone': ministerDetails['phone'] ?? 'Not provided',
         'ministerEmail': ministerDetails['email'] ?? 'Not provided',
         'ministerDetails': ministerDetails,
+        'clientType': clientType,
       };
       
       // 1. Notify each assigned staff member with complete booking details
@@ -493,7 +499,7 @@ if (!enrichedData.containsKey('showRating')) {
         // Create notification in Firestore
         await createNotification(
           title: 'New Appointment Assignment',
-          body: 'You have been assigned to $ministerName\'s $formattedDate $formattedTime ${appointmentData['serviceName'] ?? 'appointment'}',
+          body: 'You have been assigned to $clientType $ministerName\'s $formattedDate $formattedTime ${appointmentData['serviceName'] ?? 'appointment'}',
           data: {
             ...enhancedAppointmentData,
             'assignmentTime': FieldValue.serverTimestamp(),
@@ -508,7 +514,7 @@ if (!enrichedData.containsKey('showRating')) {
         await sendFCMToUser(
           userId: staffId,
           title: 'New Appointment Assignment',
-          body: 'You have been assigned to $ministerName\'s $formattedDate $formattedTime ${appointmentData['serviceName'] ?? 'appointment'}',
+          body: 'You have been assigned to $clientType $ministerName\'s $formattedDate $formattedTime ${appointmentData['serviceName'] ?? 'appointment'}',
           data: convertToStringMap({
             ...enhancedAppointmentData,
             'type': 'assignment',
@@ -715,6 +721,7 @@ if (!enrichedData.containsKey('showRating')) {
       // Get minister details
       final ministerData = await _getMinisterDetails(appointmentData['ministerId']);
       final ministerName = '${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''}';
+      final clientType = ministerData['clientType'] ?? 'VIP';
       
       final floorManagersQuery = await _firestore.collection('users').where('role', isEqualTo: 'floor_manager').get();
       
@@ -731,7 +738,7 @@ if (!enrichedData.containsKey('showRating')) {
         
         await createNotification(
           title: 'Appointment Started',
-          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with VIP $ministerName at $formattedTime',
+          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with $clientType $ministerName at $formattedTime',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -748,7 +755,7 @@ if (!enrichedData.containsKey('showRating')) {
         await sendFCMToUser(
           userId: floorManagerId,
           title: 'Appointment Started',
-          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with VIP $ministerName at $formattedTime',
+          body: '$staffName (${_getRoleTitle(staffRole)}) has started the $serviceName appointment with $clientType $ministerName at $formattedTime',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -772,7 +779,7 @@ if (!enrichedData.containsKey('showRating')) {
         
         await createNotification(
           title: 'VIP Has Arrived',
-          body: 'VIP $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
+          body: '$clientType $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -788,7 +795,7 @@ if (!enrichedData.containsKey('showRating')) {
         await sendFCMToUser(
           userId: consultantId,
           title: 'VIP Has Arrived',
-          body: 'VIP $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
+          body: '$clientType $ministerName has arrived and is with the concierge. Please prepare for your appointment.',
           data: {
             ...appointmentData,
             'id': appointmentId,
@@ -1024,17 +1031,24 @@ if (!enrichedData.containsKey('showRating')) {
         return {
           'firstName': 'Unknown',
           'lastName': 'Minister',
+          'clientType': 'Minister',
           'phone': '',
           'email': '',
         };
       }
       
-      return ministerDoc.data() ?? {};
+      final data = ministerDoc.data() ?? {};
+      // Ensure clientType has a default value if not set
+      if (data['clientType'] == null || data['clientType'].toString().trim().isEmpty) {
+        data['clientType'] = 'Minister';
+      }
+      return data;
     } catch (e) {
       print('Error getting minister details: $e');
       return {
         'firstName': 'Unknown',
         'lastName': 'Minister',
+        'clientType': 'Minister',
         'phone': '',
         'email': '',
       };

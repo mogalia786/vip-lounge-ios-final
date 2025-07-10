@@ -153,7 +153,7 @@ class NotificationsScreen extends StatelessWidget {
                     print('[DEBUG][NOTIF TAP] data: $data');
                     print('[DEBUG][NOTIF TAP] Fields: appointmentId=$appointmentId, resolvedAppointmentId=$resolvedAppointmentId, data.id=${data['id']}, data.appointmentId=${data['appointmentId']}, data.data?.appointmentId=${data['data']?['appointmentId']}, notification.id=${notification.id}');
                     // Block only for staff assignment and role is floor_manager
-                    if (title.contains('staff assignment') && role == 'floor_manager') {
+                    if (title.contains('staff assignment') && role == 'floorManager') {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('No details available for this notification')),
                       );
@@ -222,7 +222,7 @@ class NotificationsScreen extends StatelessWidget {
       print('Getting notifications for floor manager role - fallback case');
       return FirebaseFirestore.instance
           .collection('notifications')
-          .where('role', isEqualTo: 'floor_manager')
+          .where('role', isEqualTo: 'floorManager')
           .orderBy('createdAt', descending: true)
           .snapshots();
     }

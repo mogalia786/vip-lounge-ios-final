@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
 import 'package:vip_lounge/core/widgets/app_bottom_nav_bar.dart';
@@ -19,6 +20,7 @@ import '../../../floor_manager/presentation/screens/notifications_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
 import 'minister_chat_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/widgets/notification_item.dart';
@@ -63,7 +65,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   
   // Define non-nullable map with proper initialization
   final Map<String, Map<String, dynamic>> _assignedStaff = {
-    'floor_manager': {
+    'floorManager': {
       'id': '',
       'name': 'Floor Manager',
       'checked': true,
@@ -1267,10 +1269,100 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                         ),
                       ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(color: Colors.grey),
-                    ),
+                    // Floor Manager Contact Information
+                    if (appointmentData['floorManagerId'] != null) ...[
+                      const SizedBox(height: 8),
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(appointmentData['floorManagerId'])
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return const SizedBox.shrink();
+                          }
+                          
+                          final floorManagerData = snapshot.data!.data() as Map<String, dynamic>?;
+                          if (floorManagerData == null) return const SizedBox.shrink();
+                          
+                          final floorManagerName = '${floorManagerData['firstName'] ?? ''} ${floorManagerData['lastName'] ?? ''}'.trim();
+                          final floorManagerEmail = floorManagerData['email'] as String?;
+                          final floorManagerPhone = floorManagerData['phoneNumber'] as String? ?? floorManagerData['phone'] as String?;
+                          
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.person_outline, size: 14, color: Colors.blue[300]),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (floorManagerName.isNotEmpty) Text(
+                                          'Floor Manager: $floorManagerName',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        if (floorManagerPhone != null && floorManagerPhone.isNotEmpty) GestureDetector(
+                                          onTap: () {
+                                            final phoneUrl = 'tel:${floorManagerPhone.replaceAll(RegExp(r'[^0-9+]'), '')}';
+                                            launchUrl(Uri.parse(phoneUrl));
+                                          },
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.phone, size: 12, color: Colors.green),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                floorManagerPhone,
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontSize: 12,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (floorManagerEmail != null && floorManagerEmail.isNotEmpty) GestureDetector(
+                                          onTap: () {
+                                            final emailUrl = 'mailto:$floorManagerEmail';
+                                            launchUrl(Uri.parse(emailUrl));
+                                          },
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.email, size: 12, color: Colors.blue),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  floorManagerEmail,
+                                                  style: const TextStyle(
+                                                    color: Colors.blue,
+                                                    fontSize: 12,
+                                                    decoration: TextDecoration.underline,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Divider(color: Colors.grey),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                     // Feedback status - shows either 'Rate my experience' or 'Feedback submitted'
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
@@ -1499,11 +1591,11 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                       // Get floor manager ID
                                       String floorManagerId = _assignedStaff['floor_manager']?['id'] ?? '';
                                       
-                                      // Set selectedRole to floor_manager to chat only with floor manager
+                                      // Set selectedRole to floorManager to chat only with floor manager
                                       _openChatDialog({
                                         ...appointmentData,
                                         'id': appointmentId,
-                                        'selectedRole': 'floor_manager'
+                                        'selectedRole': 'floorManager'
                                       });
                                       
                                       // Mark all messages as read when opening the chat dialog
@@ -1697,7 +1789,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
   
   String _getRoleTitle(String role) {
     switch (role) {
-      case 'floor_manager':
+      case 'floorManager':
         return 'Floor Manager';
       case 'consultant':
         return 'Consultants';
@@ -2308,7 +2400,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
     } else if (role.toLowerCase() == 'cleaner') {
       roleColor = Colors.orange;
       roleIcon = Icons.cleaning_services;
-    } else if (role.toLowerCase() == 'floor_manager') {
+    } else if (role.toLowerCase() == 'floorManager') {
       roleColor = Colors.red;
       roleIcon = Icons.admin_panel_settings;
     }

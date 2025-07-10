@@ -426,7 +426,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
     // Role colors for visual identification
     final Map<String, Color> roleColors = {
       'minister': Colors.purple,
-      'floor_manager': AppColors.gold,
+      'floorManager': AppColors.gold,
       'consultant': Colors.blue,
       'concierge': Colors.green,
       'cleaner': Colors.orange,
@@ -457,7 +457,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
     FirebaseFirestore.instance
         .collection('notifications')
         .where('appointmentId', isEqualTo: appointmentId)
-        .where('role', isEqualTo: 'floor_manager')
+        .where('role', isEqualTo: 'floorManager')
         .where('notificationType', isEqualTo: 'chat')
         .where('isRead', isEqualTo: false)
         .get()
@@ -579,7 +579,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                           shrinkWrap: false,
                           itemBuilder: (context, index) {
                             final message = messages[index].data() as Map<String, dynamic>;
-                            final isFromFloorManager = message['senderRole'] == 'floor_manager';
+                            final isFromFloorManager = message['senderRole'] == 'floorManager';
                             final senderName = message['senderName'] ?? 'Unknown';
                             final senderRole = message['senderRole'] ?? 'unknown';
                             final senderInitial = message['senderInitial'] ?? '';

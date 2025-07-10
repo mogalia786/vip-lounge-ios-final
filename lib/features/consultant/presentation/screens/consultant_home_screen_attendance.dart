@@ -89,8 +89,6 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   int _unreadNotifications = 0;
   Map<String, int> _appointmentUnreadCounts = {};
   Map<String, dynamic> _metricsData = {};
-  Timer? _metricsUpdateTimer;
-  Timer? _statsUpdateTimer;
   Map<String, Map<String, dynamic>> _performanceHistory = {};
   bool _isCurrentDay = true;
   double _workplaceLatitude = -29.835930939846083;
@@ -298,16 +296,6 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
     _loadAppointmentsForDate(_selectedDate);
     _setupNotificationListener();
     _fetchNotificationsOnce();
-    _metricsUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _updatePerformanceMetrics();
-    });
-    _statsUpdateTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (mounted) {
-        if (_isCurrentDay) {
-          _updateActiveWorkTime();
-        }
-      }
-    });
     _initializePushNotificationDebug();
   }
 
@@ -340,8 +328,6 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
   @override
   void dispose() {
     _notificationsSubscription?.cancel();
-    _metricsUpdateTimer?.cancel();
-    _statsUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -1505,7 +1491,7 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
                     style: TextStyle(
                       color: AppColors.gold,
                       fontWeight: FontWeight.bold,
-                      fontSize: 36,
+                      fontSize: 18,
                       fontFamily: 'Cinzel',
                     ),
                     textAlign: TextAlign.center,

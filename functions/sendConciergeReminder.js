@@ -75,7 +75,7 @@ exports.sendConciergeReminder = functions.pubsub.schedule('every 2 minutes').onR
   const snapshot = await appointmentsRef
     .where('appointmentTime', '>=', windowStart.toDate())
     .where('appointmentTime', '<=', windowEnd.toDate())
-    //.where('conciergeSessionStarted', '==', false)
+    .where('conciergeSessionStarted', '==', false)
     .get();
 
   if (snapshot.empty) {

@@ -863,7 +863,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       try {
         final floorManagerQuery = await FirebaseFirestore.instance
             .collection('users')
-            .where('role', isEqualTo: 'floor_manager')
+            .where('role', isEqualTo: 'floorManager')
             .limit(1)
             .get();
             
@@ -871,10 +871,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           final doc = floorManagerQuery.docs.first;
           floorManagerData = {
             'floorManagerId': doc.id,
-            'floorManagerFirstName': doc.data()['firstName'] ?? '',
-            'floorManagerLastName': doc.data()['lastName'] ?? '',
+            'floorManagerName': '${doc.data()['firstName'] ?? ''} ${doc.data()['lastName'] ?? ''}'.trim(),
           };
-          print('[DEBUG] Found floor manager: ${floorManagerData['floorManagerFirstName']} ${floorManagerData['floorManagerLastName']}');
+          print('[DEBUG] Found floor manager: ${floorManagerData['floorManagerName']}');
         } else {
           print('[WARNING] No floor manager found in the system');
         }
@@ -911,8 +910,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         // Add floor manager data if available
         if (floorManagerData != null) ...{
           'floorManagerId': floorManagerData['floorManagerId'],
-          'floorManagerFirstName': floorManagerData['floorManagerFirstName'],
-          'floorManagerLastName': floorManagerData['floorManagerLastName'],
+          'floorManagerName': floorManagerData['floorManagerName'],
         },
       };
       
@@ -1158,7 +1156,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         print('Floor Manager UIDs (time slot selection): ' + floorManagerUids.join(', '));
         for (var floorManagerUid in floorManagerUids) {
           await _notificationService.createNotification(
-            role: 'floor_manager',
+            role: 'floorManager',
             assignedToId: floorManagerUid,
             title: 'New Appointment Request',
             body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
@@ -1173,7 +1171,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             title: 'New Appointment Request',
             body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
             appointmentId: appointmentId,
-            role: 'floor_manager',
+            role: 'floorManager',
             additionalData: notificationData,
             showRating: false,
             notificationType: 'new_appointment',

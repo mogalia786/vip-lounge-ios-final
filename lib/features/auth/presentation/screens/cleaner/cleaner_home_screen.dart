@@ -31,7 +31,7 @@ class CleanerHomeScreen extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
-                    fontSize: 36,
+                    fontSize: 18,
                     fontFamily: 'Cinzel',
                   ),
                 ),

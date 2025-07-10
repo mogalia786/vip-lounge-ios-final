@@ -22,7 +22,7 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
   late String appointmentId;
   String recipientId = '';
   String recipientName = 'Floor Manager';
-  String recipientRole = 'floor_manager';
+  String recipientRole = 'floorManager';
   
   // Fetch floor manager ID from users collection
   Future<void> _fetchFloorManagerId() async {
@@ -30,7 +30,7 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
       // Query users collection to find the floor manager
       final floorManagerUsers = await _firestore
           .collection('users')
-          .where('role', isEqualTo: 'floor_manager')
+          .where('role', isEqualTo: 'floorManager')
           .limit(1) // We only need one floor manager
           .get();
       
@@ -104,7 +104,7 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
     
     // Always update the display name
     recipientName = widget.appointment['floorManagerName'] as String? ?? 'Floor Manager';
-    recipientRole = 'floor_manager';
+    recipientRole = 'floorManager';
     
     print('DEBUG: Chat setup with appointmentId: $appointmentId');
     print('DEBUG: Recipient - ID: $recipientId, Name: $recipientName, Role: $recipientRole');
@@ -223,8 +223,8 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
         print('DEBUG: Added floor manager ID from appointment: $floorManagerId');
       } else {
         // Add a special ID that floor managers can query for
-        participants.add('floor_manager_recipient');
-        print('DEBUG: Added generic floor_manager_recipient ID to participants');
+        participants.add('floorManager_recipient');
+        print('DEBUG: Added generic floorManager_recipient ID to participants');
       }
     }
     
@@ -619,7 +619,7 @@ class _MinisterChatDialogState extends State<MinisterChatDialog> {
   
   String _formatRoleDisplay(String role) {
     switch (role.toLowerCase()) {
-      case 'floor_manager':
+      case 'floorManager':
         return 'Floor Manager';
       case 'floormanager':
         return 'Floor Manager';
