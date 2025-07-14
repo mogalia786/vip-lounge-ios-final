@@ -7,6 +7,9 @@ import 'package:vip_lounge/features/staff_query_list_screen.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_chat_list_screen.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/feedback_management_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/appointment_search_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/query_search_screen.dart';
+
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -1797,7 +1800,33 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           ],
         ),
         actions: [
-          // Messages icon moved here
+          // Search appointments icon
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.blue, size: 24),
+            tooltip: 'Search Appointments',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AppointmentSearchScreen(),
+                ),
+              );
+            },
+          ),
+          // Search queries icon
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.blue, size: 24),
+            tooltip: 'Search Queries',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const QuerySearchScreen(),
+                ),
+              );
+            },
+          ),
+          // Messages icon
           IconButton(
             icon: const Icon(Icons.message, color: Colors.blue, size: 24),
             tooltip: 'Messages from Ministers',

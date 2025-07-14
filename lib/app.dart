@@ -9,6 +9,7 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/minister/presentation/screens/minister_home_screen.dart';
 import 'features/minister/presentation/screens/minister_feedback_screen.dart';
 import 'features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
+import 'features/floor_manager/presentation/screens/floor_manager_search_screen.dart';
 import 'core/presentation/screens/standard_home_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/minister/presentation/screens/minister_choice_screen.dart';
@@ -149,6 +150,8 @@ class _AppState extends State<App> {
             return MaterialPageRoute(builder: (_) => const AppointmentBookingScreen());
           case '/floor_manager/home':
             return MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew());
+          case '/floor_manager/search':
+            return MaterialPageRoute(builder: (_) => const FloorManagerSearchScreen());
           case '/operational_manager/home':
             return MaterialPageRoute(builder: (_) => const OperationalManagerHomeScreen());
           case '/consultant/home':

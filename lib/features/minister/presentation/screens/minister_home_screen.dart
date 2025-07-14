@@ -1193,6 +1193,25 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             ),
                           ),
                         ),
+                        // Display reference number if available
+                        if (appointmentData['referenceNumber'] != null &&
+                            appointmentData['referenceNumber'].toString().isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.amber),
+                            ),
+                            child: Text(
+                              'Ref: ${appointmentData['referenceNumber']}',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         Icon(Icons.check_circle, color: Colors.green, size: 24), // TICK ICON FOR DEBUGGING
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,6 +20,13 @@ class AppointmentBookingScreen extends StatefulWidget {
 }
 
 class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
+  // Generate a random 5-character alphanumeric reference number
+  String _generateReferenceNumber() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random.secure();
+    return List.generate(5, (index) => chars[random.nextInt(chars.length)]).join();
+  }
+
   Future<void> testMinimalFirestoreWrite() async {
     final now = DateTime.now();
     final testData = {
@@ -89,6 +97,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       // Create appointment data
       // Ensure floor manager fields are always present
       print('DEBUG: About to write appointment with floorManagerId: ' + floorManagerId + ', floorManagerName: ' + floorManagerName);
+      final referenceNumber = _generateReferenceNumber();
       final appointmentData = {
         'ministerId': authProvider.ministerData!['uid'],
         'ministerFirstName': authProvider.ministerData!['firstName'],
@@ -109,6 +118,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         'floorManagerId': floorManagerId,
         'floorManagerName': floorManagerName,
         'typeOfVip': 'VIP Client',
+        'referenceNumber': referenceNumber, // Add reference number to appointment
       };
       print('DEBUG: appointmentData to be saved (should include floorManagerId/floorManagerName): $appointmentData');
 
@@ -140,6 +150,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           'role': 'floor_manager',
           'type': 'new_appointment', // Add a type field for better filtering
           'appointmentId': appointmentRef.id,
+          'referenceNumber': referenceNumber, // Add reference number to notification
           'ministerId': authProvider.ministerData!['uid'],
           'ministerFirstName': authProvider.ministerData!['firstName'],
           'ministerLastName': authProvider.ministerData!['lastName'],
@@ -170,6 +181,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         // Make a copy with only string values for FCM
         final fcmData = {
           'appointmentId': appointmentRef.id,
+          'referenceNumber': referenceNumber, // Add reference number to FCM data
           'type': 'new_appointment',
           'ministerId': authProvider.ministerData!['uid'],
           'ministerFirstName': authProvider.ministerData!['firstName'],

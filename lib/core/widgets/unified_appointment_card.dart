@@ -995,6 +995,7 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
     final consultantSessionEnded = appointmentData['consultantSessionEnded'] == true;
     final conciergeSessionStarted = appointmentData['conciergeSessionStarted'] == true;
     final conciergeSessionEnded = appointmentData['conciergeSessionEnded'] == true;
+    final referenceNumber = appointmentData['referenceNumber'] ?? '';
 
     // Debug prints
     print('consultantSessionStarted: $consultantSessionStarted');
@@ -1440,14 +1441,27 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   children: [
                     Icon(Icons.info, color: Colors.lightBlueAccent, size: 22),
                     const SizedBox(width: 7),
-                    Text(
-                      'Status: ' + (appointmentData['status']?.toString().toUpperCase() ?? 'UNKNOWN'),
-                      style: const TextStyle(
-                        color: Colors.lightBlueAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${appointmentData['serviceName'] ?? 'Appointment'} - ${appointmentData['status']?.toString().toUpperCase() ?? 'PENDING'}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (referenceNumber.isNotEmpty)
+                          Text(
+                            'Ref: $referenceNumber',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.amber,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),

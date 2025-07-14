@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../features/floor_manager/presentation/widgets/daily_schedule.dart';
 import '../../../features/floor_manager/presentation/screens/notifications_screen.dart';
 import '../../../features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
+import '../../../features/floor_manager/presentation/screens/appointment_search_screen.dart';
+import '../../../features/floor_manager/presentation/screens/query_search_screen.dart';
 import '../../providers/app_auth_provider.dart';
 import '../../constants/colors.dart';
 
@@ -119,15 +121,36 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.black,
-          title: Image.asset(
-            'assets/Premium.ico',
-            width: 40,
-            height: 40,
-            errorBuilder: (context, error, stackTrace) => 
-                const Icon(Icons.star, color: Colors.amber, size: 40),
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
+          title: const Text('Home'),
           actions: [
+            // Search Appointments
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.blue, size: 24),
+              tooltip: 'Search Appointments',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AppointmentSearchScreen(),
+                  ),
+                );
+              },
+            ),
+            
+            // Search Queries
+            IconButton(
+              icon: const Icon(Icons.help_outline, color: Colors.blue, size: 24),
+              tooltip: 'Search Queries',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QuerySearchScreen(),
+                  ),
+                );
+              },
+            ),
+            
             // Pickup Locations Management
             IconButton(
               icon: const Icon(Icons.location_on, color: Colors.blue),

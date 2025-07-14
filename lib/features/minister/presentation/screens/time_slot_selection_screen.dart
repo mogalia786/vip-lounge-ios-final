@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
@@ -820,6 +821,15 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
     }
   }
   
+  // Generate a random alphanumeric reference number (5 characters)
+  String _generateReferenceNumber() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(5, (_) => chars.codeUnitAt(random.nextInt(chars.length)))
+    );
+  }
+
   // Handle the booking process
   Future<void> _handleBookAppointment() async {
     if (_selectedTimeSlot == null) {
@@ -881,6 +891,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         print('[ERROR] Error fetching floor manager: $e');
       }
 
+      // Generate reference number
+      final referenceNumber = _generateReferenceNumber();
+      
       // Create appointment data with base fields
       final appointmentData = {
         'ministerId': ministerData['uid'],
@@ -899,6 +912,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         'subServiceName': widget.subServiceName,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
+        'referenceNumber': referenceNumber, // Add reference number
         'typeOfVip': ministerData['clientType'] ?? 'VIP Client', // Use clientType from user data
         // Add pickup location data
         'pickupLocation': {
@@ -940,8 +954,8 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       final notificationService = NotificationService();
       try {
         await notificationService.sendFCMToFloorManager(
-          title: 'New Appointment',
-          body: 'A new appointment has been booked by ${ministerData['firstName']} ${ministerData['lastName']}',
+          title: 'New Appointment #$referenceNumber',
+          body: 'A new appointment has been booked by ${ministerData['firstName']} ${ministerData['lastName']} (Ref: #$referenceNumber)',
           data: {
             'type': 'booking',
             'bookingId': appointmentId,
@@ -949,6 +963,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             'serviceName': widget.selectedService.name,
             'ministerName': '${ministerData['firstName']} ${ministerData['lastName']}',
             'floorManagerId': floorManagerData?['floorManagerId'],
+            'referenceNumber': referenceNumber,
           },
         );
         print('[DEBUG] Sent FCM notification to floor managers');
@@ -972,11 +987,12 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             if (fcmToken != null && fcmToken.toString().isNotEmpty) {
               // Send notification to the consultant
               await notificationService.createNotification(
-                title: 'New Appointment Assigned',
-                body: 'You have been assigned to a new appointment with ${ministerData['firstName']} ${ministerData['lastName']}',
+                title: 'New Appointment #$referenceNumber Assigned',
+                body: 'You have been assigned to a new appointment with ${ministerData['firstName']} ${ministerData['lastName']} (Ref: #$referenceNumber)',
                 data: {
                   'type': 'booking',
                   'bookingId': appointmentId,
+                  'referenceNumber': referenceNumber,
                 },
                 role: 'consultant',
                 assignedToId: _selectedConsultantId,
@@ -998,8 +1014,9 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         initiatorId: ministerData['uid'],
         initiatorRole: 'minister',
         initiatorName: '${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''}',
-        notes: 'Booking created by minister',
         eventData: {
+          ...appointmentData,
+          'referenceNumber': referenceNumber, // Include reference number in event data
           'serviceId': widget.selectedService.id,
           'serviceName': widget.selectedService.name,
           'serviceCategory': widget.serviceCategory,
@@ -1009,6 +1026,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           'appointmentTime': _selectedTimeSlot!.toIso8601String(),
           'duration': widget.serviceDuration,
         },
+        notes: 'Booking created by minister',
       );
 
       // Create notification for floor managers
@@ -1029,12 +1047,13 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           role: 'minister',
           assignedToId: ministerData['uid'],
           title: 'Booking Confirmation',
-          body: 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.',
+          body: 'Your booking #$referenceNumber for ${widget.selectedService.name} at ${widget.venueName} on $formattedTime has been confirmed. A staff member will be assigned to you shortly.',
           notificationType: 'booking_confirmation',
           data: {
             'appointmentId': appointmentId,
             'notificationType': 'booking_confirmation',
             'status': 'pending',
+            'referenceNumber': referenceNumber,
           },
         );
         
@@ -1121,15 +1140,15 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         
         // If no specific message was set, use the default
         if (categorySpecificMessage.isEmpty) {
-          categorySpecificMessage = 'Thank you for booking ${widget.selectedService.name} at ${widget.venueName} on $formattedTime. A staff member will be assigned to you shortly.';
+          categorySpecificMessage = 'Your booking #$referenceNumber for ${widget.selectedService.name} at ${widget.venueName} on $formattedTime has been confirmed. A staff member will be assigned to you shortly.';
         } else {
           // Add the standard booking confirmation at the end if we have a specific message
-          categorySpecificMessage += '\n\nAppointment details: ${widget.selectedService.name} at ${widget.venueName} on $formattedTime.';
+          categorySpecificMessage += '\n\nBooking #$referenceNumber\n${widget.selectedService.name} at ${widget.venueName} on $formattedTime.';
         }
         
         await sendMyFCM.sendNotification(
           recipientId: ministerData['uid'],
-          title: 'Booking Confirmation',
+          title: 'Booking Confirmation #$referenceNumber',
           body: categorySpecificMessage,
           appointmentId: appointmentId,
           role: 'minister',
@@ -1138,6 +1157,7 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
             'status': 'pending',
             'serviceCategory': mainCategory,
             'subServiceName': subcategory,
+            'referenceNumber': referenceNumber,
           },
           showRating: false,
           notificationType: 'booking_confirmation',
@@ -1158,21 +1178,21 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           await _notificationService.createNotification(
             role: 'floorManager',
             assignedToId: floorManagerUid,
-            title: 'New Appointment Request',
-            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
+            title: 'New Appointment Request #$referenceNumber',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment (Ref: #$referenceNumber)',
             notificationType: 'new_appointment',
-            data: notificationData,
+            data: notificationData..['referenceNumber'] = referenceNumber,
           );
           
           // Also send notification to floor managers using SendMyFCM
           final sendMyFCM = new SendMyFCM();
           await sendMyFCM.sendNotification(
             recipientId: floorManagerUid,
-            title: 'New Appointment Request',
-            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment',
+            title: 'New Appointment Request #$referenceNumber',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment (Ref: #$referenceNumber)',
             appointmentId: appointmentId,
             role: 'floorManager',
-            additionalData: notificationData,
+            additionalData: notificationData..['referenceNumber'] = referenceNumber,
             showRating: false,
             notificationType: 'new_appointment',
           );
@@ -1186,18 +1206,18 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
           await _notificationService.createNotification(
             role: 'consultant',
             assignedToId: _selectedConsultantId!,
-            title: 'You Have Been Assigned an Appointment',
-            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant',
+            title: 'New Appointment #$referenceNumber Assigned',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant (Ref: #$referenceNumber)',
             notificationType: 'assigned_appointment',
-            data: notificationData,
+            data: notificationData..['referenceNumber'] = referenceNumber,
           );
           
           // Also send FCM notification to the consultant
           final consultantFcm = new SendMyFCM();
           await consultantFcm.sendNotification(
             recipientId: _selectedConsultantId!,
-            title: 'You Have Been Assigned an Appointment',
-            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant',
+            title: 'New Appointment #$referenceNumber Assigned',
+            body: 'Minister ${ministerData['firstName'] ?? ''} ${ministerData['lastName'] ?? ''} has requested an appointment and selected you as their consultant (Ref: #$referenceNumber)',
             appointmentId: appointmentId,
             role: 'consultant',
             additionalData: notificationData,
