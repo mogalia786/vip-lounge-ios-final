@@ -109,49 +109,90 @@ class _AssignStaffToQueryScreenState extends State<AssignStaffToQueryScreen> {
       });
 
       // Send notification to the assigned staff
-      await _notificationService.createNotification(
-        title: 'New Query Assigned',
-        body: 'You have been assigned a new query from ${widget.query['ministerName'] ?? 'a minister'}.',
-        data: {
-          'queryId': widget.query['id'],
-          'referenceNumber': widget.query['referenceNumber'],
-          'ministerName': widget.query['ministerName'],
-          'ministerPhone': widget.query['ministerPhone'],
-          'query': widget.query['uery'] ?? widget.query['query'],
-          'type': 'query_assigned',
-        },
-        role: staff['role'],
-        assignedToId: _selectedStaffId,
-        notificationType: 'query_assignment',
-      );
+      try {
+        await _notificationService.createNotification(
+          title: 'New Query Assigned',
+          body: 'You have been assigned a new query from ${widget.query['ministerName'] ?? 'a minister'}. Reference #${widget.query['referenceNumber']}',
+          data: {
+            'queryId': widget.query['id'],
+            'referenceNumber': widget.query['referenceNumber'],
+            'ministerName': widget.query['ministerName'],
+            'ministerPhone': widget.query['ministerPhone'],
+            'query': widget.query['uery'] ?? widget.query['query'],
+            'type': 'query_assigned',
+            'timestamp': DateTime.now().toIso8601String(),
+            'priority': 'high',
+          },
+          role: staff['role'],
+          assignedToId: _selectedStaffId,
+          notificationType: 'query_assignment',
+        );
+        debugPrint('Successfully sent notification to staff: ${staff['email']}');
+      } catch (e) {
+        debugPrint('Error sending notification to staff: $e');
+        // Log the error but don't fail the operation
+        await _notificationService.logNotificationDebug(
+          trigger: 'assign_staff_to_query',
+          eventType: 'staff_notification_error',
+          recipient: staff['email'] ?? _selectedStaffId ?? 'unknown',
+          body: 'Failed to send notification to staff',
+          localSuccess: false,
+          fcmSuccess: false,
+          error: e.toString(),
+        );
+      }
 
       // Send notification to the minister with enhanced details
-      await _notificationService.createNotification(
-        title: 'Query #${widget.query['referenceNumber']} - Assigned',
-        body: '''Your query has been assigned to ${staff['name']}.
-        
+      try {
+        final ministerId = widget.query['ministerId'];
+        if (ministerId != null && ministerId.toString().isNotEmpty) {
+          final notificationBody = '''Your query has been assigned to ${staff['name']}.
+          
 Contact Details:
 Name: ${staff['name']}
 Phone: ${staff['phone'] ?? 'Not provided'}
 Email: ${staff['email'] ?? 'Not provided'}
 
-Reference: #${widget.query['referenceNumber']}''',
-        data: {
-          'queryId': widget.query['id'],
-          'referenceNumber': widget.query['referenceNumber'],
-          'assignedToName': staff['name'],
-          'assignedToPhone': staff['phone'] ?? '',
-          'assignedToEmail': staff['email'] ?? '',
-          'queryText': widget.query['uery'] ?? widget.query['query'] ?? 'No details',
-          'queryDate': widget.query['createdAt']?.toDate().toString() ?? DateTime.now().toString(),
-          'type': 'query_assignment',
-          'showFullDetails': 'true',
-          'priority': 'high',
-        },
-        role: 'minister',
-        assignedToId: widget.query['ministerId'],
-        notificationType: 'query_assignment',
-      );
+Query: ${widget.query['uery'] ?? widget.query['query'] ?? 'No details'}
+Reference: #${widget.query['referenceNumber']}''';
+
+          await _notificationService.createNotification(
+            title: 'Query #${widget.query['referenceNumber']} - Assigned',
+            body: notificationBody,
+            data: {
+              'queryId': widget.query['id'],
+              'referenceNumber': widget.query['referenceNumber'],
+              'assignedToName': staff['name'],
+              'assignedToPhone': staff['phone'] ?? '',
+              'assignedToEmail': staff['email'] ?? '',
+              'queryText': widget.query['uery'] ?? widget.query['query'] ?? 'No details',
+              'queryDate': widget.query['createdAt']?.toDate().toString() ?? DateTime.now().toString(),
+              'type': 'query_assignment',
+              'showFullDetails': 'true',
+              'priority': 'high',
+              'timestamp': DateTime.now().toIso8601String(),
+            },
+            role: 'minister',
+            assignedToId: ministerId,
+            notificationType: 'query_assignment',
+          );
+          debugPrint('Successfully sent notification to minister: $ministerId');
+        } else {
+          debugPrint('No ministerId found in query: ${widget.query['id']}');
+        }
+      } catch (e) {
+        debugPrint('Error sending notification to minister: $e');
+        // Log the error but don't fail the operation
+        await _notificationService.logNotificationDebug(
+          trigger: 'assign_staff_to_query',
+          eventType: 'minister_notification_error',
+          recipient: widget.query['ministerId']?.toString() ?? 'unknown',
+          body: 'Failed to send notification to minister',
+          localSuccess: false,
+          fcmSuccess: false,
+          error: e.toString(),
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return success

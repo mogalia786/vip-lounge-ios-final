@@ -127,18 +127,36 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
   }
 
   bool _isQueryOverdue(Map<String, dynamic> query) {
-    if (query['assignedAt'] == null) return false;
+    // If query is already resolved/completed, it's not overdue
+    final status = query['status']?.toString().toLowerCase() ?? 'new';
+    if (status == 'resolved' || status == 'completed') return false;
     
-    final assignedAt = query['assignedAt'] is Timestamp 
-        ? (query['assignedAt'] as Timestamp).toDate()
-        : DateTime.now();
+    // Check if query was created more than 30 minutes ago
+    final createdAt = query['createdAt'] is Timestamp 
+        ? (query['createdAt'] as Timestamp).toDate()
+        : DateTime.now().subtract(const Duration(hours: 1)); // Default to 1 hour ago if no timestamp
+        
     final now = DateTime.now();
-    final difference = now.difference(assignedAt).inMinutes;
+    final difference = now.difference(createdAt).inMinutes;
     
-    // If status is not resolved and it's been more than 30 minutes since assignment
-    return query['status']?.toString().toLowerCase() != 'resolved' && 
-           query['status']?.toString().toLowerCase() != 'completed' &&
-           difference > 30;
+    return difference > 30; // More than 30 minutes old
+  }
+  
+  String _getOverdueTime(Map<String, dynamic> query) {
+    final createdAt = query['createdAt'] is Timestamp 
+        ? (query['createdAt'] as Timestamp).toDate()
+        : DateTime.now().subtract(const Duration(hours: 1));
+        
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+    
+    if (difference.inDays > 1) {
+      return '${difference.inDays} days';
+    } else if (difference.inHours > 1) {
+      return '${difference.inHours} hours';
+    } else {
+      return '${difference.inMinutes} mins';
+    }
   }
 
   Widget _buildQueryItem(Map<String, dynamic> query) {
@@ -156,12 +174,15 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
     
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      elevation: 2,
+      elevation: isOverdue ? 4 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.red.shade700, width: 1.5),
+        side: BorderSide(
+          color: isOverdue ? Colors.red.shade700 : Colors.grey.shade800, 
+          width: isOverdue ? 2.0 : 1.0,
+        ),
       ),
-      color: const Color(0xFF0A1E3C), // Dark blue background
+      color: isOverdue ? Colors.red.shade900.withOpacity(0.2) : const Color(0xFF0A1E3C),
       child: InkWell(
         onTap: () {
           if (!isAssigned) {
@@ -192,6 +213,33 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Overdue warning banner
+              if (isOverdue) 
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade900,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.amber),
+                      const SizedBox(width: 6),
+                      Text(
+                        'OVERDUE - ${_getOverdueTime(query)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
               // Reference number and status row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,12 +365,51 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Query Details'),
+        title: Text('Query #$query[referenceNumber]'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (_isQueryOverdue(query))
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade900,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'QUERY OVERDUE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'This query is ${_getOverdueTime(query)} old and still unresolved',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               _buildDetailRow('Reference', query['referenceNumber'] ?? 'N/A'),
               _buildDetailRow('Minister', query['ministerName'] ?? 'N/A'),
               _buildDetailRow('Email', query['ministerEmail'] ?? 'N/A'),

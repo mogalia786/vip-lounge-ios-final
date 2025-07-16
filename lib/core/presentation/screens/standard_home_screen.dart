@@ -7,6 +7,7 @@ import '../../../features/floor_manager/presentation/screens/notifications_scree
 import '../../../features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
 import '../../../features/floor_manager/presentation/screens/appointment_search_screen_new.dart';
 import '../../../features/floor_manager/presentation/screens/query_search_screen.dart';
+import '../../../features/ratings/presentation/screens/appointment_ratings_screen.dart';
 import '../../providers/app_auth_provider.dart';
 import '../../constants/colors.dart';
 
@@ -172,12 +173,26 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
               onPressed: () => Navigator.pushNamed(context, '/floor_manager/home'),
             ),
             
+            // Ratings
+            IconButton(
+              icon: const Icon(Icons.star, color: Colors.amber, size: 24),
+              tooltip: 'View Appointment Ratings',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AppointmentRatingsScreen(),
+                  ),
+                );
+              },
+            ),
+            
             // Notifications
             if (_unreadNotifications > 0)
               Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.notifications, color: Colors.orange),
+                    icon: const Icon(Icons.notifications, color: Colors.orange, size: 24),
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
