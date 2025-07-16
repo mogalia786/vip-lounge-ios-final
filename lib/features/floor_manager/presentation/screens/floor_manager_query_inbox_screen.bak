@@ -471,8 +471,29 @@ class _FloorManagerQueryInboxScreenState extends State<FloorManagerQueryInboxScr
                         children: [
                           const Text('Top Performing Staff', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                           const SizedBox(height: 8),
+                          ...topStaff.take(3).map((s) => Row(
+                                children: [
+                                  Icon(Icons.emoji_events, color: AppColors.primary),
+                                  const SizedBox(width: 8),
+                                  Text('${s['name']}'),
+                                  const SizedBox(width: 8),
+                                  Text('(${s['count']})', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ],
+                              )),
+                        ],
+                      ),
                     ),
-    );
+                  ),
+                ...grouped.entries.map((entry) {
+                  final staff = entry.key;
+                  final queries = entry.value;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF0D1333), Colors.black],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),

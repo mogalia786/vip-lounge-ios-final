@@ -5,9 +5,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_list_screen.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_query_inbox_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_query_inbox_screen_new.dart' as new_inbox;
 import 'package:vip_lounge/features/floor_manager/presentation/screens/floor_manager_chat_list_screen.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/feedback_management_screen.dart';
-import 'package:vip_lounge/features/floor_manager/presentation/screens/appointment_search_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/appointment_search_screen_new.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/query_search_screen.dart';
 
 import 'package:provider/provider.dart';
@@ -1800,32 +1802,6 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
           ],
         ),
         actions: [
-          // Search appointments icon
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.blue, size: 24),
-            tooltip: 'Search Appointments',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AppointmentSearchScreen(),
-                ),
-              );
-            },
-          ),
-          // Search queries icon
-          IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.blue, size: 24),
-            tooltip: 'Search Queries',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const QuerySearchScreen(),
-                ),
-              );
-            },
-          ),
           // Messages icon
           IconButton(
             icon: const Icon(Icons.message, color: Colors.blue, size: 24),
@@ -2198,7 +2174,7 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FloorManagerQueryInboxScreen(),
+                  builder: (context) => new_inbox.FloorManagerQueryInboxScreen(),
                 ),
               );
               break;

@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../features/floor_manager/presentation/widgets/daily_schedule.dart';
 import '../../../features/floor_manager/presentation/screens/notifications_screen.dart';
 import '../../../features/floor_manager/presentation/screens/floor_manager_home_screen_new.dart';
-import '../../../features/floor_manager/presentation/screens/appointment_search_screen.dart';
+import '../../../features/floor_manager/presentation/screens/appointment_search_screen_new.dart';
 import '../../../features/floor_manager/presentation/screens/query_search_screen.dart';
 import '../../providers/app_auth_provider.dart';
 import '../../constants/colors.dart';

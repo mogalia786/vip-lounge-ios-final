@@ -12,7 +12,7 @@ import 'appointments_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/concierge_closed_day_helper.dart';
 import 'staff_management_screen.dart';
 import 'notifications_screen.dart';
-import 'floor_manager_query_inbox_screen.dart';
+import 'query_inbox_clean.dart';
 import 'floor_manager_chat_list_screen.dart';
 import '../widgets/staff_assignment_dialog.dart';
 import '../widgets/message_icon_widget.dart';
