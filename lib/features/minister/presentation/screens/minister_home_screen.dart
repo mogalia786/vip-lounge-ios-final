@@ -853,9 +853,9 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                     );
                     return;
                   }
-                  // 2. Fetch business address from Firestore
-                  final doc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
-                  if (!doc.exists || doc['latitude'] == null || doc['longitude'] == null) {
+                  // 3. Get business coordinates from Firestore
+                  final businessDoc = await FirebaseFirestore.instance.collection('business').doc('settings').get();
+                  if (!businessDoc.exists || businessDoc['latitude'] == null || businessDoc['longitude'] == null) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Business address not set.')),
@@ -863,9 +863,11 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                     }
                     return;
                   }
-                  final double businessLat = (doc['latitude'] as num).toDouble();
-                  final double businessLng = (doc['longitude'] as num).toDouble();
-                  // 3. Launch Google Maps with directions
+                  
+                  final double businessLat = (businessDoc['latitude'] as num).toDouble();
+                  final double businessLng = (businessDoc['longitude'] as num).toDouble();
+                  
+                  // 4. Launch Google Maps with directions
                   final url = 'https://www.google.com/maps/dir/?api=1&origin=${ministerLat},${ministerLng}&destination=${businessLat},${businessLng}&travelmode=driving';
                   final uri = Uri.parse(url);
                   if (await canLaunchUrl(uri)) {
