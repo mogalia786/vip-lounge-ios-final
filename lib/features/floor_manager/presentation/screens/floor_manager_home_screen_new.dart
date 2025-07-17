@@ -83,6 +83,59 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
     }
   }
 
+  // Dashboard Box Widget
+  Widget _buildDashboardBox({
+    required IconData icon,
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0E21), // Dark Blue background
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: AppColors.primary, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _clockBarController.dispose();
@@ -2132,14 +2185,115 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                             ],
                           ),
                         ),
+                        // Dashboard Section - 3-column grid
+                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Quick Actions',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              GridView.count(
+                                crossAxisCount: 3,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.9,
+                                children: [
+                                  // Row 1
+                                  _buildDashboardBox(
+                                    icon: Icons.calendar_today,
+                                    title: 'Appointments',
+                                    value: '12',
+                                    onTap: () {
+                                      // Navigate to appointments screen
+                                    },
+                                  ),
+                                  _buildDashboardBox(
+                                    icon: Icons.question_answer,
+                                    title: 'Queries',
+                                    value: '5',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => new_inbox.FloorManagerQueryInboxScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  _buildDashboardBox(
+                                    icon: Icons.people,
+                                    title: 'Staff',
+                                    value: '8',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => StaffManagementScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  // Row 2 - Add more boxes as needed
+                                  _buildDashboardBox(
+                                    icon: Icons.notifications,
+                                    title: 'Alerts',
+                                    value: '3',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => NotificationsScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  _buildDashboardBox(
+                                    icon: Icons.chat,
+                                    title: 'Chats',
+                                    value: '2',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FloorManagerChatListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  _buildDashboardBox(
+                                    icon: Icons.feedback,
+                                    title: 'Feedback',
+                                    value: '4',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FeedbackManagementScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: 320, // Adjust as needed for your layout
-                child: _buildAppointmentsList(),
               ),
             ],
           ),
