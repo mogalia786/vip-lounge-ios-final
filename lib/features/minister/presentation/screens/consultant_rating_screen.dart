@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/constants/colors.dart';
 import '../../../../core/providers/app_auth_provider.dart';
+import '../../../../core/services/vip_notification_service.dart';
 import '../../../../core/services/notification_service.dart';
 
 class ConsultantRatingScreen extends StatefulWidget {
@@ -52,16 +53,34 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
       final appointmentId = widget.appointmentData['appointmentId'];
       final consultantId = widget.appointmentData['consultantId'];
       
+      // Prepare common data
+      final appointmentDate = widget.appointmentData['appointmentTime'] != null 
+          ? (widget.appointmentData['appointmentTime'] is Timestamp 
+              ? (widget.appointmentData['appointmentTime'] as Timestamp).toDate() 
+              : DateTime.parse(widget.appointmentData['appointmentTime'].toString()))
+          : DateTime.now();
+      final formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(appointmentDate);
+      final serviceId = widget.appointmentData['serviceId'] ?? widget.appointmentData['service'] ?? 'N/A';
+      final referenceNumber = widget.appointmentData['referenceNumber']?.toString() ?? '';
+      final consultantName = widget.appointmentData['consultantName'] ?? 'Consultant';
+
       // Save the rating to Firestore
       await FirebaseFirestore.instance.collection('ratings').add({
         'appointmentId': appointmentId,
-        'consultantId': consultantId,
-        'ministerId': user.id,
+        'referenceNumber': widget.appointmentData['referenceNumber'] ?? '',
+        'staffId': consultantId,
+        'staffName': widget.appointmentData['consultantName'] ?? 'Consultant',
+        'role': 'consultant',
+        'ministerId': user.uid,
         'ministerName': user.name,
         'rating': _rating,
-        'feedback': _feedback,
+        'notes': _feedback,
         'timestamp': FieldValue.serverTimestamp(),
+        'type': 'Appointment Rating',
+        'appointmentDate': widget.appointmentData['appointmentTime'],
       });
+      
+      print('[RATING] Submitted rating with reference number: ${widget.appointmentData['referenceNumber']}');
       
       // Update the appointment to show it's been rated
       await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
@@ -69,13 +88,59 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
         'rating': _rating,
       });
       
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rating submitted successfully')),
-      );
+      // Notify floor manager about the rating
+      try {
+        final notificationService = VipNotificationService();
+        
+        // Get all active floor managers
+        final floorManagers = await FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'floor_manager')
+            .where('isActive', isEqualTo: true)
+            .get();
+            
+        if (floorManagers.docs.isEmpty) {
+          print('No active floor managers found to notify');
+        } else {
+          for (var manager in floorManagers.docs) {
+            try {
+              await notificationService.createNotification(
+                title: 'New Consultant Rating',
+                body: '${user.name} rated ${widget.appointmentData['consultantName'] ?? 'a consultant'} $_rating stars',
+                data: {
+                  'type': 'consultant_rating',
+                  'appointmentId': appointmentId,
+                  'consultantId': consultantId,
+                  'consultantName': widget.appointmentData['consultantName'] ?? 'Consultant',
+                  'rating': _rating,
+                  'feedback': _feedback,
+                  'ministerName': user.name,
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'showRating': true,
+                },
+                role: 'floor_manager',
+                assignedToId: manager.id,
+                notificationType: 'consultant_rating',
+              );
+            } catch (e) {
+              print('Error notifying floor manager ${manager.id}: $e');
+            }
+          }
+        }
+      } catch (e) {
+        print('Error in floor manager notification process: $e');
+        // Don't fail the whole operation if notification fails
+      }
       
-      // Navigate back
-      Navigator.of(context).pop(true);
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rating submitted successfully')),
+        );
+        
+        // Navigate back
+        Navigator.of(context).pop(true);
+      }
       
     } catch (e) {
       print('Error submitting rating: $e');

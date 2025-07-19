@@ -1085,6 +1085,85 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
   }
   
   // Function to show staff selection dialog
+  Widget _buildDashboardBox({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    int badgeCount = 0,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0E21),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : badgeCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showStaffSelectionDialog(BuildContext context, String appointmentId, String staffType) {
     showDialog(
       context: context,
@@ -1378,26 +1457,207 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildDateScroll30Days(),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('appointments')
-                  .where('date', isEqualTo: DateFormat('yyyy-MM-dd').format(_selectedDate))
-                  .orderBy('startTime', descending: false)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator(color: AppColors.primary));
-                }
-                final appointments = snapshot.data!.docs;
-                if (appointments.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Welcome Card
+            Card(
+              color: const Color(0xFF0A0E21),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Colors.white, width: 1.5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, $userName',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'VIP Lounge Management Dashboard',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // First Row - Main Actions
+            Row(
+              children: [
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.calendar_today,
+                  label: 'Appointments',
+                  onTap: () {
+                    // Navigate to appointments screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AppointmentsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.people,
+                  label: 'Staff',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StaffManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.notifications,
+                  label: 'Notifications',
+                  badgeCount: _unreadNotifications,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Second Row - Management
+            Row(
+              children: [
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.assignment,
+                  label: 'Queries',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const QueryInboxScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.chat,
+                  label: 'Messages',
+                  badgeCount: _unreadMessages,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FloorManagerChatListScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.settings,
+                  label: 'Settings',
+                  onTap: () {
+                    // Add settings navigation
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Upcoming Appointments Section
+            const Text(
+              'Today\'s Appointments',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A0E21),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('appointments')
+                    .where('date', isEqualTo: DateFormat('yyyy-MM-dd').format(DateTime.now()))
+                    .orderBy('startTime', descending: false)
+                    .limit(5)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  }
+                  final appointments = snapshot.data!.docs;
+                  if (appointments.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No appointments for today',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: appointments.length,
+                    itemBuilder: (context, index) {
+                      final appointment = appointments[index].data() as Map<String, dynamic>;
+                      final appointmentId = appointments[index].id;
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
+                        color: Colors.grey[900],
+                        child: ListTile(
+                          title: Text(
+                            appointment['ministerName'] ?? 'No Name',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            '${appointment['serviceName'] ?? 'Service'} at ${appointment['startTime'] ?? ''}',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white),
+                          onTap: () {
+                            // Navigate to appointment details
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
                         Icon(Icons.event_busy, color: Colors.grey, size: 48),
                         const SizedBox(height: 16),
                         Text(

@@ -16,6 +16,7 @@ import '../../../../core/services/vip_messaging_service.dart';
 import '../../../../core/services/vip_notification_service.dart';
 import 'query_screen.dart';
 import 'consultant_rating_screen.dart';
+import 'concierge_rating_screen.dart';
 import '../../../floor_manager/presentation/screens/notifications_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
 import 'minister_chat_dialog.dart';
@@ -38,6 +39,7 @@ import '../../../../core/services/vip_messaging_service.dart';
 import '../../../../core/services/vip_notification_service.dart';
 import 'query_screen.dart';
 import 'consultant_rating_screen.dart';
+import 'concierge_rating_screen.dart';
 import '../../../floor_manager/presentation/screens/notifications_screen.dart';
 import 'package:vip_lounge/features/minister/presentation/screens/marketing_tab_social_feed.dart';
 import 'package:vip_lounge/core/services/device_location_service.dart';
@@ -648,6 +650,7 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             try {
                               final ratingData = {
                                 'appointmentId': appointmentId,
+                                'referenceNumber': appointment['referenceNumber'] ?? '', // Add reference number
                                 'staffId': staffId,
                                 'staffName': staffName,
                                 'role': role,
@@ -657,7 +660,9 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                                 'ministerId': user.uid,
                                 'ministerName': user.name,
                                 'type': 'Appointment Rating',
+                                'appointmentDate': appointment['appointmentTime'], // Add appointment date for filtering
                               };
+                              print('[RATING] Reference number being saved: ${appointment['referenceNumber']}');
                               print('[DEBUG] Attempting to write rating: ' + ratingData.toString());
                               await FirebaseFirestore.instance.collection('ratings').add(ratingData);
                               print('[DEBUG] Rating written to ratings collection for $role, appointmentId: $appointmentId');
@@ -671,10 +676,25 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                             }
                             // Send notification and FCM to staff
                             final notifService = VipNotificationService();
-                            final notifTitle = 'You received a rating';
-                            final notifBody = 'You received a rating from the minister: $_selectedRating stars. Notes: $_notes';
+                            final appointmentDate = appointment['appointmentTime'] != null 
+                                ? (appointment['appointmentTime'] is Timestamp 
+                                    ? (appointment['appointmentTime'] as Timestamp).toDate() 
+                                    : DateTime.parse(appointment['appointmentTime'].toString()))
+                                : DateTime.now();
+                            final formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(appointmentDate);
+                            final serviceId = appointment['serviceId'] ?? appointment['service'] ?? 'N/A';
+                            
+                            // Notification to the rated staff
+                            final staffNotifTitle = 'You received a rating';
+                            final staffNotifBody = '${user.name} rated you $_selectedRating stars for service $serviceId on $formattedDate. ${_notes.isNotEmpty ? 'Notes: $_notes' : ''}';
+                            
+                            // Notification to the minister (sender)
+                            final ministerNotifTitle = 'Rating Submitted';
+                            final ministerNotifBody = 'You rated $staffName $_selectedRating stars for service $serviceId on $formattedDate';
+                            
                             final notifData = {
                               'appointmentId': appointmentId,
+                              'referenceNumber': appointment['referenceNumber'] ?? '',
                               'staffId': staffId,
                               'staffName': staffName,
                               'role': role,
@@ -682,15 +702,29 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                               'notes': _notes,
                               'ministerId': user.uid,
                               'ministerName': user.name,
+                              'serviceId': serviceId,
+                              'appointmentDate': appointmentDate.toString(),
                               'type': 'Appointment Rating',
                             };
+                            
+                            // Send to staff
                             await notifService.createNotification(
-                              title: notifTitle,
-                              body: notifBody,
+                              title: staffNotifTitle,
+                              body: staffNotifBody,
                               data: notifData,
                               role: role,
                               assignedToId: staffId,
                               notificationType: 'rating',
+                            );
+                            
+                            // Also send to minister
+                            await notifService.createNotification(
+                              title: ministerNotifTitle,
+                              body: ministerNotifBody,
+                              data: notifData,
+                              role: 'minister',
+                              assignedToId: user.uid,
+                              notificationType: 'rating_confirmation',
                             );
                             if (mounted) {
                               Navigator.of(context).pop();
@@ -1531,28 +1565,68 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                         ],
                       ),
                     if (appointmentData['conciergeId'] != null)
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Icon(Icons.support_agent, size: 12, color: Colors.green),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Concierge: ${appointmentData['conciergeName'] ?? 'Assigned'}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.support_agent, size: 12, color: Colors.green),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        'Concierge: ${appointmentData['conciergeName'] ?? 'Assigned'}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ConciergeRatingScreen(
+                                    appointmentData: {
+                                      ...appointmentData,
+                                      'appointmentId': appointmentData['id'] ?? appointmentData['appointmentId'],
+                                      'conciergeId': appointmentData['conciergeId'],
+                                      'conciergeName': appointmentData['conciergeName'],
+                                      'referenceNumber': appointmentData['referenceNumber'],
+                                      'service': appointmentData['serviceName'] ?? 'Service',
+                                      'appointmentDate': appointmentData['appointmentTime'],
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.star_border, size: 14, color: AppColors.gold),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Rate Concierge',
+                                  style: TextStyle(
+                                    color: AppColors.gold,
+                                    fontSize: 12,
+                                    decoration: TextDecoration.underline,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          // Chat icon removed per requirements
                         ],
                       ),
                     if (appointmentData['cleanerId'] != null)

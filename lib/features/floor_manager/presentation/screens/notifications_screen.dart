@@ -210,19 +210,31 @@ class NotificationsScreen extends StatelessWidget {
           .orderBy('createdAt', descending: true)
           .snapshots();
     } else if (user != null) {
-      // Get notifications for the current user based on their role and ID
-      print('Getting notifications for user: ${user.uid}, role: ${user.role}');
-      return FirebaseFirestore.instance
-          .collection('notifications')
-          .where('assignedToId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots();
+      // For floor managers, we need to get both their personal notifications
+      // and any notifications for the floor_manager role
+      if (user.role == 'floor_manager' || user.role == 'floorManager') {
+        print('Getting notifications for floor manager: ${user.uid}');
+        return FirebaseFirestore.instance
+            .collection('notifications')
+            .where('assignedToId', isEqualTo: user.uid)
+            .orderBy('createdAt', descending: true)
+            .snapshots();
+      } else {
+        // For other users, just get their personal notifications
+        print('Getting notifications for user: ${user.uid}, role: ${user.role}');
+        return FirebaseFirestore.instance
+            .collection('notifications')
+            .where('assignedToId', isEqualTo: user.uid)
+            .orderBy('createdAt', descending: true)
+            .snapshots();
+      }
     } else {
-      // Default to floor manager notifications (should never hit this branch)
-      print('Getting notifications for floor manager role - fallback case');
+      // Fallback: Get all notifications for floor_manager role
+      // This should only happen if the user is not logged in, which shouldn't happen
+      print('Getting all notifications for floor_manager role (fallback)');
       return FirebaseFirestore.instance
           .collection('notifications')
-          .where('role', isEqualTo: 'floorManager')
+          .where('role', isEqualTo: 'floor_manager')
           .orderBy('createdAt', descending: true)
           .snapshots();
     }

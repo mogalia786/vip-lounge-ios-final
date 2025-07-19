@@ -76,11 +76,45 @@ final questionDocs = questionsSnap.docs;
       final appointment = appointmentDoc.data() ?? {};
       final floorManagerId = appointment['floorManagerId']?.toString();
       
+      // Enhanced responses with question and option details
+      final enhancedResponses = _responses.entries.map((entry) {
+        final qId = entry.key;
+        final score = entry.value;
+        final question = _questions.firstWhere(
+          (q) => (q['docId'] ?? q['id'] ?? '').toString() == qId,
+          orElse: () => {'text': 'Question not found'},
+        );
+        
+        final option = _options.firstWhere(
+          (opt) => opt['score'] == score,
+          orElse: () => {'label': 'Unknown', 'score': score},
+        );
+        
+        return {
+          'questionId': qId,
+          'questionText': question['text'] ?? question['question'] ?? 'Question',
+          'responseScore': score,
+          'responseLabel': option['label'] ?? 'Score: $score',
+          'maxScore': _options.isNotEmpty ? _options.last['score'] : 5, // Assuming highest score is last
+          // Removed timestamp from array items as it's not supported
+        };
+      }).toList();
+      
+      // Calculate average score for quick reference
+      final averageScore = _responses.isNotEmpty 
+          ? _responses.values.reduce((a, b) => a + b) / _responses.length
+          : 0;
+      
       // Prepare feedback data with staff/booking details
       final feedbackData = {
         'appointmentId': widget.appointmentId,
+        'referenceNumber': appointment['referenceNumber'] ?? '',
         'ministerId': widget.ministerId,
-        'responses': _responses,
+        'responses': _responses, // Keep original for backward compatibility
+        'enhancedResponses': enhancedResponses, // New enhanced format
+        'averageScore': averageScore,
+        'totalQuestions': _questions.length,
+        'questionsVersion': '1.0', // Version identifier for future schema changes
         'comment': _comment,
         'createdAt': FieldValue.serverTimestamp(),
         'consultantId': appointment['consultantId'],
@@ -124,6 +158,7 @@ final questionDocs = questionsSnap.docs;
         // Prepare notification data matching the rating notification pattern
         final notificationData = {
           'appointmentId': widget.appointmentId,
+          'referenceNumber': appointment['referenceNumber'] ?? '', // Add reference number
           'type': 'feedback_submitted',
           'feedbackType': 'minister_experience',
           'ministerId': widget.ministerId,
