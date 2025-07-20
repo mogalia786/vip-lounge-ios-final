@@ -173,76 +173,8 @@ class _StandardHomeScreenState extends State<StandardHomeScreen> {
               onPressed: () => Navigator.pushNamed(context, '/floor_manager/home'),
             ),
             
-            // Ratings
-            IconButton(
-              icon: const Icon(Icons.star, color: Colors.amber, size: 24),
-              tooltip: 'View Appointment Ratings',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AppointmentRatingsScreen(),
-                  ),
-                );
-              },
-            ),
+
             
-            // Notifications
-            if (_unreadNotifications > 0)
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications, color: Colors.orange, size: 24),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => NotificationsScreen(
-                            userId: user.uid,
-                            userRole: user.role,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$_unreadNotifications',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            if (_unreadNotifications == 0)
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: AppColors.primary),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => NotificationsScreen(
-                        userId: user.uid,
-                        userRole: user.role,
-                      ),
-                    ),
-                  );
-                },
-              ),
             const SizedBox(width: 8),
             
             // Logout button

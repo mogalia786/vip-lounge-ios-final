@@ -28,8 +28,12 @@ import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import '../../widgets/attendance_actions_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:vip_lounge/features/floor_manager/presentation/screens/ratings_received_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/feedback_received_screen.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/staff_attendance_screen.dart';
 import '../screens/closed_days_screen.dart';
 import '../../../../core/services/device_location_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class LatLng {
   final double latitude;
@@ -57,6 +61,9 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
   bool _isLoading = false;
   List<Map<String, dynamic>> _breakHistory = [];
   List<Map<String, dynamic>> _activeBreaks = [];
+  int _ratingsReceived = 0;
+  int _feedbackReceived = 0;
+  int _staffAttendance = 0;
 
   // Add controllers for all horizontal scrollbars
   final ScrollController _clockBarController = ScrollController();
@@ -64,7 +71,6 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
 
   // Add this field to cache closed days
   Set<String> _closedDaysSet = {};
-
   double _allowedDistanceInMeters = 1000.0;
   double _currentLatitude = 0.0;
   double _currentLongitude = 0.0;
@@ -72,8 +78,13 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting();
     _listenToUnreadNotifications();
     _fetchClosedDays();
+    // TODO: Implement data fetching methods
+    // _fetchRatingsReceived();
+    // _fetchFeedbackReceived();
+    // _fetchStaffAttendance();
     final floorManager = Provider.of<AppAuthProvider>(context, listen: false).appUser;
     if (floorManager != null) {
       setState(() {
@@ -2201,88 +2212,163 @@ class _FloorManagerHomeScreenNewState extends State<FloorManagerHomeScreenNew> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              GridView.count(
-                                crossAxisCount: 3,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.9,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  // Row 1
-                                  _buildDashboardBox(
-                                    icon: Icons.calendar_today,
-                                    title: 'Appointments',
-                                    value: '12',
-                                    onTap: () {
-                                      // Navigate to appointments screen
-                                    },
-                                  ),
-                                  _buildDashboardBox(
-                                    icon: Icons.question_answer,
-                                    title: 'Queries',
-                                    value: '5',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => new_inbox.FloorManagerQueryInboxScreen(),
+                                  // First Row
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.calendar_today,
+                                          title: 'Appointments',
+                                          value: '12',
+                                          onTap: () {
+                                            // Navigate to appointments screen
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
-                                  _buildDashboardBox(
-                                    icon: Icons.people,
-                                    title: 'Staff',
-                                    value: '8',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => StaffManagementScreen(),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.question_answer,
+                                          title: 'Queries',
+                                          value: '5',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => new_inbox.FloorManagerQueryInboxScreen(),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
-                                  // Row 2 - Add more boxes as needed
-                                  _buildDashboardBox(
-                                    icon: Icons.notifications,
-                                    title: 'Alerts',
-                                    value: '3',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => NotificationsScreen(),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.people,
+                                          title: 'Staff',
+                                          value: '8',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => StaffManagementScreen(),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ],
                                   ),
-                                  _buildDashboardBox(
-                                    icon: Icons.chat,
-                                    title: 'Chats',
-                                    value: '2',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FloorManagerChatListScreen(),
+                                  const SizedBox(height: 12),
+                                  // Second Row
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.star,
+                                          title: 'Ratings Received',
+                                          value: '4.8',
+                                          onTap: () {
+                                            final now = DateTime.now();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const RatingsReceivedScreen(),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.feedback,
+                                          title: 'Feedback Received',
+                                          value: '12',
+                                          onTap: () {
+                                            final now = DateTime.now();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const FeedbackReceivedScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.people_alt,
+                                          title: 'Staff Attendance',
+                                          value: '15/20',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => StaffAttendanceScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  _buildDashboardBox(
-                                    icon: Icons.feedback,
-                                    title: 'Feedback',
-                                    value: '4',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FeedbackManagementScreen(),
+                                  const SizedBox(height: 12),
+                                  // Third Row
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.chat,
+                                          title: 'Chat with Minister',
+                                          value: 'New',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const FloorManagerChatListScreen(),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.search,
+                                          title: 'Query Search',
+                                          value: 'Search',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const QuerySearchScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDashboardBox(
+                                          icon: Icons.search_outlined,
+                                          title: 'Appointment Search',
+                                          value: 'Search',
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const AppointmentSearchScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

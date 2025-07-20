@@ -11,6 +11,7 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/services/notification_service.dart';
 import '../widgets/time_slot_calendar.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:add_2_calendar/add_2_calendar.dart';
 
 class AppointmentBookingScreen extends StatefulWidget {
   const AppointmentBookingScreen({super.key});
@@ -20,6 +21,9 @@ class AppointmentBookingScreen extends StatefulWidget {
 }
 
 class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
+  final NotificationService _notificationService = NotificationService();
+  bool _isBooking = false;
+
   // Generate a random 5-character alphanumeric reference number
   String _generateReferenceNumber() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -38,13 +42,135 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
     await FirebaseFirestore.instance.collection('test_appointments').add(testData);
   }
 
+  // Add appointment to device calendar using simple add_2_calendar plugin - NO PERMISSIONS NEEDED!
+  Future<void> _addAppointmentToCalendar(
+    DateTime appointmentTime,
+    String referenceNumber,
+  ) async {
+    print('🔥🔥🔥 CALENDAR INTEGRATION METHOD CALLED - START 🔥🔥🔥');
+    print('🔥 Method parameters received:');
+    print('🔥 - appointmentTime: $appointmentTime');
+    print('🔥 - referenceNumber: $referenceNumber');
+    
+    // Get appointment data from current selections
+    final serviceName = _selectedService!.name;
+    final venueName = _selectedVenue!.name;
+    final duration = _selectedSubService?.maxDuration ?? _selectedService!.maxDuration;
+    final subServiceName = _selectedSubService?.name;
+    
+    print('🔥 Appointment data from selections:');
+    print('🔥 - serviceName: $serviceName');
+    print('🔥 - venueName: $venueName');
+    print('🔥 - duration: $duration');
+    print('🔥 - subServiceName: $subServiceName');
+    
+    try {
+      print('🔥 STEP 1: Calculating event details...');
+      
+      // Calculate end time
+      final endTime = appointmentTime.add(Duration(minutes: duration));
+      
+      // Create event details
+      final eventTitle = subServiceName != null 
+          ? '$serviceName - $subServiceName'
+          : serviceName;
+      
+      final eventDescription = 'VIP Lounge Appointment\n\n'
+          'Service: $serviceName\n'
+          '${subServiceName != null ? 'Sub-Service: $subServiceName\n' : ''}'
+          'Venue: $venueName\n'
+          'Reference: $referenceNumber\n\n'
+          'Please arrive 15 minutes early.';
+      
+      print('📅 STEP 2: Event details calculated:');
+      print('📅 - Title: $eventTitle');
+      print('📅 - Start: $appointmentTime');
+      print('📅 - End: $endTime');
+      print('📅 - Location: $venueName');
+      print('📅 - Description length: ${eventDescription.length} chars');
+      
+      print('📅 STEP 3: Creating Event object...');
+      
+      // Create event using add_2_calendar plugin
+      final Event event = Event(
+        title: eventTitle,
+        description: eventDescription,
+        location: venueName,
+        startDate: appointmentTime,
+        endDate: endTime,
+        iosParams: IOSParams(
+          reminder: Duration(minutes: 15), // 15 minute reminder
+        ),
+        androidParams: AndroidParams(
+          emailInvites: [], // no email invites
+        ),
+      );
+      
+      print('✅ STEP 4: Event object created successfully!');
+      print('📅📅📅 STEP 5: CALLING Add2Calendar.addEvent2Cal() 📅📅📅');
+      
+      // Add event to calendar - this opens the device's calendar app
+      final bool result = await Add2Calendar.addEvent2Cal(event);
+      
+      print('📅 STEP 6: Add2Calendar.addEvent2Cal() returned: $result');
+      
+      if (result) {
+        print('✅✅✅ CALENDAR APP OPENED SUCCESSFULLY! ✅✅✅');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('📅 Calendar opened! Save the event to add it to your calendar.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        print('❌❌❌ FAILED TO OPEN CALENDAR APP - RESULT WAS FALSE ❌❌❌');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Failed to open calendar app'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      print('❌❌❌ ERROR DURING CALENDAR INTEGRATION ❌❌❌');
+      print('❌ Error: $e');
+      print('❌ Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Calendar error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    
+    print('🔥🔥🔥 CALENDAR INTEGRATION METHOD FINISHED 🔥🔥🔥');
+  }
+
+  
+  // Show fallback message when calendar integration fails
+  void _showCalendarFallback() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment booked successfully. Please manually add it to your calendar.'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   ServiceCategory? _selectedCategory;
   Service? _selectedService;
   SubService? _selectedSubService;
   VenueType? _selectedVenue;
-  bool _isBooking = false;
-
-  final NotificationService _notificationService = NotificationService();
 
   final _borderRadius = const BorderRadius.all(Radius.circular(12));
 
@@ -56,13 +182,20 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   }
 
   void _handleBookAppointment(DateTime selectedTime) async {
+    print('🚀🚀🚀 BOOKING METHOD CALLED 🚀🚀🚀');
+    print('🚀 Selected Time: $selectedTime');
+    print('🚀 Selected Service: ${_selectedService?.name}');
+    print('🚀 Selected Venue: ${_selectedVenue?.name}');
+    
     if (_selectedService == null || _selectedVenue == null) {
+      print('🚀 ❌ Missing service or venue - aborting booking');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a service and venue')),
       );
       return;
     }
 
+    print('🚀 ✅ All validations passed - proceeding with booking');
     setState(() => _isBooking = true);
 
     try {
@@ -131,8 +264,22 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           .collection('appointments')
           .add(appointmentData);
 
-      // TEST BUTTON: Call this from your UI to test minimal Firestore write
-      // await testMinimalFirestoreWrite();
+      print('💾💾💾 APPOINTMENT SAVED TO FIRESTORE 💾💾💾');
+      print('💾 Appointment ID: ${appointmentRef.id}');
+      print('💾 Reference Number: $referenceNumber');
+
+      // 🔥 ADD TO CALENDAR IMMEDIATELY AFTER FIRESTORE SAVE
+      print('🔥🔥🔥 STARTING CALENDAR INTEGRATION 🔥🔥🔥');
+      try {
+        await _addAppointmentToCalendar(
+          selectedTime,
+          referenceNumber,
+        );
+        print('🔥🔥🔥 CALENDAR INTEGRATION COMPLETED 🔥🔥🔥');
+      } catch (calendarError) {
+        print('🔥 CALENDAR INTEGRATION ERROR: $calendarError');
+        // Don't fail the booking if calendar fails
+      }
 
       // Add the appointmentId to the data for notifications
       final notificationData = Map<String, dynamic>.from(appointmentData);
@@ -200,6 +347,13 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       } catch (e) {
         print('Error sending notifications: $e');
       }
+
+      print('💾💾💾 FIRESTORE SAVE COMPLETED 💾💾💾');
+      print('💾 Appointment saved with ID: ${appointmentRef.id}');
+      print('💾 Reference Number: $referenceNumber');
+      print('💾 Now proceeding to calendar integration...');
+
+      // Calendar integration already called above after Firestore save - no duplicate needed
 
       // Reset selections
       setState(() {

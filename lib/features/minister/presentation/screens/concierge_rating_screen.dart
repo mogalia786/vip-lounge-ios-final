@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
+import 'package:vip_lounge/core/services/vip_notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../../core/constants/colors.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -25,12 +28,57 @@ class _ConciergeRatingScreenState extends State<ConciergeRatingScreen> {
   bool _isSubmitting = false;
   bool _hasRated = false;
   final _feedbackController = TextEditingController();
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   @override
   void initState() {
     super.initState();
+    _initializeLocalNotifications();
     // Check if already rated
     _checkIfRated();
+  }
+  
+  Future<void> _initializeLocalNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    
+    await _localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle notification tap
+      },
+    );
+  }
+  
+  Future<void> _showLocalNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+  }) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'concierge_rating_channel',
+      'Concierge Rating Notifications',
+      channelDescription: 'Notifications for concierge ratings',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+    );
+    
+    const NotificationDetails platformChannelSpecifics = 
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    
+    await _localNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID based on timestamp
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: payload != null ? payload.toString() : null,
+    );
   }
 
   Future<void> _checkIfRated() async {
@@ -135,57 +183,168 @@ class _ConciergeRatingScreenState extends State<ConciergeRatingScreen> {
       
       debugPrint('[RATING] Submitted concierge rating with reference number: $referenceNumber');
       
-      // Update the appointment document with the rating
-      await FirebaseFirestore.instance
+      // Update the appointment using referenceNumber to find the correct document
+      debugPrint('Updating appointment with referenceNumber: $referenceNumber');
+      final appointmentQuery = await FirebaseFirestore.instance
           .collection('appointments')
-          .doc(appointmentId)
-          .update({
-            'hasConciergeRating': true,
-            'conciergeRating': _rating,
-            'conciergeComment': _feedback.isNotEmpty ? _feedback : null,
-            'conciergeRatedAt': FieldValue.serverTimestamp(),
-          });
+          .where('referenceNumber', isEqualTo: referenceNumber)
+          .limit(1)
+          .get();
+      
+      if (appointmentQuery.docs.isNotEmpty) {
+        final appointmentDoc = appointmentQuery.docs.first;
+        await appointmentDoc.reference.update({
+          'hasConciergeRating': true,
+          'conciergeRating': _rating,
+          'conciergeComment': _feedback.isNotEmpty ? _feedback : null,
+          'conciergeRatedAt': FieldValue.serverTimestamp(),
+          'ratingSubmittedAt': FieldValue.serverTimestamp(),
+          'conciergeId': conciergeId,
+          'conciergeName': conciergeName,
+          'concierge_rated': true,
+          'concierge_score': _rating,
+        });
+        debugPrint('✅ Successfully updated appointment with concierge rating');
+      } else {
+        debugPrint('❌ ERROR: No appointment found with referenceNumber: $referenceNumber');
+        throw Exception('Appointment not found with reference number: $referenceNumber');
+      }
           
       debugPrint('[RATING_DEBUG] Successfully updated appointment with concierge rating');
       
-      // Notify floor manager about the rating
+      // Notifications
       try {
         final notificationService = VipNotificationService();
+        final sendMyFCM = SendMyFCM();
         
-        // Get all active floor managers
+        // Original notification to concierge (unchanged)
+        if (conciergeId.isNotEmpty) {
+          await notificationService.createNotification(
+            title: 'New Rating Received',
+            body: 'You received $_rating stars from ${user.name}',
+            data: {
+              'type': 'concierge_rating_received',
+              'appointmentId': appointmentId,
+              'rating': _rating,
+              'feedback': _feedback,
+              'ministerName': user.name,
+              'timestamp': FieldValue.serverTimestamp(),
+            },
+            role: 'concierge',
+            assignedToId: conciergeId,
+            notificationType: 'concierge_rating',
+          );
+        }
+        
+        // Notify floor managers using Send_My_FCM
+        debugPrint('=== CONCIERGE RATING FLOOR MANAGER NOTIFICATION DEBUG START ===');
+        debugPrint('Appointment ID: $appointmentId');
+        debugPrint('Concierge ID: $conciergeId');
+        debugPrint('Minister: ${user.name}');
+        debugPrint('Rating: $_rating stars');
+        debugPrint('Feedback: ${_feedback.isEmpty ? 'No feedback' : _feedback}');
+        debugPrint('Reference Number: $referenceNumber');
+        
+        debugPrint('Querying floor managers from Firestore...');
         final floorManagers = await FirebaseFirestore.instance
             .collection('users')
-            .where('role', isEqualTo: 'floor_manager')
-            .where('isActive', isEqualTo: true)
+            .where('role', isEqualTo: 'floorManager')
             .get();
             
+        debugPrint('Floor managers found: ${floorManagers.docs.length}');
+        
         if (floorManagers.docs.isEmpty) {
-          debugPrint('No active floor managers found to notify');
+          debugPrint('WARNING: No active floor managers found in database!');
+          debugPrint('Checking all users with floorManager role (including inactive)...');
+          final allFloorManagers = await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'floorManager')
+              .get();
+          debugPrint('Total floor managers (active + inactive): ${allFloorManagers.docs.length}');
+          for (var doc in allFloorManagers.docs) {
+            final data = doc.data();
+            debugPrint('Floor Manager ${doc.id}: active=${data['isActive']}, name=${data['firstName']} ${data['lastName']}');
+          }
         } else {
+          for (var doc in floorManagers.docs) {
+            final data = doc.data();
+            debugPrint('Active Floor Manager: ${doc.id} - Name: ${data['firstName']} ${data['lastName']}, Email: ${data['email']}');
+          }
+          // Test local notification first
+          debugPrint('Testing local notification for concierge rating...');
+          try {
+            await _showLocalNotification(
+              title: 'Test Concierge Rating Notification',
+              body: 'This is a test to verify local notifications work for concierge ratings',
+              payload: {'test': 'concierge_rating'},
+            );
+            debugPrint('✅ Local notification test successful');
+          } catch (e) {
+            debugPrint('❌ Local notification test failed: $e');
+          }
+          
+          debugPrint('Starting notification loop for ${floorManagers.docs.length} floor managers...');
           for (var manager in floorManagers.docs) {
+            debugPrint('Processing floor manager: ${manager.id}');
             try {
-              await notificationService.createNotification(
-                title: 'New Concierge Rating',
-                body: '${user.name} rated ${widget.appointmentData['conciergeName'] ?? 'the concierge'} $_rating stars',
-                data: {
+              final notificationTitle = 'New Concierge Rating';
+              final notificationBody = '${user.name} rated ${widget.appointmentData['conciergeName'] ?? 'the concierge'} $_rating stars\n\nFeedback: ${_feedback.isEmpty ? 'No additional comments' : _feedback}\n\nAppointment: ${widget.appointmentData['serviceName'] ?? 'Service'} on $formattedDate\nReference: $referenceNumber';
+              
+              debugPrint('Notification Title: $notificationTitle');
+              debugPrint('Notification Body Length: ${notificationBody.length} characters');
+              debugPrint('SendMyFCM Parameters:');
+              debugPrint('  - recipientId: ${manager.id}');
+              debugPrint('  - appointmentId: $appointmentId');
+              debugPrint('  - role: floorManager');
+              debugPrint('  - rating: $_rating stars');
+              
+              // Send FCM notification
+              debugPrint('Sending FCM notification to floor manager...');
+              await sendMyFCM.sendNotification(
+                recipientId: manager.id,
+                title: notificationTitle,
+                body: notificationBody,
+                appointmentId: appointmentId,
+                role: 'floorManager',
+                additionalData: {
                   'type': 'concierge_rating',
-                  'appointmentId': appointmentId,
                   'conciergeId': conciergeId,
                   'conciergeName': widget.appointmentData['conciergeName'] ?? 'Concierge',
-                  'rating': _rating,
+                  'rating': _rating.toString(),
                   'feedback': _feedback,
                   'ministerName': user.name,
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'showRating': true,
+                  'referenceNumber': referenceNumber,
+                  'timestamp': FieldValue.serverTimestamp().toString(),
                 },
-                role: 'floor_manager',
-                assignedToId: manager.id,
+                showRating: true,
                 notificationType: 'concierge_rating',
               );
+              debugPrint('✅ FCM notification sent successfully');
+              
+              // Show local notification
+              debugPrint('Sending local notification to floor manager...');
+              await _showLocalNotification(
+                title: notificationTitle,
+                body: notificationBody,
+                payload: {
+                  'appointmentId': appointmentId,
+                  'type': 'concierge_rating',
+                  'rating': _rating.toString(),
+                },
+              );
+              debugPrint('✅ Local notification sent successfully');
+              
+              debugPrint('✅ All notifications sent to floor manager: ${manager.id}');
             } catch (e) {
-              debugPrint('Error notifying floor manager ${manager.id}: $e');
+              debugPrint('❌ Error notifying floor manager ${manager.id}: $e');
+              debugPrint('Error details: ${e.toString()}');
+              if (e is Exception) {
+                debugPrint('Exception type: ${e.runtimeType}');
+              }
             }
           }
+          
+          debugPrint('=== CONCIERGE RATING FLOOR MANAGER NOTIFICATION DEBUG END ===');
         }
       } catch (e) {
         debugPrint('Error in floor manager notification process: $e');

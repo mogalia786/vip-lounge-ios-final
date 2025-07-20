@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../../core/constants/colors.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -25,6 +27,56 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
   String _feedback = '';
   bool _isSubmitting = false;
   final _feedbackController = TextEditingController();
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLocalNotifications();
+  }
+  
+  Future<void> _initializeLocalNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    
+    await _localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle notification tap
+      },
+    );
+  }
+  
+  Future<void> _showLocalNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+  }) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'consultant_rating_channel',
+      'Consultant Rating Notifications',
+      channelDescription: 'Notifications for consultant ratings',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+    );
+    
+    const NotificationDetails platformChannelSpecifics = 
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    
+    await _localNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID based on timestamp
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: payload != null ? payload.toString() : null,
+    );
+  }
 
   @override
   void dispose() {
@@ -67,11 +119,8 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
       // Save the rating to Firestore
       await FirebaseFirestore.instance.collection('ratings').add({
         'appointmentId': appointmentId,
-        'referenceNumber': widget.appointmentData['referenceNumber'] ?? '',
-        'staffId': consultantId,
-        'staffName': widget.appointmentData['consultantName'] ?? 'Consultant',
-        'role': 'consultant',
-        'ministerId': user.uid,
+        'consultantId': consultantId,
+        'ministerId': user.id,
         'ministerName': user.name,
         'rating': _rating,
         'notes': _feedback,
@@ -82,53 +131,166 @@ class _ConsultantRatingScreenState extends State<ConsultantRatingScreen> {
       
       print('[RATING] Submitted rating with reference number: ${widget.appointmentData['referenceNumber']}');
       
-      // Update the appointment to show it's been rated
-      await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({
-        'isRated': true,
-        'rating': _rating,
-      });
+      // Update the appointment using referenceNumber to find the correct document
+      print('Updating appointment with referenceNumber: $referenceNumber');
+      final appointmentQuery = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('referenceNumber', isEqualTo: referenceNumber)
+          .limit(1)
+          .get();
       
-      // Notify floor manager about the rating
+      if (appointmentQuery.docs.isNotEmpty) {
+        final appointmentDoc = appointmentQuery.docs.first;
+        await appointmentDoc.reference.update({
+          'isRated': true,
+          'rating': _rating,
+          'ratingSubmittedAt': FieldValue.serverTimestamp(),
+          'consultantId': consultantId,
+          'consultantName': consultantName,
+          'consultant_rated': true,
+          'consultant_score': _rating,
+          'consultant_comments': _feedback.isNotEmpty ? _feedback : null,
+        });
+        print('✅ Successfully updated appointment with consultant rating');
+      } else {
+        print('❌ ERROR: No appointment found with referenceNumber: $referenceNumber');
+        throw Exception('Appointment not found with reference number: $referenceNumber');
+      }
+      
+      // Notify floor manager about the rating using Send_My_FCM
       try {
         final notificationService = VipNotificationService();
+        final sendMyFCM = SendMyFCM();
         
-        // Get all active floor managers
+        // Original notification to consultant (unchanged)
+        await notificationService.createNotification(
+          title: 'New Rating Received',
+          body: 'You received $_rating stars from ${user.name}',
+          data: {
+            'type': 'consultant_rating_received',
+            'appointmentId': appointmentId,
+            'rating': _rating,
+            'feedback': _feedback,
+            'ministerName': user.name,
+            'timestamp': FieldValue.serverTimestamp(),
+          },
+          role: 'consultant',
+          assignedToId: consultantId,
+          notificationType: 'consultant_rating',
+        );
+        
+        // New notification to floor managers using Send_My_FCM
+        print('=== CONSULTANT RATING FLOOR MANAGER NOTIFICATION DEBUG START ===');
+        print('Appointment ID: $appointmentId');
+        print('Consultant ID: $consultantId');
+        print('Minister: ${user.name}');
+        print('Rating: $_rating stars');
+        print('Feedback: ${_feedback.isEmpty ? 'No feedback' : _feedback}');
+        print('Reference Number: $referenceNumber');
+        
+        print('Querying floor managers from Firestore...');
         final floorManagers = await FirebaseFirestore.instance
             .collection('users')
-            .where('role', isEqualTo: 'floor_manager')
-            .where('isActive', isEqualTo: true)
+            .where('role', isEqualTo: 'floorManager')
             .get();
             
+        print('Floor managers found: ${floorManagers.docs.length}');
+        
         if (floorManagers.docs.isEmpty) {
-          print('No active floor managers found to notify');
+          print('WARNING: No active floor managers found in database!');
+          print('Checking all users with floorManager role (including inactive)...');
+          final allFloorManagers = await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'floorManager')
+              .get();
+          print('Total floor managers (active + inactive): ${allFloorManagers.docs.length}');
+          for (var doc in allFloorManagers.docs) {
+            final data = doc.data();
+            print('Floor Manager ${doc.id}: active=${data['isActive']}, name=${data['firstName']} ${data['lastName']}');
+          }
         } else {
+          for (var doc in floorManagers.docs) {
+            final data = doc.data();
+            print('Active Floor Manager: ${doc.id} - Name: ${data['firstName']} ${data['lastName']}, Email: ${data['email']}');
+          }
+          // Test local notification first
+          print('Testing local notification for consultant rating...');
+          try {
+            await _showLocalNotification(
+              title: 'Test Consultant Rating Notification',
+              body: 'This is a test to verify local notifications work for consultant ratings',
+              payload: {'test': 'consultant_rating'},
+            );
+            print('✅ Local notification test successful');
+          } catch (e) {
+            print('❌ Local notification test failed: $e');
+          }
+          
+          print('Starting notification loop for ${floorManagers.docs.length} floor managers...');
           for (var manager in floorManagers.docs) {
+            print('Processing floor manager: ${manager.id}');
             try {
-              await notificationService.createNotification(
-                title: 'New Consultant Rating',
-                body: '${user.name} rated ${widget.appointmentData['consultantName'] ?? 'a consultant'} $_rating stars',
-                data: {
+              final notificationTitle = 'New Consultant Rating';
+              final notificationBody = '${user.name} rated ${widget.appointmentData['consultantName'] ?? 'a consultant'} $_rating stars\n\nFeedback: ${_feedback.isEmpty ? 'No additional comments' : _feedback}\n\nAppointment: ${widget.appointmentData['serviceName'] ?? 'Service'} on $formattedDate\nReference: $referenceNumber';
+              
+              print('Notification Title: $notificationTitle');
+              print('Notification Body Length: ${notificationBody.length} characters');
+              print('SendMyFCM Parameters:');
+              print('  - recipientId: ${manager.id}');
+              print('  - appointmentId: $appointmentId');
+              print('  - role: floorManager');
+              print('  - rating: $_rating stars');
+              
+              // Send FCM notification
+              print('Sending FCM notification to floor manager...');
+              await sendMyFCM.sendNotification(
+                recipientId: manager.id,
+                title: notificationTitle,
+                body: notificationBody,
+                appointmentId: appointmentId,
+                role: 'floorManager',
+                additionalData: {
                   'type': 'consultant_rating',
-                  'appointmentId': appointmentId,
                   'consultantId': consultantId,
                   'consultantName': widget.appointmentData['consultantName'] ?? 'Consultant',
-                  'rating': _rating,
+                  'rating': _rating.toString(),
                   'feedback': _feedback,
                   'ministerName': user.name,
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'showRating': true,
+                  'referenceNumber': referenceNumber,
+                  'timestamp': FieldValue.serverTimestamp().toString(),
                 },
-                role: 'floor_manager',
-                assignedToId: manager.id,
+                showRating: true,
                 notificationType: 'consultant_rating',
               );
+              print('✅ FCM notification sent successfully');
+              
+              // Show local notification
+              print('Sending local notification to floor manager...');
+              await _showLocalNotification(
+                title: notificationTitle,
+                body: notificationBody,
+                payload: {
+                  'appointmentId': appointmentId,
+                  'type': 'consultant_rating',
+                  'rating': _rating.toString(),
+                },
+              );
+              print('✅ Local notification sent successfully');
+              
+              print('✅ All notifications sent to floor manager: ${manager.id}');
             } catch (e) {
-              print('Error notifying floor manager ${manager.id}: $e');
+              print('❌ Error notifying floor manager ${manager.id}: $e');
+              print('Error details: ${e.toString()}');
+              if (e is Exception) {
+                print('Exception type: ${e.runtimeType}');
+              }
             }
           }
+          
+          print('=== CONSULTANT RATING FLOOR MANAGER NOTIFICATION DEBUG END ===');
         }
       } catch (e) {
-        print('Error in floor manager notification process: $e');
+        print('Error in notification process: $e');
         // Don't fail the whole operation if notification fails
       }
       

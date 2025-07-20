@@ -1231,6 +1231,19 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         // Continue with booking even if notification fails
       }
 
+      // 🔥 ADD TO CALENDAR AFTER SUCCESSFUL BOOKING
+      print('🔥🔥🔥 STARTING CALENDAR INTEGRATION 🔥🔥🔥');
+      try {
+        await _addAppointmentToCalendar(
+          _selectedTimeSlot!,
+          referenceNumber,
+        );
+        print('🔥🔥🔥 CALENDAR INTEGRATION COMPLETED 🔥🔥🔥');
+      } catch (calendarError) {
+        print('🔥 CALENDAR INTEGRATION ERROR: $calendarError');
+        // Don't fail the booking if calendar fails
+      }
+
       if (mounted) {
         // Navigate back to home screen after successful booking
         Navigator.of(context).pushNamedAndRemoveUntil(
@@ -1259,6 +1272,117 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
         setState(() => _isBooking = false);
       }
     }
+  }
+
+  // Add appointment to device calendar using simple add_2_calendar plugin - NO PERMISSIONS NEEDED!
+  Future<void> _addAppointmentToCalendar(
+    DateTime appointmentTime,
+    String referenceNumber,
+  ) async {
+    print('🔥🔥🔥 CALENDAR INTEGRATION METHOD CALLED - START 🔥🔥🔥');
+    print('🔥 Method parameters received:');
+    print('🔥 - appointmentTime: $appointmentTime');
+    print('🔥 - referenceNumber: $referenceNumber');
+    
+    // Get appointment data from widget properties
+    final serviceName = widget.selectedService.name;
+    final venueName = widget.venueName;
+    final duration = widget.serviceDuration;
+    final subServiceName = widget.subServiceName;
+    
+    print('🔥 Appointment data from widget:');
+    print('🔥 - serviceName: $serviceName');
+    print('🔥 - venueName: $venueName');
+    print('🔥 - duration: $duration');
+    print('🔥 - subServiceName: $subServiceName');
+    
+    try {
+      print('🔥 STEP 1: Calculating event details...');
+      
+      // Calculate end time
+      final endTime = appointmentTime.add(Duration(minutes: duration));
+      
+      // Create event details
+      final eventTitle = subServiceName != null && subServiceName.isNotEmpty
+          ? '$serviceName - $subServiceName'
+          : serviceName;
+      
+      final eventDescription = 'Appointment with VIP Premium lounge\n\n'
+          'Service: $serviceName\n'
+          '${subServiceName != null && subServiceName.isNotEmpty ? 'Sub-Service: $subServiceName\n' : ''}'
+          'Venue: $venueName\n'
+          'Reference: $referenceNumber\n\n'
+          'Please arrive 15 minutes early.';
+      
+      print('📅 STEP 2: Event details calculated:');
+      print('📅 - Title: $eventTitle');
+      print('📅 - Start: $appointmentTime');
+      print('📅 - End: $endTime');
+      print('📅 - Location: $venueName');
+      print('📅 - Description length: ${eventDescription.length} chars');
+      
+      print('📅 STEP 3: Creating Event object...');
+      
+      // Create event using add_2_calendar plugin
+      final Event event = Event(
+        title: eventTitle,
+        description: eventDescription,
+        location: venueName,
+        startDate: appointmentTime,
+        endDate: endTime,
+        iosParams: IOSParams(
+          reminder: Duration(minutes: 15), // 15 minute reminder
+        ),
+        androidParams: AndroidParams(
+          emailInvites: [], // no email invites
+        ),
+      );
+      
+      print('✅ STEP 4: Event object created successfully!');
+      print('📅📅📅 STEP 5: CALLING Add2Calendar.addEvent2Cal() 📅📅📅');
+      
+      // Add event to calendar - this opens the device's calendar app
+      final bool result = await Add2Calendar.addEvent2Cal(event);
+      
+      print('📅 STEP 6: Add2Calendar.addEvent2Cal() returned: $result');
+      
+      if (result) {
+        print('✅✅✅ CALENDAR APP OPENED SUCCESSFULLY! ✅✅✅');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('📅 Calendar opened! Save the event to add it to your calendar.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        print('❌❌❌ FAILED TO OPEN CALENDAR APP - RESULT WAS FALSE ❌❌❌');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Failed to open calendar app'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      print('❌❌❌ ERROR DURING CALENDAR INTEGRATION ❌❌❌');
+      print('❌ Error: $e');
+      print('❌ Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Calendar error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    
+    print('🔥🔥🔥 CALENDAR INTEGRATION METHOD FINISHED 🔥🔥🔥');
   }
 
   @override

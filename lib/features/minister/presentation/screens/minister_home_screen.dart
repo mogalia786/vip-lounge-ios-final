@@ -726,6 +726,176 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                               assignedToId: user.uid,
                               notificationType: 'rating_confirmation',
                             );
+                            
+                            // Update appointment document with rating information using referenceNumber
+                            final referenceNumber = appointment['referenceNumber']?.toString() ?? '';
+                            print('=== MINISTER HOME SCREEN RATING DEBUG START ===');
+                            print('Role: $role');
+                            print('Rating: $_selectedRating stars');
+                            print('Notes: ${_notes.isEmpty ? 'No notes' : _notes}');
+                            print('Reference Number: $referenceNumber');
+                            
+                            if (referenceNumber.isNotEmpty) {
+                              print('Updating appointment with referenceNumber: $referenceNumber');
+                              final appointmentQuery = await FirebaseFirestore.instance
+                                  .collection('appointments')
+                                  .where('referenceNumber', isEqualTo: referenceNumber)
+                                  .limit(1)
+                                  .get();
+                              
+                              if (appointmentQuery.docs.isNotEmpty) {
+                                final appointmentDoc = appointmentQuery.docs.first;
+                                Map<String, dynamic> updateData = {
+                                  'ratingSubmittedAt': FieldValue.serverTimestamp(),
+                                };
+                                
+                                if (role == 'consultant') {
+                                  updateData.addAll({
+                                    'consultant_rated': true,
+                                    'consultant_score': _selectedRating,
+                                    'consultant_comments': _notes.isNotEmpty ? _notes : null,
+                                    'consultantId': staffId,
+                                    'consultantName': staffName,
+                                  });
+                                } else if (role == 'concierge') {
+                                  updateData.addAll({
+                                    'concierge_rated': true,
+                                    'concierge_score': _selectedRating,
+                                    'conciergeComment': _notes.isNotEmpty ? _notes : null,
+                                    'conciergeId': staffId,
+                                    'conciergeName': staffName,
+                                  });
+                                }
+                                
+                                await appointmentDoc.reference.update(updateData);
+                                print('✅ Successfully updated appointment with $role rating');
+                              } else {
+                                print('❌ ERROR: No appointment found with referenceNumber: $referenceNumber');
+                              }
+                            }
+                            
+                            // Send notifications to floor managers using Send_My_FCM (following exact Rate My Experience pattern)
+                            final sendMyFCM = SendMyFCM();
+                            
+                            print('=== ${role.toUpperCase()} RATING FLOOR MANAGER NOTIFICATION DEBUG START ===');
+                            print('Appointment ID: $appointmentId');
+                            print('Minister ID: ${user.uid}');
+                            print('Role: $role');
+                            print('Rating: $_selectedRating stars');
+                            print('Notes: ${_notes.isEmpty ? 'No notes' : _notes}');
+                            print('Reference Number: $referenceNumber');
+                            
+                            // Query all floor managers and send notification to each (exact same pattern as feedback)
+                            print('Querying floor managers from Firestore...');
+                            final floorManagerQuery = await FirebaseFirestore.instance
+                                .collection('users')
+                                .where('role', isEqualTo: 'floorManager')
+                                .get();
+                                
+                            print('Floor managers found: ${floorManagerQuery.docs.length}');
+                            
+                            if (floorManagerQuery.docs.isEmpty) {
+                              print('WARNING: No floor managers found in database!');
+                              print('Checking all users with any role...');
+                              final allUsersQuery = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .get();
+                              print('Total users in database: ${allUsersQuery.docs.length}');
+                              for (var doc in allUsersQuery.docs) {
+                                final data = doc.data();
+                                print('User ${doc.id}: role=${data['role']}, name=${data['firstName']} ${data['lastName']}');
+                              }
+                            }
+                            
+                            final floorManagerUids = floorManagerQuery.docs
+                                .map((doc) => doc.id)
+                                .where((uid) => uid != null && uid.isNotEmpty)
+                                .cast<String>()
+                                .toList();
+                                
+                            print('Floor Manager UIDs extracted: ${floorManagerUids.join(', ')}');
+                            
+                            for (var doc in floorManagerQuery.docs) {
+                              final data = doc.data();
+                              print('Floor Manager Details: ${doc.id} - Name: ${data['firstName']} ${data['lastName']}, Email: ${data['email']}, Active: ${data['isActive']}');
+                            }
+                            
+                            // Get the actual appointmentId using referenceNumber before sending notifications
+                            String? actualAppointmentId;
+                            if (referenceNumber.isNotEmpty) {
+                              print('Querying appointments collection to get appointmentId using referenceNumber: $referenceNumber');
+                              final appointmentQuery = await FirebaseFirestore.instance
+                                  .collection('appointments')
+                                  .where('referenceNumber', isEqualTo: referenceNumber)
+                                  .limit(1)
+                                  .get();
+                              
+                              if (appointmentQuery.docs.isNotEmpty) {
+                                actualAppointmentId = appointmentQuery.docs.first.id;
+                                print('✅ Found appointmentId: $actualAppointmentId for referenceNumber: $referenceNumber');
+                              } else {
+                                print('❌ No appointment found with referenceNumber: $referenceNumber');
+                                actualAppointmentId = 'unknown'; // Fallback to prevent empty string
+                              }
+                            } else {
+                              print('❌ ReferenceNumber is empty, using fallback appointmentId');
+                              actualAppointmentId = 'unknown'; // Fallback to prevent empty string
+                            }
+                            
+                            // Send to floor managers (exact same pattern as feedback)
+                            print('Starting notification loop for ${floorManagerUids.length} floor managers...');
+                            for (var floorManagerUid in floorManagerUids) {
+                              print('Processing floor manager: $floorManagerUid');
+                              try {
+                                // Send using SendMyFCM (exact same pattern as feedback)
+                                final notificationTitle = 'New ${role.toUpperCase()} Rating';
+                                final notificationBody = '${user.name} rated $staffName $_selectedRating stars for service $serviceId on $formattedDate.\n\nFeedback: ${_notes.isEmpty ? 'No additional comments' : _notes}\n\nReference: $referenceNumber';
+                                
+                                print('Notification Title: $notificationTitle');
+                                print('Notification Body Length: ${notificationBody.length} characters');
+                                print('SendMyFCM Parameters:');
+                                print('  - recipientId: $floorManagerUid');
+                                print('  - appointmentId: $actualAppointmentId');
+                                print('  - role: floorManager');
+                                
+                                // Send FCM notification (exact same call as feedback)
+                                print('Sending FCM notification...');
+                                await sendMyFCM.sendNotification(
+                                  recipientId: floorManagerUid,
+                                  title: notificationTitle,
+                                  body: notificationBody,
+                                  appointmentId: actualAppointmentId ?? 'unknown',
+                                  role: 'floorManager',
+                                  additionalData: {
+                                    'type': '${role}_rating',
+                                    'staffId': staffId,
+                                    'staffName': staffName,
+                                    'rating': _selectedRating.toString(),
+                                    'feedback': _notes,
+                                    'ministerName': user.name,
+                                    'referenceNumber': referenceNumber,
+                                    'serviceId': serviceId,
+                                    'appointmentDate': formattedDate,
+                                    'appointmentId': actualAppointmentId,
+                                    'notificationType': '${role}_rating',
+                                    'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                                  },
+                                  showRating: false,
+                                  notificationType: '${role}_rating',
+                                );
+                                print('✅ FCM notification sent successfully');
+                                
+                                print('✅ All notifications sent to floor manager: $floorManagerUid');
+                              } catch (e) {
+                                print('❌ Error sending notifications to floor manager $floorManagerUid: $e');
+                                print('Error details: ${e.toString()}');
+                                if (e is Exception) {
+                                  print('Exception type: ${e.runtimeType}');
+                                }
+                              }
+                            }
+                            
+                            print('=== MINISTER HOME SCREEN RATING DEBUG END ===');
                             if (mounted) {
                               Navigator.of(context).pop();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1486,57 +1656,85 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
                     if (appointmentData['consultantId'] != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4.0, bottom: 2.0),
-                        child: GestureDetector(
-                          onTap: () {
-                            final Map<String, dynamic> consultantAppointment = Map<String, dynamic>.from(appointmentData);
-                            consultantAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
-                            _showRatingDialog(context, consultantAppointment, 'consultant');
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Icon(Icons.star_border, color: AppColors.gold, size: 20),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Rate Consultant',
-                                style: TextStyle(
-                                  color: AppColors.gold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  decoration: TextDecoration.underline,
-                                  shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
-                                ),
+                        child: Builder(
+                          builder: (context) {
+                            // Check if consultant has been rated by checking appointment document
+                            final bool isConsultantRated = appointmentData['consultant_rated'] == true;
+                            final consultantScore = appointmentData['consultant_score'];
+                            
+                            return GestureDetector(
+                              onTap: isConsultantRated ? null : () {
+                                final Map<String, dynamic> consultantAppointment = Map<String, dynamic>.from(appointmentData);
+                                consultantAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
+                                _showRatingDialog(context, consultantAppointment, 'consultant');
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    isConsultantRated ? Icons.check_circle : Icons.star_border,
+                                    color: isConsultantRated ? Colors.green : AppColors.gold,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    isConsultantRated 
+                                        ? 'Consultant Rated${consultantScore != null ? ' ($consultantScore⭐)' : ''}'
+                                        : 'Rate Consultant',
+                                    style: TextStyle(
+                                      color: isConsultantRated ? Colors.green : AppColors.gold,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      decoration: isConsultantRated ? TextDecoration.none : TextDecoration.underline,
+                                      shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ),
                     if (appointmentData['conciergeId'] != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2.0, bottom: 4.0),
-                        child: GestureDetector(
-                          onTap: () {
-                            final Map<String, dynamic> conciergeAppointment = Map<String, dynamic>.from(appointmentData);
-                            conciergeAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
-                            _showRatingDialog(context, conciergeAppointment, 'concierge');
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Icon(Icons.star_border, color: AppColors.gold, size: 20),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Rate Concierge',
-                                style: TextStyle(
-                                  color: AppColors.gold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  decoration: TextDecoration.underline,
-                                  shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
-                                ),
+                        child: Builder(
+                          builder: (context) {
+                            // Check if concierge has been rated by checking appointment document
+                            final bool isConciergeRated = appointmentData['concierge_rated'] == true;
+                            final conciergeScore = appointmentData['concierge_score'];
+                            
+                            return GestureDetector(
+                              onTap: isConciergeRated ? null : () {
+                                final Map<String, dynamic> conciergeAppointment = Map<String, dynamic>.from(appointmentData);
+                                conciergeAppointment['id'] = appointmentData['id'] ?? appointmentData['appointmentId'];
+                                _showRatingDialog(context, conciergeAppointment, 'concierge');
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    isConciergeRated ? Icons.check_circle : Icons.star_border,
+                                    color: isConciergeRated ? Colors.green : AppColors.gold,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    isConciergeRated 
+                                        ? 'Concierge Rated${conciergeScore != null ? ' ($conciergeScore⭐)' : ''}'
+                                        : 'Rate Concierge',
+                                    style: TextStyle(
+                                      color: isConciergeRated ? Colors.green : AppColors.gold,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      decoration: isConciergeRated ? TextDecoration.none : TextDecoration.underline,
+                                      shadows: [Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1,1))],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ),
                     if (appointmentData['consultantId'] != null)
@@ -2576,56 +2774,85 @@ class _MinisterHomeScreenState extends State<MinisterHomeScreen> {
           if (role.toLowerCase() == 'consultant' || role.toLowerCase() == 'concierge')
             Padding(
               padding: const EdgeInsets.only(top: 4.0, left: 24.0),
-              child: GestureDetector(
-                onTap: () async {
-                  try {
-                    final appointmentDoc = await FirebaseFirestore.instance
-                        .collection('appointments')
-                        .doc(appointmentId)
-                        .get();
-                    if (!appointmentDoc.exists) {
-                      print('[ERROR] Appointment not found: ' + appointmentId);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Appointment not found. Cannot submit rating.')),
-                      );
-                      return;
+              child: Builder(
+                builder: (context) {
+                  // Check if this staff member has been rated
+                  bool isRated = false;
+                  String buttonText = 'Rate Experience';
+                  Color buttonColor = AppColors.gold;
+                  IconData buttonIcon = Icons.star_border;
+                  
+                  if (role.toLowerCase() == 'consultant') {
+                    isRated = appointment['consultant_rated'] == true;
+                    if (isRated) {
+                      buttonText = 'Consultant Rated';
+                      buttonColor = Colors.green;
+                      buttonIcon = Icons.check_circle;
                     }
-                    final appointmentData = appointmentDoc.data()!;
-                    final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointmentData);
-                    appointmentWithId['id'] = appointmentDoc.id;
-                    print('[DEBUG] appointmentData passed to _showRatingDialog: ' + appointmentWithId.toString());
-                    if (!(appointmentWithId['id'] != null && appointmentWithId['id'].toString().isNotEmpty)) {
-                      if (appointmentWithId['appointmentId'] != null && appointmentWithId['appointmentId'].toString().isNotEmpty) {
-                        appointmentWithId['id'] = appointmentWithId['appointmentId'];
-                      }
+                  } else if (role.toLowerCase() == 'concierge') {
+                    isRated = appointment['concierge_rated'] == true;
+                    if (isRated) {
+                      buttonText = 'Concierge Rated';
+                      buttonColor = Colors.green;
+                      buttonIcon = Icons.check_circle;
                     }
-                    _showRatingDialog(context, appointmentWithId, role.toLowerCase());
-                  } catch (e) {
-                    print('[ERROR] Failed to fetch appointment for rating: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: Failed to fetch appointment for rating.')),
-                    );
                   }
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star_border, color: AppColors.gold, size: 18),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Rate Experience',
-                        style: TextStyle(
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                  
+                  return GestureDetector(
+                    onTap: isRated ? null : () async {
+                      try {
+                        final appointmentDoc = await FirebaseFirestore.instance
+                            .collection('appointments')
+                            .doc(appointmentId)
+                            .get();
+                        if (!appointmentDoc.exists) {
+                          print('[ERROR] Appointment not found: ' + appointmentId);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Error: Appointment not found. Cannot submit rating.')),
+                          );
+                          return;
+                        }
+                        final appointmentData = appointmentDoc.data()!;
+                        final Map<String, dynamic> appointmentWithId = Map<String, dynamic>.from(appointmentData);
+                        appointmentWithId['id'] = appointmentDoc.id;
+                        print('[DEBUG] appointmentData passed to _showRatingDialog: ' + appointmentWithId.toString());
+                        if (!(appointmentWithId['id'] != null && appointmentWithId['id'].toString().isNotEmpty)) {
+                          if (appointmentWithId['appointmentId'] != null && appointmentWithId['appointmentId'].toString().isNotEmpty) {
+                            appointmentWithId['id'] = appointmentWithId['appointmentId'];
+                          }
+                        }
+                        _showRatingDialog(context, appointmentWithId, role.toLowerCase());
+                      } catch (e) {
+                        print('[ERROR] Failed to fetch appointment for rating: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: Failed to fetch appointment for rating.')),
+                        );
+                      }
+                    },
+                    child: Opacity(
+                      opacity: isRated ? 0.7 : 1.0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(buttonIcon, color: buttonColor, size: 18),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              buttonText,
+                              style: TextStyle(
+                                color: buttonColor,
+                                fontWeight: FontWeight.bold,
+                                decoration: isRated ? TextDecoration.none : TextDecoration.underline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
         ],

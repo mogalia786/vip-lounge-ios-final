@@ -1588,6 +1588,105 @@ class _FloorManagerHomeScreenState extends State<FloorManagerHomeScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            
+            // Third Row - Ratings and Feedback
+            Row(
+              children: [
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.star,
+                  label: 'Ratings Received',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RatingsReceivedScreen(),
+                      ),
+                    );
+                    // Navigate to ratings screen with month filter
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Select Month for Ratings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 20),
+                            // Add month/year picker here
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const RatingsReceivedScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text('View All Ratings'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.feedback,
+                  label: 'Feedback Received',
+                  onTap: () {
+                    // Navigate to feedback screen with month filter
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Select Month for Feedback', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 20),
+                            // Add month/year picker here
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const FeedbackReceivedScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text('View All Feedback'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildDashboardBox(
+                  context: context,
+                  icon: Icons.access_time,
+                  label: 'Staff Attendance',
+                  onTap: () {
+                    // Navigate to staff attendance screen for current day
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StaffAttendanceScreen(
+                          selectedDate: null, // null will default to current day
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             
             // Upcoming Appointments Section
