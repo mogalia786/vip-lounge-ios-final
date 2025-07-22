@@ -137,7 +137,7 @@ class _MinisterFeedbackScreenState extends State<MinisterFeedbackScreen> {
     final notificationService = VipNotificationService();
     
     try {
-      // Fetch appointment details for staff info
+      // Fetch appointment details
       final appointmentDoc = await FirebaseFirestore.instance
           .collection('appointments')
           .doc(widget.appointmentId)
@@ -148,10 +148,12 @@ class _MinisterFeedbackScreenState extends State<MinisterFeedbackScreen> {
       }
       
       final appointment = appointmentDoc.data() ?? {};
-      final floorManagerId = appointment['floorManagerId']?.toString();
       
-      // Enhanced responses with question and option details
-      final enhancedResponses = _responses.entries.map((entry) {
+      // Calculate total score (1-based indexing as requested)
+      int totalScore = 0;
+      List<Map<String, dynamic>> questionResponses = [];
+      
+      for (final entry in _responses.entries) {
         final qId = entry.key;
         final score = entry.value;
         final question = _questions.firstWhere(
@@ -164,64 +166,35 @@ class _MinisterFeedbackScreenState extends State<MinisterFeedbackScreen> {
           orElse: () => {'label': 'Unknown', 'score': score},
         );
         
-        return {
-          'questionId': qId,
-          'questionText': question['text'] ?? question['question'] ?? 'Question',
-          'responseScore': score,
-          'responseLabel': option['label'] ?? 'Score: $score',
-          'maxScore': _options.isNotEmpty ? _options.last['score'] : 5,
-        };
-      }).toList();
+        // Convert to 1-based indexing (score + 1)
+        final selectedOption = score + 1;
+        totalScore += selectedOption;
+        
+        questionResponses.add({
+          'questionLabel': question['text'] ?? question['question'] ?? 'Question',
+          'text': _comment, // User input as comments
+          'selectedOption': selectedOption, // 1-based indexing
+        });
+      }
       
-      // Calculate average score for quick reference
-      final averageScore = _responses.isNotEmpty 
-          ? _responses.values.reduce((a, b) => a + b) / _responses.length
-          : 0;
-      
-      // Prepare feedback data with staff/booking details
-      final feedbackData = {
-        'appointmentId': widget.appointmentId,
+      // Create single VIP_feedback document with all required fields
+      final vipFeedbackData = {
         'referenceNumber': appointment['referenceNumber'] ?? '',
-        'ministerId': widget.ministerId,
-        'responses': _responses,
-        'enhancedResponses': enhancedResponses,
-        'averageScore': averageScore,
-        'totalQuestions': _questions.length,
-        'questionsVersion': '1.0',
-        'comment': _comment,
-        'createdAt': FieldValue.serverTimestamp(),
-        'consultantId': appointment['consultantId'],
-        'consultantName': appointment['consultantName'],
-        'conciergeId': appointment['conciergeId'],
-        'conciergeName': appointment['conciergeName'],
-        'floorManagerId': floorManagerId,
-        'floorManagerName': appointment['floorManagerName'],
-        'venueName': appointment['venueName'],
-        'serviceName': appointment['serviceName'],
-        'appointmentTime': appointment['appointmentTime'],
-        'appointmentTimeFormatted': appointment['appointmentTime'] is Timestamp
-            ? DateFormat('EEEE, MMMM d, yyyy h:mm a')
-                .format((appointment['appointmentTime'] as Timestamp).toDate())
-            : '',
-        'status': 'feedback_submitted',
+        'ministerName': '${appointment['ministerFirstName'] ?? ''} ${appointment['ministerLastName'] ?? ''}'.trim(),
+        'typeOfUser': appointment['typeOfVip'] ?? 'Standard',
+        'appointmentDateTime': appointment['appointmentTime'],
+        'feedbackCreatedAt': FieldValue.serverTimestamp(),
+        'consultantName': appointment['consultantName'] ?? 'Not assigned',
+        'conciergeName': appointment['conciergeName'] ?? 'Not assigned',
+        'questionResponses': questionResponses,
+        'totalScore': totalScore,
+        'numberOfQuestions': _questions.length,
       };
-
-      // Save feedback to Firestore
-      final feedbackRef = await FirebaseFirestore.instance
-          .collection('Client_feedback')
-          .add(feedbackData);
       
-      // Update appointment status to show feedback was submitted
+      // Save to VIP_feedback collection (single write)
       await FirebaseFirestore.instance
-          .collection('appointments')
-          .doc(widget.appointmentId)
-          .update({
-            'status': 'feedback_submitted',
-            'feedbackSubmitted': true,
-            'feedbackId': feedbackRef.id,
-            'feedbackSubmittedAt': FieldValue.serverTimestamp(),
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
+          .collection('VIP_feedback')
+          .add(vipFeedbackData);
 
       // Prepare notification data
       final notificationData = {

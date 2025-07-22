@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:syncfusion_flutter_datepicker/datepicker.dart';
-
 import '../../../../core/constants/colors.dart';
-import '../../../../core/providers/app_auth_provider.dart';
 
 class RatingsReceivedScreen extends StatefulWidget {
   const RatingsReceivedScreen({Key? key}) : super(key: key);
@@ -14,147 +10,459 @@ class RatingsReceivedScreen extends StatefulWidget {
   _RatingsReceivedScreenState createState() => _RatingsReceivedScreenState();
 }
 
+// Simple data model for ratings
+class StaffRating {
+  final String id;
+  final String referenceNumber;
+  final String ministerName;
+  final String staffName;
+  final String staffType; // 'consultant' or 'concierge'
+  final int rating;
+  final String comment;
+  final DateTime createdAt;
+  final DateTime appointmentTime;
+
+  StaffRating({
+    required this.id,
+    required this.referenceNumber,
+    required this.ministerName,
+    required this.staffName,
+    required this.staffType,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+    required this.appointmentTime,
+  });
+
+  double get normalizedRating => rating / 5.0; // Normalize to 5-point scale
+}
+
 class _RatingsReceivedScreenState extends State<RatingsReceivedScreen> {
   DateTime _selectedMonth = DateTime.now();
   bool _isLoading = true;
-  List<Map<String, dynamic>> _ratings = [];
-  Map<String, Map<String, dynamic>> _ministerRatings = {};
-  Map<String, double> _consultantAverages = {};
-  Map<String, double> _conciergeAverages = {};
-  double _overallAverage = 0.0;
-  int _totalRatings = 0;
+  Map<String, List<StaffRating>> _staffRatings = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchRatings();
+    _fetchAllRatings();
   }
 
-  Future<void> _fetchRatings() async {
+  Future<void> _fetchAllRatings() async {
     setState(() => _isLoading = true);
-    
     try {
-      // Get the first and last day of the selected month
-      final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-      final lastDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
+      debugPrint('🔍 Fetching ratings data...');
       
-      debugPrint('Fetching ratings from ${firstDay.toIso8601String()} to ${lastDay.toIso8601String()}');
+      // Calculate date range
+      final startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+      final endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
       
-      // Fetch ratings within the selected month
-      final ratingsSnapshot = await FirebaseFirestore.instance
+      debugPrint('📅 Date range: ${startOfMonth.toIso8601String()} to ${endOfMonth.toIso8601String()}');
+      
+      // Fetch all ratings first (remove date filtering temporarily to see all data)
+      final ratingsQuery = await FirebaseFirestore.instance
           .collection('ratings')
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(firstDay))
-          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(lastDay))
+          .orderBy('timestamp', descending: true)
           .get();
-
-      debugPrint('Found ${ratingsSnapshot.docs.length} ratings in the selected period');
+          
+      debugPrint('📊 Raw query returned ${ratingsQuery.docs.length} documents');
       
-      _ratings = ratingsSnapshot.docs.map((doc) {
-        final data = doc.data();
-        debugPrint('Rating data: ${data.toString()}');
-        return {
-          'id': doc.id,
-          ...data,
-        };
-      }).toList();
-
-      _processRatings();
+      debugPrint('📊 Found ${ratingsQuery.docs.length} ratings documents');
+      
+      _staffRatings.clear();
+      
+      for (final doc in ratingsQuery.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        
+        debugPrint('🔍 Processing document ${doc.id}: $data');
+        
+        final referenceNumber = data['referenceNumber']?.toString() ?? '';
+        final ministerName = data['ministerName']?.toString() ?? 'Unknown Minister';
+        final rating = data['rating'] ?? data['score'] ?? 0;
+        final comment = data['comment']?.toString() ?? data['notes']?.toString() ?? '';
+        final createdAt = (data['timestamp'] as Timestamp?)?.toDate() ?? 
+                         (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final appointmentTime = (data['appointmentDate'] as Timestamp?)?.toDate() ?? 
+                               (data['appointmentTime'] as Timestamp?)?.toDate() ?? DateTime.now();
+        
+        // Determine staff name and type from the data
+        String staffName = '';
+        String staffType = '';
+        
+        // From your Firestore data, I can see staffName and role fields
+        if (data['staffName'] != null) {
+          staffName = data['staffName']?.toString() ?? 'Unknown Staff';
+          staffType = data['role']?.toString().toLowerCase() ?? 'staff';
+        } else if (data['type'] == 'consultant' || data['consultantName'] != null) {
+          staffName = data['consultantName']?.toString() ?? 'Unknown Consultant';
+          staffType = 'consultant';
+        } else if (data['type'] == 'concierge' || data['conciergeName'] != null) {
+          staffName = data['conciergeName']?.toString() ?? 'Unknown Concierge';
+          staffType = 'concierge';
+        } else {
+          // Fallback
+          staffName = 'Unknown Staff';
+          staffType = 'staff';
+        }
+        
+        debugPrint('🔍 Processing rating: Staff="$staffName", Type="$staffType", Rating=$rating');
+        
+        // Create rating object
+        final staffRating = StaffRating(
+          id: doc.id,
+          referenceNumber: referenceNumber,
+          ministerName: ministerName,
+          staffName: staffName,
+          staffType: staffType,
+          rating: rating,
+          comment: comment,
+          createdAt: createdAt,
+          appointmentTime: appointmentTime,
+        );
+        
+        // Group by staff name
+        if (!_staffRatings.containsKey(staffName)) {
+          _staffRatings[staffName] = [];
+        }
+        _staffRatings[staffName]!.add(staffRating);
+        
+        debugPrint('✅ Added rating for staff "$staffName" with rating $rating');
+      }
+      
+      setState(() => _isLoading = false);
+      debugPrint('✅ Data fetch complete: ${_staffRatings.length} staff members, ${ratingsQuery.docs.length} total ratings');
+      
     } catch (e) {
-      print('Error fetching ratings: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading ratings: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      debugPrint('❌ Error fetching ratings: $e');
+      setState(() => _isLoading = false);
     }
   }
 
-  void _processRatings() {
-    _consultantAverages.clear();
-    _conciergeAverages.clear();
-    _ministerRatings.clear();
+  double _calculateAverageScore() {
+    if (_staffRatings.isEmpty) return 0.0;
     
-    double totalRating = 0;
-    int ratingCount = 0;
-    Map<String, int> consultantRatingCounts = {};
-    Map<String, int> conciergeRatingCounts = {};
-
-    for (var rating in _ratings) {
-      final ratingValue = rating['rating']?.toDouble() ?? 0.0;
-      final ratingType = rating['type']?.toString().toLowerCase() ?? '';
-      final createdAt = rating['createdAt'] is Timestamp 
-          ? (rating['createdAt'] as Timestamp).toDate() 
-          : DateTime.now();
-
-      // Process consultant ratings
-      if (ratingType == 'consultant' && rating['consultantId'] != null) {
-        final consultantId = rating['consultantId'];
-        final consultantName = rating['consultantName'] ?? 'Unknown Consultant';
-        
-        _consultantAverages[consultantId] = (_consultantAverages[consultantId] ?? 0.0) + ratingValue;
-        consultantRatingCounts[consultantId] = (consultantRatingCounts[consultantId] ?? 0) + 1;
-        
-        // Store minister's rating
-        final ministerName = rating['userName'] ?? 'Anonymous Minister';
-        if (!_ministerRatings.containsKey(consultantId)) {
-          _ministerRatings[consultantId] = {
-            'name': consultantName,
-            'ratings': [],
-          };
-        }
-        _ministerRatings[consultantId]!['ratings'].add({
-          'from': ministerName,
-          'value': ratingValue,
-          'comment': rating['comment'],
-          'date': createdAt,
-        });
+    double totalScore = 0.0;
+    int totalRatings = 0;
+    
+    _staffRatings.values.forEach((ratings) {
+      for (final rating in ratings) {
+        totalScore += rating.normalizedRating * 5; // Convert back to 5-point scale
+        totalRatings++;
       }
-      // Process concierge ratings
-      else if (ratingType == 'concierge' && rating['conciergeId'] != null) {
-        final conciergeId = rating['conciergeId'];
-        final conciergeName = rating['conciergeName'] ?? 'Unknown Concierge';
-        
-        _conciergeAverages[conciergeId] = (_conciergeAverages[conciergeId] ?? 0.0) + ratingValue;
-        conciergeRatingCounts[conciergeId] = (conciergeRatingCounts[conciergeId] ?? 0) + 1;
-        
-        // Store minister's rating
-        final ministerName = rating['userName'] ?? 'Anonymous Minister';
-        if (!_ministerRatings.containsKey(conciergeId)) {
-          _ministerRatings[conciergeId] = {
-            'name': conciergeName,
-            'ratings': [],
-          };
-        }
-        _ministerRatings[conciergeId]!['ratings'].add({
-          'from': ministerName,
-          'value': ratingValue,
-          'comment': rating['comment'],
-          'date': createdAt,
-        });
-      }
-
-      totalRating += ratingValue;
-      ratingCount++;
-    }
-
-    // Calculate overall average
-    _overallAverage = ratingCount > 0 ? totalRating / ratingCount : 0.0;
-    _totalRatings = ratingCount;
-
-    // Calculate consultant and concierge averages
-    _consultantAverages.forEach((key, value) {
-      final count = consultantRatingCounts[key] ?? 1;
-      _consultantAverages[key] = value / count;
     });
-
-    _conciergeAverages.forEach((key, value) {
-      final count = conciergeRatingCounts[key] ?? 1;
-      _conciergeAverages[key] = value / count;
-    });
+    
+    return totalRatings > 0 ? totalScore / totalRatings : 0.0;
+  }
+  
+  int get _totalRatingsCount {
+    return _staffRatings.values.fold(0, (sum, ratings) => sum + ratings.length);
   }
 
+  // Get alternating colors for staff members (same pattern as feedback screen)
+  Color _getStaffColor(int index) {
+    final colors = [
+      Colors.blue.shade600,
+      Colors.green.shade600,
+      Colors.orange.shade600,
+      Colors.purple.shade600,
+      Colors.teal.shade600,
+      Colors.red.shade600,
+    ];
+    return colors[index % colors.length];
+  }
+
+  Widget _buildStaffRatingCard(String staffName, List<StaffRating> ratings, int index) {
+    // Calculate average rating for this staff member
+    double averageRating = ratings.isEmpty ? 0.0 : 
+        ratings.map((r) => r.rating).reduce((a, b) => a + b) / ratings.length;
+    
+    // Get staff type (consultant/concierge) from first rating
+    String staffType = ratings.isNotEmpty ? ratings.first.staffType : 'staff';
+    
+    // Get alternating color for this staff member
+    final staffColor = _getStaffColor(index);
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: staffColor,
+          child: Text(
+            staffName.split(' ').map((n) => n.isNotEmpty ? n[0] : '').join().toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(
+          staffName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${staffType.toUpperCase()} • ${ratings.length} rating${ratings.length != 1 ? 's' : ''} • Avg: ${averageRating.toStringAsFixed(1)}/5.0',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 5 Golden stars with average rating
+            Row(
+              children: [
+                ...List.generate(5, (index) {
+                  return Icon(
+                    index < averageRating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 20,
+                  );
+                }),
+                const SizedBox(width: 8),
+                Text(
+                  averageRating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '/5.0',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+        children: ratings.map((rating) => _buildRatingDetailItem(rating)).toList(),
+      ),
+    );
+  }
+  
+  Widget _buildRatingDetailItem(StaffRating rating) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with minister name and rating
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      rating.ministerName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Ref: ${rating.referenceNumber}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ...List.generate(5, (index) {
+                        return Icon(
+                          index < rating.rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 16,
+                        );
+                      }),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${rating.rating}/5',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    DateFormat('MMM dd, HH:mm').format(rating.createdAt),
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+          // Comment section
+          if (rating.comment.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue[100]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.comment,
+                    size: 16,
+                    color: Colors.blue[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      rating.comment,
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildAverageScoreCard() {
+    final averageScore = _calculateAverageScore();
+    final totalRatings = _totalRatingsCount;
+    final monthName = DateFormat('MMMM yyyy').format(_selectedMonth);
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Staff Ratings - $monthName',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  const Text(
+                    'Average Rating',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    averageScore.toStringAsFixed(1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < averageScore ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 16,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+              Container(
+                height: 60,
+                width: 1,
+                color: Colors.white30,
+              ),
+              Column(
+                children: [
+                  const Text(
+                    'Total Ratings',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    totalRatings.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${_staffRatings.length} Staff',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
   Future<void> _selectMonth() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -162,282 +470,87 @@ class _RatingsReceivedScreenState extends State<RatingsReceivedScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       initialDatePickerMode: DatePickerMode.year,
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.white,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
-
+    
     if (picked != null && picked != _selectedMonth) {
       setState(() {
-        _selectedMonth = DateTime(picked.year, picked.month);
+        _selectedMonth = DateTime(picked.year, picked.month, 1);
       });
-      await _fetchRatings();
+      _fetchAllRatings();
     }
-  }
-
-  Widget _buildRatingStars(double rating, {double size = 24.0}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < rating.floor() ? Icons.star : Icons.star_border,
-          color: Colors.amber,
-          size: size,
-        );
-      }),
-    );
-  }
-
-  Widget _buildAverageRatingsCard() {
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Average Ratings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildAverageRatingItem(
-                  'Overall',
-                  _overallAverage,
-                  Icons.star,
-                  _totalRatings,
-                ),
-                _buildAverageRatingItem(
-                  'Consultant',
-                  _consultantAverages.values.isNotEmpty
-                      ? _consultantAverages.values.reduce((a, b) => a + b) / _consultantAverages.length
-                      : 0.0,
-                  Icons.person,
-                  _consultantAverages.length,
-                ),
-                _buildAverageRatingItem(
-                  'Concierge',
-                  _conciergeAverages.values.isNotEmpty
-                      ? _conciergeAverages.values.reduce((a, b) => a + b) / _conciergeAverages.length
-                      : 0.0,
-                  Icons.support_agent,
-                  _conciergeAverages.length,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAverageRatingItem(String label, double rating, IconData icon, int count) {
-    return Column(
-      children: [
-        Icon(icon, size: 28, color: AppColors.primary),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 2),
-        _buildRatingStars(rating, size: 16),
-        Text(
-          rating > 0 ? rating.toStringAsFixed(1) : 'N/A',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          '($count)',
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMinisterRatingItem(String staffId, Map<String, dynamic> data) {
-    final name = data['name'];
-    final ratings = List<Map<String, dynamic>>.from(data['ratings'] ?? []);
-    
-    // Calculate average rating
-    double totalRating = 0;
-    for (var rating in ratings) {
-      totalRating += rating['value']?.toDouble() ?? 0.0;
-    }
-    final average = ratings.isNotEmpty ? totalRating / ratings.length : 0.0;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: ExpansionTile(
-        title: Text(
-          name,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _buildRatingStars(average, size: 16.0),
-                const SizedBox(width: 8),
-                Text(
-                  '${average.toStringAsFixed(1)} (${ratings.length} ${ratings.length == 1 ? 'rating' : 'ratings'})',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-          ],
-        ),
-        children: [
-          const Divider(),
-          if (ratings.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('No ratings received yet', style: TextStyle(fontStyle: FontStyle.italic)),
-            )
-          else
-            ...ratings.map((rating) => _buildRatingDetailItem(
-                  rating['from'] ?? 'Anonymous',
-                  rating['value']?.toDouble() ?? 0.0,
-                  rating['comment']?.toString(),
-                  rating['date'] is Timestamp 
-                      ? (rating['date'] as Timestamp).toDate() 
-                      : (rating['date'] is DateTime ? rating['date'] as DateTime : DateTime.now()),
-                )).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRatingDetailItem(String from, double rating, String? comment, DateTime date) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'From: $from',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              _buildRatingStars(rating, size: 16.0),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (comment?.isNotEmpty ?? false) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: Text(
-                comment!,
-                style: const TextStyle(fontSize: 14, height: 1.4),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          Text(
-            'Rated on ${DateFormat('MMM d, y • hh:mm a').format(date)}',
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff Ratings'),
+        title: const Text(
+          'Staff Ratings Received',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today, color: Colors.white),
+            icon: const Icon(Icons.calendar_today),
             onPressed: _selectMonth,
             tooltip: 'Select Month',
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _ratings.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.star_outline, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No ratings found for ${DateFormat('MMMM y').format(_selectedMonth)}',
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAverageRatingsCard(),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Showing ratings for ${DateFormat('MMMM y').format(_selectedMonth)}',
-                              style: const TextStyle(color: Colors.grey, fontSize: 14),
-                            ),
-                          ],
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : Column(
+              children: [
+                // Average score card at top
+                _buildAverageScoreCard(),
+                
+                // Staff ratings list
+                Expanded(
+                  child: _staffRatings.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.star_border,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No ratings found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'for ${DateFormat('MMMM yyyy').format(_selectedMonth)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _staffRatings.keys.length,
+                          itemBuilder: (context, index) {
+                            final staffName = _staffRatings.keys.elementAt(index);
+                            final ratings = _staffRatings[staffName]!;
+                            return _buildStaffRatingCard(staffName, ratings, index);
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._ministerRatings.entries.map(
-                        (entry) => _buildMinisterRatingItem(entry.key, entry.value),
-                      ),
-                    ],
-                  ),
                 ),
+              ],
+            ),
     );
   }
 }

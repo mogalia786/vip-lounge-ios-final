@@ -18,6 +18,7 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
   final TextEditingController _questionController = TextEditingController();
   final TextEditingController _optionController = TextEditingController();
   final TextEditingController _scoreController = TextEditingController();
+  final TextEditingController _orderController = TextEditingController();
 
   String? editingQuestionId;
   String? editingOptionId;
@@ -27,6 +28,7 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
     _questionController.dispose();
     _optionController.dispose();
     _scoreController.dispose();
+    _orderController.dispose();
     super.dispose();
   }
 
@@ -66,9 +68,10 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
     );
   }
 
-  void _showOptionDialog({String? option, int? score, String? id}) {
+  void _showOptionDialog({String? option, int? score, int? order, String? id}) {
     _optionController.text = option ?? '';
     _scoreController.text = score?.toString() ?? '';
+    _orderController.text = order?.toString() ?? '';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -89,6 +92,13 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
               style: TextStyle(color: Colors.white),
               decoration: InputDecoration(hintText: 'Enter score (e.g. 0, 1, 2...)', hintStyle: TextStyle(color: Colors.grey)),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _orderController,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(hintText: 'Enter display order (e.g. 1, 2, 3...)', hintStyle: TextStyle(color: Colors.grey)),
+            ),
           ],
         ),
         actions: [
@@ -100,12 +110,22 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
             onPressed: () async {
               final text = _optionController.text.trim();
               final scoreText = _scoreController.text.trim();
+              final orderText = _orderController.text.trim();
               final scoreVal = int.tryParse(scoreText) ?? 0;
+              final orderVal = int.tryParse(orderText) ?? 0;
               if (text.isNotEmpty) {
                 if (id == null) {
-                  await optionsRef.add({'label': text, 'score': scoreVal});
+                  await optionsRef.add({
+                    'responseLabel': text, 
+                    'responseScore': scoreVal,
+                    'order': orderVal
+                  });
                 } else {
-                  await optionsRef.doc(id).update({'label': text, 'score': scoreVal});
+                  await optionsRef.doc(id).update({
+                    'responseLabel': text, 
+                    'responseScore': scoreVal,
+                    'order': orderVal
+                  });
                 }
                 Navigator.of(context).pop();
               }
@@ -223,7 +243,7 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
                             final data = doc.data() as Map<String, dynamic>;
                             return ListTile(
                               title: Text(
-                                '${data['label'] ?? ''} - (${data['score'] ?? 0})',
+                                '${data['responseLabel'] ?? data['label'] ?? ''} - Score: ${data['responseScore'] ?? data['score'] ?? 0} - Order: ${data['order'] ?? 0}',
                                 style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                               ),
                               trailing: Row(
@@ -231,7 +251,12 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
                                 children: [
                                   IconButton(
                                     icon: Icon(Icons.edit, color: AppColors.primary),
-                                    onPressed: () => _showOptionDialog(option: data['label'], score: data['score'], id: doc.id),
+                                    onPressed: () => _showOptionDialog(
+                                      option: data['responseLabel'] ?? data['label'], 
+                                      score: data['responseScore'] ?? data['score'], 
+                                      order: data['order'],
+                                      id: doc.id
+                                    ),
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.delete, color: Colors.red),

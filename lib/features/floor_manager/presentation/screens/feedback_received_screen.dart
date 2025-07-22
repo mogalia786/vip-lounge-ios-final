@@ -1,168 +1,215 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
-import '../../../../core/providers/app_auth_provider.dart';
-
-// Function to safely get first element or null
-E? firstOrNull<E>(Iterable<E> iterable) => iterable.isEmpty ? null : iterable.first;
-
-// Model to hold feedback data
-class FeedbackData {
-  final String id;
-  final String ministerId;
-  final String ministerName;
-  final String appointmentId;
-  final String? referenceNumber;
-  final DateTime date;
-  final List<Map<String, dynamic>> questions;
-  final String? comment;
-  final String? consultantName;
-  final String? conciergeName;
-  final double? rating;
-
-  FeedbackData({
-    required this.id,
-    required this.ministerId,
-    required this.ministerName,
-    required this.appointmentId,
-    this.referenceNumber,
-    required this.date,
-    required this.questions,
-    this.comment,
-    this.consultantName,
-    this.conciergeName,
-    this.rating,
-  });
-
-  factory FeedbackData.fromMap(Map<String, dynamic> data, String id) {
-    return FeedbackData(
-      id: id,
-      ministerId: data['ministerId'] ?? data['userId'] ?? '',
-      ministerName: data['ministerName'] ?? data['userName'] ?? 'Unknown',
-      appointmentId: data['appointmentId'] ?? '',
-      referenceNumber: data['referenceNumber'],
-      date: data['createdAt'] is Timestamp 
-          ? (data['createdAt'] as Timestamp).toDate() 
-          : DateTime.now(),
-      questions: List<Map<String, dynamic>>.from(data['questions'] ?? []),
-      comment: data['comment'] ?? data['comments'],
-      consultantName: data['consultantName'],
-      conciergeName: data['conciergeName'],
-      rating: data['rating']?.toDouble(),
-    );
-  }
-}
 
 class FeedbackReceivedScreen extends StatefulWidget {
-  const FeedbackReceivedScreen({Key? key}) : super(key: key);
+  const FeedbackReceivedScreen({super.key});
 
   @override
-  _FeedbackReceivedScreenState createState() => _FeedbackReceivedScreenState();
+  State<FeedbackReceivedScreen> createState() => _FeedbackReceivedScreenState();
+}
+
+// Simplified data models for VIP_feedback collection
+class VipFeedback {
+  final String id;
+  final String referenceNumber;
+  final String ministerName;
+  final String typeOfUser;
+  final DateTime appointmentDateTime;
+  final DateTime feedbackCreatedAt;
+  final String consultantName;
+  final String conciergeName;
+  final List<QuestionResponse> questionResponses;
+  final int totalScore;
+  final int numberOfQuestions;
+
+  VipFeedback({
+    required this.id,
+    required this.referenceNumber,
+    required this.ministerName,
+    required this.typeOfUser,
+    required this.appointmentDateTime,
+    required this.feedbackCreatedAt,
+    required this.consultantName,
+    required this.conciergeName,
+    required this.questionResponses,
+    required this.totalScore,
+    required this.numberOfQuestions,
+  });
+
+  // This will be updated with the correct calculation in the state class
+  double get averageScore => numberOfQuestions > 0 ? totalScore / numberOfQuestions : 0.0;
+}
+
+class QuestionResponse {
+  final String questionLabel;
+  final String text;
+  final int selectedOption;
+  final List<String> availableOptions;
+
+  QuestionResponse({
+    required this.questionLabel,
+    required this.text,
+    required this.selectedOption,
+    required this.availableOptions,
+  });
 }
 
 class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
-  DateTime _selectedMonth = DateTime.now();
   bool _isLoading = true;
-  
-  // Group feedback by minister ID, then by date, then by appointment
-  final Map<String, Map<String, Map<String, List<FeedbackData>>>> _feedbackByMinister = {};
-  
-  // Track expanded/collapsed state
-  final Map<String, bool> _expandedMinisters = {};
-  final Map<String, bool> _expandedDates = {};
-  final Map<String, bool> _expandedAppointments = {};
+  DateTime _selectedMonth = DateTime.now();
+  Map<String, List<VipFeedback>> _ministerFeedbacks = {};
+  Map<String, List<String>> _optionsMap = {}; // questionId -> list of option labels
+  List<String> _allOptionLabels = []; // All available option labels
+  int _maxOptionsAvailable = 5; // Track the maximum number of options available
 
   @override
   void initState() {
     super.initState();
-    _fetchFeedback();
+    _fetchAllData();
   }
 
-  Future<void> _fetchFeedback() async {
+  Future<void> _fetchAllData() async {
     setState(() => _isLoading = true);
-    
     try {
-      // Get the first and last day of the selected month
-      final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-      final lastDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
+      debugPrint('🔍 Fetching VIP_feedback data...');
       
-      debugPrint('Fetching feedback from ${firstDay.toIso8601String()} to ${lastDay.toIso8601String()}');
+      // Calculate date range
+      final startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+      final endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
       
-      // Fetch feedback within the selected month from client_feedback collection
-      final feedbackSnapshot = await FirebaseFirestore.instance
-          .collection('client_feedback')
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(firstDay))
-          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(lastDay))
+      // Simple read from Feedback_options collection
+      debugPrint('🎯 Fetching options from Feedback_options...');
+      
+      final optionsQuery = await FirebaseFirestore.instance
+          .collection('Feedback_options')
           .get();
-          
-      debugPrint('Found ${feedbackSnapshot.docs.length} feedback items in the selected period');
       
-      // Process feedback data
-      final feedbacks = feedbackSnapshot.docs.map((doc) {
-        return FeedbackData.fromMap(doc.data(), doc.id);
-      }).toList();
-
-      // Group feedback by minister, date, and appointment
-      _groupFeedback(feedbacks);
+      debugPrint('📊 Found ${optionsQuery.docs.length} documents in Feedback_options');
+      
+      _allOptionLabels.clear();
+      List<Map<String, dynamic>> optionsWithOrder = [];
+      
+      // First, collect all options with their order information
+      for (final doc in optionsQuery.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        debugPrint('🔍 Document ${doc.id}: $data');
+        
+        // Get the option label - try common field names
+        String optionLabel = data['responseLabel']?.toString() ?? 
+                            data['label']?.toString() ?? 
+                            data['text']?.toString() ?? 
+                            'Option ${optionsWithOrder.length + 1}';
+        
+        int order = data['order'] ?? 999; // Default high order for unordered items
+        int score = data['responseScore'] ?? data['score'] ?? (optionsWithOrder.length + 1);
+        
+        optionsWithOrder.add({
+          'label': optionLabel,
+          'order': order,
+          'score': score,
+        });
+        
+        debugPrint('✅ Added option: "$optionLabel" with order: $order, score: $score');
+      }
+      
+      // Sort options by order field
+      optionsWithOrder.sort((a, b) => a['order'].compareTo(b['order']));
+      
+      // Extract sorted labels
+      _allOptionLabels = optionsWithOrder.map((option) => option['label'] as String).toList();
+      _maxOptionsAvailable = optionsWithOrder.isNotEmpty 
+          ? optionsWithOrder.map((o) => o['score'] as int).reduce((a, b) => a > b ? a : b)
+          : 5;
+      
+      debugPrint('🎯 Final options list: $_allOptionLabels');
+      debugPrint('🔢 Total options: ${_allOptionLabels.length}');
+      
+      // Query VIP_feedback collection
+      final vipFeedbackQuery = await FirebaseFirestore.instance
+          .collection('VIP_feedback')
+          .where('feedbackCreatedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('feedbackCreatedAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .orderBy('feedbackCreatedAt', descending: true)
+          .get();
+      
+      debugPrint('📊 Found ${vipFeedbackQuery.docs.length} VIP_feedback documents');
+      
+      _ministerFeedbacks.clear();
+      
+      for (final doc in vipFeedbackQuery.docs) {
+        final data = doc.data();
+        
+        final ministerName = data['ministerName']?.toString() ?? 'Unknown Minister';
+        final referenceNumber = data['referenceNumber']?.toString() ?? '';
+        final typeOfUser = data['typeOfUser']?.toString() ?? 'Standard';
+        final appointmentDateTime = (data['appointmentDateTime'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final feedbackCreatedAt = (data['feedbackCreatedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final consultantName = data['consultantName']?.toString() ?? 'Not assigned';
+        final conciergeName = data['conciergeName']?.toString() ?? 'Not assigned';
+        final totalScore = data['totalScore'] ?? 0;
+        final numberOfQuestions = data['numberOfQuestions'] ?? 0;
+        
+        final questionResponsesData = data['questionResponses'] as List<dynamic>? ?? [];
+        
+        // Build question responses with available options from Feedback_options
+        List<QuestionResponse> questionResponses = [];
+        for (final questionData in questionResponsesData) {
+          final questionMap = questionData as Map<String, dynamic>;
+          final questionLabel = questionMap['questionLabel']?.toString() ?? 'Question';
+          final text = questionMap['text']?.toString() ?? '';
+          final selectedOption = questionMap['selectedOption'] ?? 1;
+          
+          // Use ONLY the actual options from Feedback_options collection
+          List<String> availableOptions = _allOptionLabels;
+          
+          debugPrint('🎯 Using ${availableOptions.length} REAL options from Firestore for question "$questionLabel": $availableOptions');
+          
+          if (availableOptions.isEmpty) {
+            debugPrint('⚠️ WARNING: No options loaded from Feedback_options collection!');
+          }
+          
+          questionResponses.add(QuestionResponse(
+            questionLabel: questionLabel,
+            text: text,
+            selectedOption: selectedOption,
+            availableOptions: availableOptions,
+          ));
+          
+          debugPrint('📝 Question: "$questionLabel", Selected: $selectedOption, Available: $availableOptions');
+        }
+        
+        // Create VIP feedback object
+        final vipFeedback = VipFeedback(
+          id: doc.id,
+          referenceNumber: referenceNumber,
+          ministerName: ministerName,
+          typeOfUser: typeOfUser,
+          appointmentDateTime: appointmentDateTime,
+          feedbackCreatedAt: feedbackCreatedAt,
+          consultantName: consultantName,
+          conciergeName: conciergeName,
+          questionResponses: questionResponses,
+          totalScore: totalScore,
+          numberOfQuestions: numberOfQuestions,
+        );
+        
+        // Group by minister name
+        if (!_ministerFeedbacks.containsKey(ministerName)) {
+          _ministerFeedbacks[ministerName] = [];
+        }
+        _ministerFeedbacks[ministerName]!.add(vipFeedback);
+        
+        debugPrint('✅ Added feedback for minister "$ministerName" with ${questionResponses.length} responses');
+      }
+      
+      setState(() => _isLoading = false);
+      debugPrint('✅ Data fetch complete: ${_ministerFeedbacks.length} ministers, ${vipFeedbackQuery.docs.length} total feedbacks');
       
     } catch (e) {
-      debugPrint('Error fetching feedback: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading feedback: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _groupFeedback(List<FeedbackData> feedbacks) {
-    _feedbackByMinister.clear();
-    _expandedMinisters.clear();
-    _expandedDates.clear();
-    _expandedAppointments.clear();
-
-    for (final feedback in feedbacks) {
-      final ministerId = feedback.ministerId;
-      final dateKey = DateFormat('yyyy-MM-dd').format(feedback.date);
-      final appointmentId = feedback.appointmentId;
-
-      // Initialize minister if not exists
-      if (!_feedbackByMinister.containsKey(ministerId)) {
-        _feedbackByMinister[ministerId] = {};
-        _expandedMinisters[ministerId] = true;
-      }
-
-      // Initialize date if not exists
-      if (!_feedbackByMinister[ministerId]!.containsKey(dateKey)) {
-        _feedbackByMinister[ministerId]![dateKey] = {};
-        _expandedDates['$ministerId-$dateKey'] = false;
-      }
-
-      // Initialize appointment if not exists
-      if (!_feedbackByMinister[ministerId]![dateKey]!.containsKey(appointmentId)) {
-        _feedbackByMinister[ministerId]![dateKey]![appointmentId] = [];
-        _expandedAppointments['$ministerId-$dateKey-$appointmentId'] = false;
-      }
-
-      // Add feedback to the appropriate group
-      _feedbackByMinister[ministerId]![dateKey]![appointmentId]!.add(feedback);
-    }
-
-    // Sort dates in descending order (newest first)
-    for (final ministerId in _feedbackByMinister.keys) {
-      final dates = _feedbackByMinister[ministerId]!;
-      final sortedDates = dates.entries.toList()
-        ..sort((a, b) => b.key.compareTo(a.key));
-      
-      _feedbackByMinister[ministerId] = {
-        for (var entry in sortedDates) entry.key: entry.value
-      };
+      debugPrint('❌ Error fetching VIP_feedback: $e');
+      setState(() => _isLoading = false);
     }
   }
 
@@ -172,348 +219,210 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
       initialDate: _selectedMonth,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDatePickerMode: DatePickerMode.year,
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      helpText: 'Select Month',
     );
-
+    
     if (picked != null && picked != _selectedMonth) {
       setState(() {
         _selectedMonth = DateTime(picked.year, picked.month);
       });
-      await _fetchFeedback();
+      _fetchAllData();
     }
   }
 
-  Widget _buildRatingStars(double rating, {double size = 20}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < rating.floor()
-              ? Icons.star
-              : index < rating.ceil()
-                  ? Icons.star_half
-                  : Icons.star_border,
-          color: Colors.amber,
-          size: size,
-        );
-      }),
-    );
-  }
-  
-
-
-  Widget _buildFeedbackSummary() {
-    int totalFeedback = 0;
-    double totalRating = 0;
-    int ratingCount = 0;
-
-    // Calculate totals
-    for (final ministerId in _feedbackByMinister.keys) {
-      for (final dateEntry in _feedbackByMinister[ministerId]!.entries) {
-        for (final apptEntry in dateEntry.value.entries) {
-          totalFeedback += apptEntry.value.length;
-          for (final feedback in apptEntry.value) {
-            if (feedback.rating != null) {
-              totalRating += feedback.rating!;
-              ratingCount++;
-            }
-          }
-        }
+  double _calculateOverallAverage() {
+    if (_ministerFeedbacks.isEmpty || _maxOptionsAvailable == 0) return 0.0;
+    
+    int totalScore = 0;
+    int totalQuestions = 0;
+    
+    for (final feedbacks in _ministerFeedbacks.values) {
+      for (final feedback in feedbacks) {
+        totalScore += feedback.totalScore;
+        totalQuestions += feedback.numberOfQuestions;
       }
     }
+    
+    if (totalQuestions == 0) return 0.0;
+    
+    // Calculate normalized average: (totalScore / (totalQuestions * maxOptions)) * 5
+    // This converts any scale to a 5-point scale
+    final maxPossibleScore = totalQuestions * _maxOptionsAvailable;
+    final normalizedAverage = (totalScore / maxPossibleScore) * 5.0;
+    
+    debugPrint('🧮 Average calculation: totalScore=$totalScore, totalQuestions=$totalQuestions, maxOptions=$_maxOptionsAvailable');
+    debugPrint('🧮 Normalized average: ($totalScore / ($totalQuestions * $_maxOptionsAvailable)) * 5 = $normalizedAverage');
+    
+    return normalizedAverage;
+  }
+  
+  double _calculateMinisterAverage(List<VipFeedback> feedbacks) {
+    if (feedbacks.isEmpty || _maxOptionsAvailable == 0) return 0.0;
+    
+    int totalScore = 0;
+    int totalQuestions = 0;
+    
+    for (final feedback in feedbacks) {
+      totalScore += feedback.totalScore;
+      totalQuestions += feedback.numberOfQuestions;
+    }
+    
+    if (totalQuestions == 0) return 0.0;
+    
+    // Calculate normalized average for this minister
+    final maxPossibleScore = totalQuestions * _maxOptionsAvailable;
+    final normalizedAverage = (totalScore / maxPossibleScore) * 5.0;
+    
+    return normalizedAverage;
+  }
 
-    final avgRating = ratingCount > 0 ? totalRating / ratingCount : 0.0;
+  Color _getMinisterColor(int index) {
+    final colors = [
+      AppColors.primary,
+      Colors.blue.shade600,
+      Colors.green.shade600,
+      Colors.orange.shade600,
+      Colors.purple.shade600,
+      Colors.teal.shade600,
+    ];
+    return colors[index % colors.length];
+  }
 
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Feedback Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildSummaryItem(
-                  'Total Feedback',
-                  totalFeedback.toString(),
-                  Icons.feedback_outlined,
-                ),
-                _buildSummaryItem(
-                  'Avg. Rating',
-                  avgRating > 0 ? '${avgRating.toStringAsFixed(1)}/5' : 'N/A',
-                  Icons.star_rate_rounded,
-                ),
-                _buildSummaryItem(
-                  'Ministers',
-                  _feedbackByMinister.length.toString(),
-                  Icons.people_outline,
-                ),
-              ],
-            ),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      appBar: AppBar(
+        title: const Text(
+          'Feedback Received',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        backgroundColor: AppColors.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: _selectMonth,
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 28, color: AppColors.primary),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeedbackList() {
-    if (_feedbackByMinister.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.feedback_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No feedback available',
-              style: TextStyle(color: Colors.grey[600], fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'for ${DateFormat('MMMM yyyy').format(_selectedMonth)}',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        _buildFeedbackSummary(),
-        const SizedBox(height: 16),
-        ..._buildMinisterFeedbackList(),
-      ],
-    );
-  }
-
-  List<Widget> _buildMinisterFeedbackList() {
-    final widgets = <Widget>[];
-    
-    for (final ministerEntry in _feedbackByMinister.entries) {
-      final ministerId = ministerEntry.key;
-      final ministerData = ministerEntry.value;
-      final ministerName = firstOrNull(ministerData.values.first.values.first)?.ministerName ?? 'Unknown Minister';
-      
-      widgets.add(
-        Card(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: ExpansionTile(
-            key: ValueKey('minister-$ministerId'),
-            title: Text(
-              ministerName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: Text(
-              '${ministerData.length} ${ministerData.length == 1 ? 'day' : 'days'} with feedback',
-              style: const TextStyle(fontSize: 12),
-            ),
-            initiallyExpanded: _expandedMinisters[ministerId] ?? false,
-            onExpansionChanged: (expanded) {
-              setState(() {
-                _expandedMinisters[ministerId] = expanded;
-              });
-            },
-            children: _buildDateFeedbackList(ministerId, ministerData),
-          ),
-        ),
-      );
-    }
-    
-    return widgets;
-  }
-
-  List<Widget> _buildDateFeedbackList(String ministerId, Map<String, Map<String, List<FeedbackData>>> datesData) {
-    final widgets = <Widget>[];
-    
-    for (final dateEntry in datesData.entries) {
-      final dateKey = dateEntry.key;
-      final appointments = dateEntry.value;
-      final date = DateTime.parse(dateKey);
-      final dateCount = appointments.values.fold(0, (sum, feedbacks) => sum + feedbacks.length);
-      
-      widgets.add(
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: ExpansionTile(
-            key: ValueKey('date-$ministerId-$dateKey'),
-            title: Text(
-              DateFormat('EEEE, MMMM d, yyyy').format(date),
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-            ),
-            subtitle: Text(
-              '$dateCount feedback item${dateCount == 1 ? '' : 's'}' +
-              (date.isAtSameMomentAs(DateTime.now()) ? ' (Today)' : ''),
-              style: const TextStyle(fontSize: 12),
-            ),
-            initiallyExpanded: _expandedDates['$ministerId-$dateKey'] ?? false,
-            onExpansionChanged: (expanded) {
-              setState(() {
-                _expandedDates['$ministerId-$dateKey'] = expanded;
-              });
-            },
-            children: _buildAppointmentFeedbackList(ministerId, dateKey, appointments),
-          ),
-        ),
-      );
-    }
-    
-    return widgets;
-  }
-
-  List<Widget> _buildAppointmentFeedbackList(
-    String ministerId, 
-    String dateKey, 
-    Map<String, List<FeedbackData>> appointments
-  ) {
-    final widgets = <Widget>[];
-    
-    for (final apptEntry in appointments.entries) {
-      final appointmentId = apptEntry.key;
-      final feedbacks = apptEntry.value;
-      final firstFeedback = feedbacks.first;
-      
-      widgets.add(
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 2.0),
-          child: ExpansionTile(
-            key: ValueKey('appt-$ministerId-$dateKey-$appointmentId'),
-            title: Text(
-              'Appointment ${firstFeedback.referenceNumber ?? '#' + appointmentId.substring(0, 6)}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-            subtitle: Text(
-              '${feedbacks.length} feedback item${feedbacks.length == 1 ? '' : 's'}' +
-              (firstFeedback.consultantName != null ? ' • ${firstFeedback.consultantName}' : '') +
-              (firstFeedback.conciergeName != null ? ' • ${firstFeedback.conciergeName}' : ''),
-              style: const TextStyle(fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            initiallyExpanded: _expandedAppointments['$ministerId-$dateKey-$appointmentId'] ?? false,
-            onExpansionChanged: (expanded) {
-              setState(() {
-                _expandedAppointments['$ministerId-$dateKey-$appointmentId'] = expanded;
-              });
-            },
-            children: feedbacks.map((feedback) => _buildFeedbackItem(feedback)).toList(),
-          ),
-        ),
-      );
-    }
-    
-    return widgets;
-  }
-
-  Widget _buildFeedbackItem(FeedbackData feedback) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Feedback questions and answers
-          if (feedback.questions.isNotEmpty) ...[
-            const Text('Feedback Questions:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            ...feedback.questions.map((q) => Padding(
-              padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-              child: Text(
-                '• ${q['question']}: ${q['answer'] ?? 'No response'}',
-                style: const TextStyle(fontSize: 13),
-              ),
-            )),
-            const Divider(),
-          ],
-          
-          // Additional comments
-          if (feedback.comment?.isNotEmpty ?? false) ...[
-            const Text('Additional Comments:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(
-              feedback.comment!,
-              style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-          ],
-          
-          // Rating if available
-          if (feedback.rating != null) ...[
-            Row(
-              children: [
-                const Text('Rating: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                _buildRatingStars(feedback.rating!),
-                const SizedBox(width: 4),
-                Text('(${feedback.rating!.toStringAsFixed(1)})'),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-          
-          // Metadata
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                DateFormat('HH:mm').format(feedback.date),
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-              if (feedback.consultantName != null || feedback.conciergeName != null) ...[
-                const Spacer(),
-                Text(
-                  [
-                    if (feedback.consultantName != null) 'Consultant: ${feedback.consultantName}',
-                    if (feedback.conciergeName != null) 'Concierge: ${feedback.conciergeName}',
-                  ].join(' • '),
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _ministerFeedbacks.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.feedback_outlined, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No feedback received for ${DateFormat('MMMM yyyy').format(_selectedMonth)}',
+                        style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    // Overall average card
+                    _buildAverageCard(),
+                    // Minister feedbacks list
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _ministerFeedbacks.keys.length,
+                        itemBuilder: (context, index) {
+                          final ministerName = _ministerFeedbacks.keys.elementAt(index);
+                          final feedbacks = _ministerFeedbacks[ministerName]!;
+                          return _buildMinisterCard(ministerName, feedbacks, index);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+    );
+  }
+
+  Widget _buildAverageCard() {
+    final overallAverage = _calculateOverallAverage();
+    final totalFeedbacks = _ministerFeedbacks.values.fold(0, (sum, feedbacks) => sum + feedbacks.length);
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Overall Feedback Summary',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    '${overallAverage.toStringAsFixed(1)}/5.0',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'Average Score',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    '$totalFeedbacks',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'Total Feedbacks',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    '${_ministerFeedbacks.keys.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'Ministers',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -521,22 +430,194 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Feedback Received'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: _selectMonth,
-            tooltip: 'Select Month',
+  Widget _buildMinisterCard(String ministerName, List<VipFeedback> feedbacks, int index) {
+    final ministerColor = _getMinisterColor(index);
+    final ministerAverage = _calculateMinisterAverage(feedbacks);
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: ministerColor,
+          child: Text(
+            ministerName.split(' ').map((n) => n.isNotEmpty ? n[0] : '').join().toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
+        ),
+        title: Text(
+          ministerName,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        subtitle: Text(
+          '${feedbacks.length} feedback${feedbacks.length != 1 ? 's' : ''} • Avg: ${ministerAverage.toStringAsFixed(1)}/5.0',
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+        children: feedbacks.map((feedback) => _buildFeedbackCard(feedback, ministerColor)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFeedbackCard(VipFeedback feedback, Color ministerColor) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with appointment info
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reference: ${feedback.referenceNumber}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    Text(
+                      'Type: ${feedback.typeOfUser}',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                    Text(
+                      'Appointment: ${DateFormat('MMM dd, yyyy h:mm a').format(feedback.appointmentDateTime)}',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                    Text(
+                      'Feedback: ${DateFormat('MMM dd, yyyy h:mm a').format(feedback.feedbackCreatedAt)}',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ministerColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${feedback.averageScore.toStringAsFixed(1)}/5.0',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Staff info
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Consultant: ${feedback.consultantName}',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  'Concierge: ${feedback.conciergeName}',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Questions and responses
+          ...feedback.questionResponses.map((response) => _buildQuestionResponseCard(response)),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildFeedbackList(),
+    );
+  }
+
+  Widget _buildQuestionResponseCard(QuestionResponse response) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Question
+          Text(
+            response.questionLabel,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Available options with selected one highlighted
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: response.availableOptions.asMap().entries.map((entry) {
+              final optionIndex = entry.key + 1; // 1-based indexing
+              final optionText = entry.value;
+              final isSelected = optionIndex == response.selectedOption;
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                  ),
+                ),
+                child: Text(
+                  '$optionIndex. $optionText',
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          
+          // Comments (collapsible if long)
+          if (response.text.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ExpansionTile(
+              title: const Text(
+                'Comments',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(top: 8),
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    response.text,
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

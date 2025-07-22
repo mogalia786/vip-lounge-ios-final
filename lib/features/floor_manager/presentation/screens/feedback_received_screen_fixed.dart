@@ -340,7 +340,7 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 4),
-            // Reference Number - Highlighted
+            // Reference Number - AMBER HIGHLIGHTED
             if (feedback.referenceNumber != null && feedback.referenceNumber != 'Unknown')
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -355,7 +355,7 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
                 ),
               ),
             const SizedBox(height: 4),
-            // VIP Type - Highlighted
+            // VIP Type - PURPLE HIGHLIGHTED
             if (feedback.typeOfVip != null && feedback.typeOfVip != 'Unknown')
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

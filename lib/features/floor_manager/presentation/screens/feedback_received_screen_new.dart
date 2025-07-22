@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/colors.dart';
+import '../../../core/theme/app_colors.dart';
 
 // Model for option data
 class OptionData {
@@ -45,7 +45,6 @@ class FeedbackData {
   final String appointmentId;
   final String? referenceNumber;
   final String? serviceId;
-  final String? typeOfVip;
   final DateTime date;
   final List<QuestionResponse> questions;
   final String? comment;
@@ -60,7 +59,6 @@ class FeedbackData {
     required this.appointmentId,
     this.referenceNumber,
     this.serviceId,
-    this.typeOfVip,
     required this.date,
     required this.questions,
     this.comment,
@@ -146,34 +144,16 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
         final serviceId = appointmentData['serviceId'] ?? appointmentData['service_id'] ?? 'Unknown';
         final consultantName = appointmentData['consultantName'] ?? 'Not assigned';
         final conciergeName = appointmentData['conciergeName'] ?? 'Not assigned';
-        final typeOfVip = appointmentData['typeOfVip'] ?? 'Unknown';
-        final referenceNumber = appointmentData['referenceNumber'] ?? 'Unknown';
         
-        // Get minister details using EXACT field names you specified
+        // Get minister details
         final ministerId = data['ministerId'] ?? appointmentData['ministerId'] ?? '';
-        final ministerFirstName = appointmentData['ministerFirstname'] ?? '';  // lowercase 'n'
-        final ministerLastName = appointmentData['ministerLastName'] ?? '';   // uppercase 'N'
-        final ministerPhone = appointmentData['ministerPhoneNumber'] ?? '';
-        final ministerEmail = appointmentData['ministerEmail'] ?? '';
+        final ministerFirstName = appointmentData['ministerFirstname'] ?? '';
+        final ministerLastName = appointmentData['ministerLastname'] ?? '';
         final ministerName = '$ministerFirstName $ministerLastName'.trim();
-        
-        debugPrint('👤 Minister: "$ministerName" (First: "$ministerFirstName", Last: "$ministerLastName")');
         
         // Process questions and responses
         List<QuestionResponse> questionResponses = [];
-        
-        // Handle both Map and List formats for responses
-        dynamic responsesData = data['responses'];
-        List<dynamic> responses = [];
-        
-        if (responsesData is List<dynamic>) {
-          responses = responsesData;
-        } else if (responsesData is Map<String, dynamic>) {
-          // Convert Map to List of values
-          responses = responsesData.values.toList();
-        }
-        
-        debugPrint('📝 Processing ${responses.length} responses for feedback ${doc.id}');
+        final responses = data['responses'] as List<dynamic>? ?? [];
         
         for (final response in responses) {
           if (response is Map<String, dynamic>) {
@@ -238,9 +218,7 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
           ministerId: ministerId,
           ministerName: ministerName.isEmpty ? 'Unknown Minister' : ministerName,
           appointmentId: appointmentId,
-          referenceNumber: referenceNumber,
           serviceId: serviceId,
-          typeOfVip: typeOfVip,
           date: (data['createdAt'] as Timestamp).toDate(),
           questions: questionResponses,
           comment: data['comment'],
@@ -316,74 +294,71 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: ministerColor,
-          child: Text(
-            feedback.ministerName.isNotEmpty ? feedback.ministerName[0] : 'M',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Text(
-          feedback.ministerName,
-          style: TextStyle(
-            color: ministerColor,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('MMM dd, yyyy').format(feedback.date),
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            // Reference Number - Highlighted
-            if (feedback.referenceNumber != null && feedback.referenceNumber != 'Unknown')
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.amber, width: 1),
-                ),
-                child: Text(
-                  'Ref: ${feedback.referenceNumber}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            const SizedBox(height: 4),
-            // VIP Type - Highlighted
-            if (feedback.typeOfVip != null && feedback.typeOfVip != 'Unknown')
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.purple, width: 1),
-                ),
-                child: Text(
-                  'VIP: ${feedback.typeOfVip}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-          ],
-        ),
+      child: Column(
         children: [
+          // Minister Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ministerColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    feedback.ministerName.isNotEmpty ? feedback.ministerName[0] : 'M',
+                    style: TextStyle(
+                      color: ministerColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        feedback.ministerName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MMM dd, yyyy').format(feedback.date),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Content
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Service ID
-                if (feedback.serviceId != null && feedback.serviceId != 'Unknown') ...[
+                if (feedback.serviceId != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: ministerColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ministerColor.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
@@ -410,9 +385,9 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
                       children: [
                         const Text('Staff:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        if (feedback.consultantName != null && feedback.consultantName != 'Not assigned')
+                        if (feedback.consultantName != null)
                           Text('Consultant: ${feedback.consultantName}'),
-                        if (feedback.conciergeName != null && feedback.conciergeName != 'Not assigned')
+                        if (feedback.conciergeName != null)
                           Text('Concierge: ${feedback.conciergeName}'),
                       ],
                     ),
@@ -420,110 +395,132 @@ class _FeedbackReceivedScreenState extends State<FeedbackReceivedScreen> {
                   const SizedBox(height: 12),
                 ],
                 
-                // Questions and Responses with Scores
-                if (feedback.questions.isNotEmpty) ...[
-                  const Text(
-                    'Feedback Questions & Scores:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  ...feedback.questions.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final question = entry.value;
-                    final maxScore = question.availableOptions.isNotEmpty 
-                        ? question.availableOptions.map((o) => o.score).reduce((a, b) => a > b ? a : b)
-                        : 5;
-                    
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: ministerColor.withOpacity(0.3)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Question Header with Score
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: ministerColor,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                // Questions and Responses
+                ...feedback.questions.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final question = entry.value;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: ministerColor.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Question Header
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: ministerColor,
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                question.questionText,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  question.questionText,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                              ),
-                              // Score Badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: ministerColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${question.selectedScore}/$maxScore',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          
-                          // Selected Answer
-                          Container(
-                            padding: const EdgeInsets.all(8),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        // All Options
+                        const Text('Available Options:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                        const SizedBox(height: 6),
+                        ...question.availableOptions.map((option) {
+                          final isSelected = option.id == question.selectedOptionId;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             decoration: BoxDecoration(
-                              color: ministerColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
+                              color: isSelected ? ministerColor.withOpacity(0.1) : Colors.grey.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: isSelected ? ministerColor : Colors.grey.withOpacity(0.3),
+                                width: isSelected ? 2 : 1,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle, color: ministerColor, size: 16),
+                                Icon(
+                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                                  color: isSelected ? ministerColor : Colors.grey,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 6),
-                                const Text('Answer: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                Expanded(
+                                Expanded(child: Text(option.text, style: const TextStyle(fontSize: 12))),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? ministerColor : Colors.grey.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                   child: Text(
-                                    question.selectedOptionText,
-                                    style: TextStyle(color: ministerColor, fontWeight: FontWeight.w600, fontSize: 12),
+                                    '${option.score}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : Colors.black54,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
+                          );
+                        }).toList(),
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Selected Summary
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: ministerColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ] else ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: ministerColor, size: 16),
+                              const SizedBox(width: 6),
+                              const Text('Selected: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              Expanded(
+                                child: Text(
+                                  question.selectedOptionText,
+                                  style: TextStyle(color: ministerColor, fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: ministerColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Score: ${question.selectedScore}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Text(
-                      'No questions found for this feedback',
-                      style: TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
                 
                 // Comments
                 if (feedback.comment?.isNotEmpty ?? false) ...[
-                  const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
