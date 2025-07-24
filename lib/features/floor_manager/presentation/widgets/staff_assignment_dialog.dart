@@ -1,7 +1,155 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/services/fcm_service.dart';
+
+class StaffAssignmentDialog extends StatefulWidget {
+  final String appointmentId;
+  final String staffType;
+  final String? currentStaffId;
+  final String? currentStaffName;
+  final Function(String staffId, String staffName) onStaffAssigned;
+
+  const StaffAssignmentDialog({
+    Key? key,
+    required this.appointmentId,
+    required this.staffType,
+    this.currentStaffId,
+    this.currentStaffName,
+    required this.onStaffAssigned,
+  }) : super(key: key);
+
+  @override
+  _StaffAssignmentDialogState createState() => _StaffAssignmentDialogState();
+}
+
+class _StaffAssignmentDialogState extends State<StaffAssignmentDialog> {
+  final Map<String, bool> _sickStaffCache = {};
+  bool _isLoading = true;
+  String? _selectedStaffId;
+  String? _selectedStaffName;
+  List<DocumentSnapshot> _staffList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStaffId = widget.currentStaffId;
+    _selectedStaffName = widget.currentStaffName;
+    _fetchStaffList();
+  }
+
+  Future<void> _fetchStaffList() async {
+    try {
+      // Fetch all staff of the specified type
+      final staffSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: widget.staffType)
+          .get();
+
+      // Fetch sick leaves for today
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final todayEnd = todayStart.add(const Duration(days: 1));
+
+      final sickLeaves = await FirebaseFirestore.instance
+          .collection('sick_leaves')
+          .where('status', isEqualTo: 'pending')
+          .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(todayEnd))
+          .where('endDate', isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart))
+          .get();
+
+      // Build sick staff cache
+      for (var doc in sickLeaves.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final userId = data['userId'] as String?;
+        if (userId != null) {
+          _sickStaffCache[userId] = true;
+        }
+      }
+
+      setState(() {
+        _staffList = staffSnapshot.docs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching staff list: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Assign ${widget.staffType.capitalize()}'),
+      content: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _staffList.length,
+                itemBuilder: (context, index) {
+                  final staff = _staffList[index].data() as Map<String, dynamic>;
+                  final staffId = _staffList[index].id;
+                  final staffName = '${staff['firstName'] ?? ''} ${staff['lastName'] ?? ''}'.trim();
+                  final isSick = _sickStaffCache.containsKey(staffId);
+                  final isSelected = _selectedStaffId == staffId;
+
+                  return ListTile(
+                    leading: isSick
+                        ? const Icon(Icons.sick, color: Colors.red)
+                        : null,
+                    title: Text(
+                      staffName.isNotEmpty ? staffName : 'Unnamed Staff',
+                      style: TextStyle(
+                        color: isSick ? Colors.grey : null,
+                        fontWeight: isSelected ? FontWeight.bold : null,
+                        decoration: isSick ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    subtitle: isSick ? const Text('On sick leave', style: TextStyle(color: Colors.red)) : null,
+                    trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
+                    onTap: isSick
+                        ? null
+                        : () {
+                            setState(() {
+                              _selectedStaffId = staffId;
+                              _selectedStaffName = staffName;
+                            });
+                          },
+                  );
+                },
+              ),
+            ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedStaffId != null && _selectedStaffId != widget.currentStaffId
+              ? () {
+                  widget.onStaffAssigned(_selectedStaffId!, _selectedStaffName!);
+                  Navigator.of(context).pop();
+                }
+              : null,
+          child: const Text('Assign'),
+        ),
+      ],
+    );
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    return '${this[0].toUpperCase()}${substring(1)}';
+  }
+}
+
 
 // Model for option data
 class OptionData {

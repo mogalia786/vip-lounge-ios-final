@@ -9,6 +9,7 @@ import 'staff/staff_home_screen.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/user_service.dart';
 import '../../../shared/utils/app_update_helper.dart';
+import '../../../../services/firebase_update_service.dart';
 import '../../../../core/providers/app_auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -34,7 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _initPackageInfo();
-    AppUpdateHelper.checkAndPromptUpdate(context, 'https://vip-lounge-f3730.web.app/version.json');
+    // Check for Firebase-based updates after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔍 LOGIN: Checking for Firebase updates...');
+      FirebaseUpdateService.checkForUpdates(context);
+    });
   }
 
   Future<void> _initPackageInfo() async {

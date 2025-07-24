@@ -1441,27 +1441,32 @@ class _UnifiedAppointmentCardState extends State<UnifiedAppointmentCard> {
                   children: [
                     Icon(Icons.info, color: Colors.lightBlueAccent, size: 22),
                     const SizedBox(width: 7),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${appointmentData['serviceName'] ?? 'Appointment'} - ${appointmentData['status']?.toString().toUpperCase() ?? 'PENDING'}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (referenceNumber.isNotEmpty)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            'Ref: $referenceNumber',
+                            '${appointmentData['serviceName'] ?? 'Appointment'} - ${appointmentData['status']?.toString().toUpperCase() ?? 'PENDING'}',
                             style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.amber,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                      ],
+                          if (referenceNumber.isNotEmpty)
+                            Text(
+                              'Ref: $referenceNumber',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.amber,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

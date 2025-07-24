@@ -210,4 +210,39 @@ class FCMService {
       print('Error updating FCM token: $e');
     }
   }
+
+  /// Send a custom FCM notification to a specific device token
+  Future<void> sendCustomNotification({
+    required String fcmToken,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final serverKey = const String.fromEnvironment('FCM_SERVER_KEY', defaultValue: 'YOUR_SERVER_KEY_HERE');
+      final url = Uri.parse('https://fcm.googleapis.com/fcm/send');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverKey',
+      };
+      final notification = {
+        'title': title,
+        'body': body,
+      };
+      final payload = {
+        'to': fcmToken,
+        'notification': notification,
+        'data': data ?? {},
+        'priority': 'high',
+      };
+      // Uncomment these lines if http is available in your environment:
+      // final response = await http.post(url, headers: headers, body: jsonEncode(payload));
+      // if (response.statusCode != 200) {
+      //   throw Exception('FCM send failed: \\${response.body}');
+      // }
+      print('[FCM] Notification would be sent to $fcmToken: $title - $body');
+    } catch (e) {
+      print('[FCM] Error sending notification: $e');
+    }
+  }
 }

@@ -152,7 +152,9 @@ class _AppState extends State<App> {
             return MaterialPageRoute(builder: (_) => const FloorManagerHomeScreenNew());
           case '/floor_manager/search':
             return MaterialPageRoute(builder: (_) => const FloorManagerSearchScreen());
-          case '/operational_manager/home':
+          case '/operational-manager/home':
+            return MaterialPageRoute(builder: (_) => const OperationalManagerHomeScreen());
+          case '/operational_manager/home': // Keep both for compatibility
             return MaterialPageRoute(builder: (_) => const OperationalManagerHomeScreen());
           case '/consultant/home':
             print('DEBUG: Loading ConsultantHomeScreenAttendance for /consultant/home route');

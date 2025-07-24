@@ -22,16 +22,18 @@ import 'package:vip_lounge/core/services/device_location_service.dart';
 import 'package:vip_lounge/core/widgets/glass_card.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
-import 'package:vip_lounge/features/floor_manager/widgets/attendance_actions_widget.dart'
-    show AttendanceActionsWidget;
+import '../../../floor_manager/widgets/attendance_actions_widget.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/app_auth_provider.dart';
-import '../../../../core/widgets/unified_appointment_card.dart';
+import 'package:vip_lounge/core/widgets/unified_appointment_card.dart';
+import 'package:vip_lounge/core/widgets/appointment_search_widget.dart';
 import 'package:vip_lounge/features/consultant/presentation/screens/appointment_detail_screen.dart';
 import '../../../../core/widgets/role_notification_list.dart';
 import '../widgets/minister_search_dialog.dart';
 import 'package:vip_lounge/core/widgets/notification_bell_badge.dart';
 import '../widgets/performance_metrics_widget.dart';
+import '../widgets/consultant_query_badge.dart';
+import 'consultant_query_inbox_screen.dart';
 
 class LatLng {
   final double latitude;
@@ -1502,6 +1504,57 @@ class _ConsultantHomeScreenAttendanceState extends State<ConsultantHomeScreenAtt
           ],
         ),
         actions: [
+          // Query Inbox Button
+          IconButton(
+            padding: const EdgeInsets.only(right: 4.0, left: 4.0),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.inbox_outlined,
+                  color: AppColors.green,
+                  size: 24.0,
+                ),
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: ConsultantQueryBadge(
+                    currentConsultantUid: _consultantId,
+                  ),
+                ),
+              ],
+            ),
+            tooltip: 'Queries Inbox',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ConsultantQueryInboxScreen(
+                    currentConsultantUid: _consultantId,
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Quick Search Icon
+          IconButton(
+            icon: Icon(Icons.search, color: AppColors.gold),
+            tooltip: 'Quick Search Appointment',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: AppointmentSearchWidget(
+                    currentUserId: _consultantId,
+                    userRole: 'consultant',
+                  ),
+                ),
+              );
+            },
+          ),
+          
           IconButton(
             icon: Icon(Icons.logout, color: AppColors.primary),
             tooltip: 'Logout',

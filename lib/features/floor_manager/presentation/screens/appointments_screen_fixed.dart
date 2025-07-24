@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
+import 'package:vip_lounge/features/floor_manager/presentation/screens/appointment_details_screen.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/providers/app_auth_provider.dart';
@@ -62,6 +63,75 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Widget to display staff with sick leave indicator
+  Widget _buildStaffInfo(String label, String staffId, String staffName, String role, Map<String, dynamic> appointment) {
+    if (staffId.isEmpty) {
+      return _buildInfoRow('$label:', 'Not assigned');
+    }
+    
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(staffId).get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildInfoRow(
+            '$label:',
+            staffName,
+          );
+        }
+        
+        final isSick = snapshot.hasData && 
+                       snapshot.data!.exists && 
+                       (snapshot.data!.data() as Map<String, dynamic>?)?['isSick'] == true;
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(
+                  '$label:',
+                  style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.w500),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    // Open appointment details screen for reassignment
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AppointmentDetailsScreen(
+                          appointmentId: appointment['id'] ?? '',
+                        ),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        staffName,
+                        style: TextStyle(
+                          color: isSick ? Colors.red : Colors.white,
+                          decoration: isSick ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      if (isSick) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.sick, color: Colors.red, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -706,88 +776,31 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     ),
                   ),
                   
-                  // Consultant Assignment
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: _buildInfoRow(
-                          'Consultant:',
-                          consultantName,
-                        ),
-                      ),
-                      if (consultantId.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.chat,
-                            color: Colors.blue,
-                          ),
-                          onPressed: () {
-                            _openChatDialog(
-                              context,
-                              appointmentId,
-                              appointment,
-                              'consultant',
-                            );
-                          },
-                        ),
-                    ],
+                  // Consultant Assignment with sick leave indicator
+                  _buildStaffInfo(
+                    'Consultant',
+                    consultantId,
+                    consultantName,
+                    'consultant',
+                    appointment,
                   ),
                   
-                  // Cleaner Assignment
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: _buildInfoRow(
-                          'Cleaner:',
-                          cleanerName,
-                        ),
-                      ),
-                      if (cleanerId.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.chat,
-                            color: Colors.teal,
-                          ),
-                          onPressed: () {
-                            _openChatDialog(
-                              context,
-                              appointmentId,
-                              appointment,
-                              'cleaner',
-                            );
-                          },
-                        ),
-                    ],
+                  // Cleaner Assignment with sick leave indicator
+                  _buildStaffInfo(
+                    'Cleaner',
+                    cleanerId,
+                    cleanerName,
+                    'cleaner',
+                    appointment,
                   ),
                   
-                  // Concierge Assignment
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: _buildInfoRow(
-                          'Concierge:',
-                          conciergeName,
-                        ),
-                      ),
-                      if (conciergeId.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.chat,
-                            color: Colors.purple,
-                          ),
-                          onPressed: () {
-                            _openChatDialog(
-                              context,
-                              appointmentId,
-                              appointment,
-                              'concierge',
-                            );
-                          },
-                        ),
-                    ],
+                  // Concierge Assignment with sick leave indicator
+                  _buildStaffInfo(
+                    'Concierge',
+                    conciergeId,
+                    conciergeName,
+                    'concierge',
+                    appointment,
                   ),
                   
                   // Minister Chat Button

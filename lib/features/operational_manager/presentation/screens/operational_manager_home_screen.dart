@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/data/services/employee_role_service.dart';
+import '../../../../admin/version_manager.dart';
+import '../../../../services/firebase_update_service.dart';
 
 class OperationalManagerHomeScreen extends StatefulWidget {
   const OperationalManagerHomeScreen({super.key});
@@ -88,7 +90,11 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
   @override
   void initState() {
     super.initState();
-    // Silwela in-app update check
+    // Firebase-based update check
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔍 OPERATIONAL MANAGER: Checking for Firebase updates...');
+      FirebaseUpdateService.checkForUpdates(context);
+    });
   }
 
   @override
@@ -235,6 +241,28 @@ class _OperationalManagerHomeScreenState extends State<OperationalManagerHomeScr
                     Icons.bar_chart,
                     () {
                       // TODO: Navigate to reports screen
+                    },
+                  ),
+                  _buildActionCard(
+                    context,
+                    'Version\nManager',
+                    Icons.system_update,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VersionManagerScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildActionCard(
+                    context,
+                    'Test\nUpdate',
+                    Icons.refresh,
+                    () {
+                      print('🔍 MANUAL: Testing Firebase update check...');
+                      FirebaseUpdateService.checkForUpdates(context);
                     },
                   ),
                 ],

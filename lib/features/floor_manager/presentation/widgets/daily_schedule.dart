@@ -205,65 +205,116 @@ class DailySchedule extends StatelessWidget {
                                 ),
                               ),
                             
-                            // Staff assignment display (read-only)
-Padding(
-  padding: const EdgeInsets.only(top: 8.0),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Icon(Icons.person, color: AppColors.primary, size: 16),
-          SizedBox(width: 5),
-          Text(
-            'Consultant: ',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            appointment['consultantName'] != null && appointment['consultantName'].toString().isNotEmpty
-              ? appointment['consultantName']
-              : 'Not assigned',
-            style: TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ],
-      ),
-      SizedBox(height: 2),
-      Row(
-        children: [
-          Icon(Icons.cleaning_services, color: AppColors.primary, size: 16),
-          SizedBox(width: 5),
-          Text(
-            'Cleaner: ',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            appointment['cleanerName'] != null && appointment['cleanerName'].toString().isNotEmpty
-              ? appointment['cleanerName']
-              : 'Not assigned',
-            style: TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ],
-      ),
-      SizedBox(height: 2),
-      Row(
-        children: [
-          Icon(Icons.room_service, color: AppColors.primary, size: 16),
-          SizedBox(width: 5),
-          Text(
-            'Concierge: ',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            appointment['conciergeName'] != null && appointment['conciergeName'].toString().isNotEmpty
-              ? appointment['conciergeName']
-              : 'Not assigned',
-            style: TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ],
-      ),
-    ],
-  ),
-),
+                            // Staff assignment display with edit buttons
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Consultant row
+                                  Row(
+                                    children: [
+                                      Icon(Icons.person, color: AppColors.primary, size: 16),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Consultant: ',
+                                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          appointment['consultantName'] != null && appointment['consultantName'].toString().isNotEmpty
+                                              ? appointment['consultantName']
+                                              : 'Not assigned',
+                                          style: TextStyle(color: Colors.white, fontSize: 13),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(),
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          '/floor_manager/appointment_details',
+                                          arguments: {
+                                            'appointmentId': appointmentId,
+                                            'initialTab': 1, // Staff Assignment tab
+                                            'focusStaffType': 'consultant',
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 2),
+                                  // Cleaner row
+                                  Row(
+                                    children: [
+                                      Icon(Icons.cleaning_services, color: AppColors.primary, size: 16),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Cleaner: ',
+                                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          appointment['cleanerName'] != null && appointment['cleanerName'].toString().isNotEmpty
+                                              ? appointment['cleanerName']
+                                              : 'Not assigned',
+                                          style: TextStyle(color: Colors.white, fontSize: 13),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(),
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          '/floor_manager/appointment_details',
+                                          arguments: {
+                                            'appointmentId': appointmentId,
+                                            'initialTab': 1, // Staff Assignment tab
+                                            'focusStaffType': 'cleaner',
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 2),
+                                  // Concierge row
+                                  Row(
+                                    children: [
+                                      Icon(Icons.room_service, color: AppColors.primary, size: 16),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Concierge: ',
+                                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          appointment['conciergeName'] != null && appointment['conciergeName'].toString().isNotEmpty
+                                              ? appointment['conciergeName']
+                                              : 'Not assigned',
+                                          style: TextStyle(color: Colors.white, fontSize: 13),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(),
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          '/floor_manager/appointment_details',
+                                          arguments: {
+                                            'appointmentId': appointmentId,
+                                            'initialTab': 1, // Staff Assignment tab
+                                            'focusStaffType': 'concierge',
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),

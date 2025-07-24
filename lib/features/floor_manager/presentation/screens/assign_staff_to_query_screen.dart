@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:vip_lounge/core/services/vip_notification_service.dart';
 import 'package:vip_lounge/core/constants/colors.dart';
+import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
 
 class AssignStaffToQueryScreen extends StatefulWidget {
   final Map<String, dynamic> query;
@@ -90,7 +91,8 @@ class _AssignStaffToQueryScreenState extends State<AssignStaffToQueryScreen> {
       
       // Update the query with assignment info
       await _firestore.collection('queries').doc(widget.query['id']).update({
-        'assignedToId': _selectedStaffId,
+        'assignedTo': _selectedStaffId,  // Changed from assignedToId to assignedTo
+        'assignedToId': _selectedStaffId,  // Keep for backward compatibility
         'assignedToName': staff['name'],
         'assignedToEmail': staff['email'],
         'assignedToPhone': staff['phone'],
@@ -110,6 +112,32 @@ class _AssignStaffToQueryScreenState extends State<AssignStaffToQueryScreen> {
 
       // Send notification to the assigned staff
       try {
+        if (_selectedStaffId == null) {
+          throw Exception('No staff member selected');
+        }
+        
+        // Send notification to assigned staff using SendMyFCM
+        final sendMyFCM = SendMyFCM();
+        await sendMyFCM.sendNotification(
+          recipientId: _selectedStaffId!,
+          title: 'New Query Assigned',
+          body: 'You have been assigned a new query from ${widget.query['ministerName'] ?? 'a minister'}. Reference #${widget.query['referenceNumber']}',
+          appointmentId: widget.query['id'],
+          role: staff['role'],
+          additionalData: {
+            'queryId': widget.query['id'],
+            'referenceNumber': widget.query['referenceNumber'],
+            'ministerName': widget.query['ministerName'],
+            'ministerPhone': widget.query['ministerPhone'],
+            'query': widget.query['uery'] ?? widget.query['query'],
+            'type': 'query_assigned',
+            'priority': 'high',
+            'assignedToId': _selectedStaffId,  // Ensure assignedToId is included
+          },
+          notificationType: 'query_assignment',
+        );
+        
+        // Also send via VIPNotification for backward compatibility
         await _notificationService.createNotification(
           title: 'New Query Assigned',
           body: 'You have been assigned a new query from ${widget.query['ministerName'] ?? 'a minister'}. Reference #${widget.query['referenceNumber']}',
@@ -122,6 +150,7 @@ class _AssignStaffToQueryScreenState extends State<AssignStaffToQueryScreen> {
             'type': 'query_assigned',
             'timestamp': DateTime.now().toIso8601String(),
             'priority': 'high',
+            'assignedToId': _selectedStaffId,  // Ensure assignedToId is included
           },
           role: staff['role'],
           assignedToId: _selectedStaffId,
@@ -155,6 +184,29 @@ Email: ${staff['email'] ?? 'Not provided'}
 
 Query: ${widget.query['uery'] ?? widget.query['query'] ?? 'No details'}
 Reference: #${widget.query['referenceNumber']}''';
+          
+          // Send to minister using SendMyFCM
+          final sendMyFCM = SendMyFCM();
+          await sendMyFCM.sendNotification(
+            recipientId: ministerId,
+            title: 'Query #${widget.query['referenceNumber']} - Assigned',
+            body: notificationBody,
+            appointmentId: widget.query['id'],
+            role: 'minister',
+            additionalData: {
+              'queryId': widget.query['id'],
+              'referenceNumber': widget.query['referenceNumber'],
+              'assignedToName': staff['name'],
+              'assignedToPhone': staff['phone'] ?? '',
+              'assignedToEmail': staff['email'] ?? '',
+              'queryText': widget.query['uery'] ?? widget.query['query'] ?? 'No details',
+              'type': 'query_assignment',
+              'priority': 'high',
+              'assignedToId': _selectedStaffId,  // Include assignedToId
+              'showFullDetails': 'true',
+            },
+            notificationType: 'query_assignment',
+          );
 
           await _notificationService.createNotification(
             title: 'Query #${widget.query['referenceNumber']} - Assigned',

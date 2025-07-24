@@ -18,6 +18,8 @@ import 'package:vip_lounge/features/staff/presentation/widgets/staff_scheduled_a
 import 'package:vip_lounge/features/staff/presentation/widgets/staff_performance_metrics_widget.dart';
 import 'package:vip_lounge/features/staff/presentation/widgets/staff_performance_indicator.dart';
 import 'package:vip_lounge/core/widgets/unified_appointment_card.dart';
+import 'package:vip_lounge/core/widgets/appointment_search_widget.dart';
+import 'package:vip_lounge/features/staff/presentation/widgets/sick_leave_dialog.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   const StaffHomeScreen({super.key});
@@ -493,6 +495,26 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
     }
   }
 
+  Future<void> _showSickLeaveDialog() async {
+    final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    if (user == null) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StaffSickLeaveDialog(
+        userId: user.uid,
+        userName: '${user.firstName} ${user.lastName}'.trim(),
+        role: 'staff',
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sick leave request submitted successfully')),
+      );
+    }
+  }
+
   Widget _getTabBody() {
     return _buildTabView();
   }
@@ -572,6 +594,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
           ],
         ),
         actions: [
+          // Sick Leave Button
+          IconButton(
+            icon: const Icon(Icons.sick, color: Colors.redAccent, size: 24.0),
+            tooltip: 'Request Sick Leave',
+            onPressed: _showSickLeaveDialog,
+          ),
           // Notification Button
           IconButton(
             padding: const EdgeInsets.all(4.0),
@@ -649,6 +677,28 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> with SingleTickerProv
                 MaterialPageRoute(
                   builder: (_) => StaffQueryInboxScreen(
                     currentStaffUid: _userId ?? '',
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Quick Search Icon
+          IconButton(
+            icon: Icon(
+              Icons.search,
+              color: AppColors.gold,
+              size: 24.0,
+            ),
+            tooltip: 'Quick Search Appointment',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: AppointmentSearchWidget(
+                    currentUserId: _userId ?? '',
+                    userRole: 'staff',
                   ),
                 ),
               );

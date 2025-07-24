@@ -29,27 +29,39 @@ class SendMyFCM {
     Map<String, dynamic> additionalData = const {},
     bool showRating = false,
     String notificationType = 'general',
+    bool skipAppointmentCheck = false,
   }) async {
     try {
       debugPrint('[SendMyFCM] --- sendNotification START ---');
       debugPrint('[SendMyFCM] Params: recipientId=$recipientId, appointmentId=$appointmentId, role=$role, notificationType=$notificationType');
 
-      // Get appointment details
-      final appointmentDoc = await _firestore.collection('appointments').doc(appointmentId).get();
-      if (!appointmentDoc.exists) {
-        debugPrint('[SendMyFCM][ERROR] Appointment not found: $appointmentId. Notification will NOT be sent.');
-        return;
+      // Initialize appointment data
+      Map<String, dynamic> appointmentData = {};
+
+      // Only fetch appointment details if not skipping the check
+      if (!skipAppointmentCheck) {
+        debugPrint('[SendMyFCM] Fetching appointment details for: $appointmentId');
+        final appointmentDoc = await _firestore.collection('appointments').doc(appointmentId).get();
+        if (!appointmentDoc.exists) {
+          debugPrint('[SendMyFCM][ERROR] Appointment not found: $appointmentId. Notification will NOT be sent.');
+          return;
+        }
+        appointmentData = appointmentDoc.data()!;
+      } else {
+        debugPrint('[SendMyFCM] Skipping appointment check for notification type: $notificationType');
       }
-      final appointmentData = appointmentDoc.data()!;
       debugPrint('[SendMyFCM] Loaded appointment data: ' + appointmentData.toString());
 
       // Create notification data
       final notificationData = {
         'appointmentId': appointmentId,
         'showRating': showRating,
+        'notificationType': notificationType,
         ...additionalData,
-        ...appointmentData,
+        if (appointmentData.isNotEmpty) ...appointmentData,
       };
+
+      debugPrint('[SendMyFCM] Notification data prepared: $notificationData');
 
       // Create in-app notification in Firestore
       debugPrint('[SendMyFCM] Writing in-app notification to Firestore for $recipientId...');

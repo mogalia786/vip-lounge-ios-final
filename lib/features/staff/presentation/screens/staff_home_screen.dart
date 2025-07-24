@@ -21,6 +21,7 @@ import 'package:vip_lounge/features/staff_query_badge.dart';
 import 'package:vip_lounge/features/staff_query_inbox_screen.dart';
 import 'package:vip_lounge/features/staff_query_all_screen.dart';
 import 'package:vip_lounge/features/floor_manager/presentation/screens/notifications_screen.dart';
+import '../widgets/sick_leave_dialog.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   const StaffHomeScreen({Key? key}) : super(key: key);
@@ -135,6 +136,26 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   void _onDateChange(DateTime d) {
     setState(() => _selectedDate = d);
+  }
+
+  Future<void> _showSickLeaveDialog() async {
+    final user = Provider.of<AppAuthProvider>(context, listen: false).appUser;
+    if (user == null) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StaffSickLeaveDialog(
+        userId: user.uid,
+        userName: '${user.firstName} ${user.lastName}'.trim(),
+        role: 'staff',
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sick leave request submitted successfully')),
+      );
+    }
   }
 
   @override
@@ -326,6 +347,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         backgroundColor: AppColors.black,
         foregroundColor: AppColors.gold,
         actions: [
+          // Sick leave button
+          IconButton(
+            icon: const Icon(Icons.sick, color: Colors.redAccent),
+            tooltip: 'Request Sick Leave',
+            onPressed: _showSickLeaveDialog,
+          ),
           // Notification bell icon with badge
           IconButton(
             icon: Stack(
