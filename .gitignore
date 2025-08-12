@@ -1,69 +1,61 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
+# Android Studio will place build artifacts here
 # Environment variables and secrets
-.env
-
+# Explicitly exclude large build artifacts
 # Firebase and service account credentials
-serviceAccountKey.json
-*service-account*.json
-*firebase*.json
-*.p8
-*.p12
-*.key
-*.cer
-GoogleService-Info.plist  # This should be configured per environment
-
+# Flutter/Dart/Pub related
 # IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
+# Miscellaneous
+# Obfuscation related
+# Symbolication related
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
 #.vscode/
-
-# Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
+*.cer
+*.class
+*.iml
+*.ipr
+*.iws
+*.key
+*.log
+*.p12
+*.p8
+*.pyc
+*.swp
+*firebase*.json
+*service-account*.json
+.DS_Store
+.atom/
+.build/
+.buildlog/
 .dart_tool/
+.env
 .flutter-plugins
 .flutter-plugins-dependencies
+.history
+.idea/
 .pub-cache/
 .pub/
-/build/
-build/
-
-# Explicitly exclude large build artifacts
-build/app/outputs/apk/debug/app-debug.apk
-build/app/intermediates/assets/debug/flutter_assets/kernel_blob.bin
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+.svn/
+.swiftpm/
 /android/app/debug
 /android/app/profile
 /android/app/release
-node_modules
+/build/
+GoogleService-Info.plist  # This should be configured per environment
+app.*.map.json
+app.*.symbols
+build/
+build/app/intermediates/assets/debug/flutter_assets/kernel_blob.bin
+build/app/outputs/apk/debug/app-debug.apk
 ios/Runner/GoogleService-Info.plist
-test_firebase_credentials.dart
-verify_credentials.dart
 ios_backup/
 ios_backup_*
+migrate_working_dir/
+node_modules
+serviceAccountKey.json
+test_firebase_credentials.dart
+verify_credentials.dart
