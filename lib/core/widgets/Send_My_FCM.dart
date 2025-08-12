@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 /// SendMyFCM is a utility class that handles both Firebase Cloud Messaging (FCM) 
 /// push notifications and in-app notifications using the same pattern as rating notifications.
@@ -63,7 +64,7 @@ class SendMyFCM {
 
       debugPrint('[SendMyFCM] Notification data prepared: $notificationData');
 
-      // Create in-app notification in Firestore
+      // Create in-app notification in Firestore (awaited, ensures UI shows update immediately)
       debugPrint('[SendMyFCM] Writing in-app notification to Firestore for $recipientId...');
       await _firestore.collection('notifications').add({
         'title': title,
@@ -78,41 +79,71 @@ class SendMyFCM {
       });
       debugPrint('[SendMyFCM] In-app notification written to Firestore for $recipientId.');
 
-      // Send FCM push notification
-      final recipientDoc = await _firestore.collection('users').doc(recipientId).get();
-      if (!recipientDoc.exists) {
-        debugPrint('[SendMyFCM][ERROR] Recipient user not found in users: $recipientId. FCM will NOT be sent.');
-        return;
-      }
-      debugPrint('[SendMyFCM] Loaded recipient doc for $recipientId: ' + (recipientDoc.data()?.toString() ?? 'null'));
-      final recipientToken = recipientDoc.data()?['fcmToken'];
-      if (recipientToken == null || recipientToken.toString().isEmpty) {
-        debugPrint('[SendMyFCM][ERROR] No FCM token found for recipient: $recipientId. FCM will NOT be sent.');
-        return;
-      }
-      debugPrint('[SendMyFCM] Recipient FCM token: $recipientToken');
-
-      // Method 1: Direct Firebase SDK (may not work in all environments)
-      debugPrint('[SendMyFCM] Attempting to send FCM push notification via FirebaseMessaging SDK...');
-      try {
-        final stringData = _convertToStringMap(notificationData);
-        await _fcm.sendMessage(
-          to: recipientToken,
-          data: stringData,
-          messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
-          messageType: notificationType,
-          collapseKey: 'notification_${appointmentId}',
-        );
-        debugPrint('[SendMyFCM] FCM push notification sent successfully via FirebaseMessaging SDK.');
-      } catch (fcmError) {
-        debugPrint('[SendMyFCM][ERROR] Failed to send FCM via FirebaseMessaging SDK: $fcmError');
-        // Try Method 2: Cloud Function
-        debugPrint('[SendMyFCM] Falling back to Cloud Function method for FCM...');
-        await _sendViaCloudFunction(recipientToken, title, body, notificationData, notificationType);
-      }
+      // Send FCM push notification in a detached task so UI never blocks
+      unawaited(_sendPushAsync(
+        recipientId: recipientId,
+        title: title,
+        body: body,
+        notificationData: notificationData,
+        appointmentId: appointmentId,
+        notificationType: notificationType,
+      ));
+      debugPrint('[SendMyFCM] Push send dispatched (non-blocking).');
       debugPrint('[SendMyFCM] --- sendNotification END ---');
     } catch (e) {
       debugPrint('[SendMyFCM][ERROR] Exception in sendNotification: $e');
+    }
+  }
+
+  // Internal: fire-and-forget push sending with short timeouts/guards
+  Future<void> _sendPushAsync({
+    required String recipientId,
+    required String title,
+    required String body,
+    required Map<String, dynamic> notificationData,
+    required String appointmentId,
+    required String notificationType,
+  }) async {
+    try {
+      final recipientDoc = await _firestore.collection('users').doc(recipientId).get();
+      if (!recipientDoc.exists) {
+        debugPrint('[SendMyFCM][PUSH] Recipient not found: $recipientId');
+        return;
+      }
+      final recipientToken = recipientDoc.data()?['fcmToken'];
+      if (recipientToken == null || recipientToken.toString().isEmpty) {
+        debugPrint('[SendMyFCM][PUSH] Missing FCM token for $recipientId');
+        return;
+      }
+
+      // Try SDK send first
+      try {
+        final stringData = _convertToStringMap(notificationData);
+        await _fcm
+            .sendMessage(
+              to: recipientToken,
+              data: stringData,
+              messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
+              messageType: notificationType,
+              collapseKey: 'notification_${appointmentId}',
+            )
+            .timeout(const Duration(seconds: 2));
+        debugPrint('[SendMyFCM][PUSH] SDK send ok');
+        return;
+      } catch (e) {
+        debugPrint('[SendMyFCM][PUSH] SDK send failed or timed out: $e');
+      }
+
+      // Fallback to Cloud Function with a short timeout
+      try {
+        await _sendViaCloudFunction(recipientToken, title, body, notificationData, notificationType)
+            .timeout(const Duration(seconds: 3));
+        debugPrint('[SendMyFCM][PUSH] Cloud Function send attempted');
+      } catch (e) {
+        debugPrint('[SendMyFCM][PUSH] Cloud Function send failed or timed out: $e');
+      }
+    } catch (e) {
+      debugPrint('[SendMyFCM][PUSH] Unexpected error: $e');
     }
   }
 
@@ -154,11 +185,13 @@ class SendMyFCM {
         'display_notification_details': true, // Custom flag for expanded details
       };
       
-      final response = await http.post(
+      final response = await http
+          .post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
-      );
+      )
+          .timeout(const Duration(seconds: 3));
     } catch (e) {
       // Silent failure
     }

@@ -193,6 +193,14 @@ class FCMService {
   
   Future<void> _updateFCMToken(BuildContext context) async {
     try {
+      final apnsToken = await _fcm.getAPNSToken();
+      print('[FCM] APNS token: ' + (apnsToken ?? 'null'));
+      if (apnsToken == null) {
+        // APNS not ready yet; iOS may provide it shortly after permission prompt.
+        print('[FCM] APNS token not set yet; will retry later.');
+        return;
+      }
+
       final token = await _fcm.getToken();
       print('FCM Token: $token');
       

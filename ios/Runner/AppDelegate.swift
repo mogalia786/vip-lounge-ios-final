@@ -1,52 +1,52 @@
 import Flutter
+import FirebaseCore
 import UIKit
-import CoreLocation
+import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, CLLocationManagerDelegate {
-  let locationManager = CLLocationManager()
-
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    // Configure Firebase as early as possible to avoid plugins triggering a default configure().
+    if FirebaseApp.app() == nil {
+      if let filePath = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+         let options = FirebaseOptions(contentsOfFile: filePath) {
+        FirebaseApp.configure(options: options)
+      } else {
+        let options = FirebaseOptions(googleAppID: "1:320766440190:ios:fbb35c9873c09977842baf", gcmSenderID: "320766440190")
+        options.apiKey = "AIzaSyBsWZEujXS0Kk5Ua2QCozfVnrsT4NrwD1c"
+        options.projectID = "vip-lounge-f3730"
+        options.storageBucket = "vip-lounge-f3730.firebasestorage.app"
+        FirebaseApp.configure(options: options)
+        NSLog("[Firebase] Configured early in willFinish with inline FirebaseOptions fallback.")
+      }
+    }
+    return true
+  }
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let locationChannel = FlutterMethodChannel(name: "com.yourcompany.vip/location",
-                                              binaryMessenger: controller.binaryMessenger)
-    locationChannel.setMethodCallHandler({ [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      if call.method == "getCurrentLocation" {
-        self?.getCurrentLocation(result: result)
+    // Configure Firebase early in app launch. Required by Firebase plugins.
+    if FirebaseApp.app() == nil {
+      if let filePath = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+         let options = FirebaseOptions(contentsOfFile: filePath) {
+        FirebaseApp.configure(options: options)
       } else {
-        result(FlutterMethodNotImplemented)
+        // Fallback: Inline FirebaseOptions so app can run even if the plist isn't bundled.
+        // Values mirror ios/Runner/GoogleService-Info.plist
+        let options = FirebaseOptions(googleAppID: "1:320766440190:ios:fbb35c9873c09977842baf", gcmSenderID: "320766440190")
+        options.apiKey = "AIzaSyBsWZEujXS0Kk5Ua2QCozfVnrsT4NrwD1c"
+        options.projectID = "vip-lounge-f3730"
+        options.storageBucket = "vip-lounge-f3730.firebasestorage.app"
+        // Note: Bundle ID comes from target settings; options.bundleID is set automatically.
+        FirebaseApp.configure(options: options)
+        NSLog("[Firebase] Configured with inline FirebaseOptions fallback.")
       }
-    })
-    locationManager.delegate = self
+    }
     GeneratedPluginRegistrant.register(with: self)
+    // Ensure notifications delegate and APNs registration are set up
+    UNUserNotificationCenter.current().delegate = self
+    application.registerForRemoteNotifications()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  private var flutterLocationResult: FlutterResult?
-
-  private func getCurrentLocation(result: @escaping FlutterResult) {
-    locationManager.requestWhenInUseAuthorization()
-    if CLLocationManager.locationServicesEnabled() {
-      flutterLocationResult = result
-      locationManager.requestLocation()
-    } else {
-      result(FlutterError(code: "PERMISSION_DENIED", message: "Location permission not granted", details: nil))
-    }
-  }
-
-  // CLLocationManagerDelegate method
-  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-    if let location = locations.last {
-      flutterLocationResult?(["latitude": location.coordinate.latitude, "longitude": location.coordinate.longitude])
-      flutterLocationResult = nil
-    }
-  }
-
-  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-    flutterLocationResult?(FlutterError(code: "LOCATION_ERROR", message: "Could not fetch location", details: error.localizedDescription))
-    flutterLocationResult = nil
   }
 }

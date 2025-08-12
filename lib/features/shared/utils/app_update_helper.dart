@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
+import '../../../utils/custom_file_opener.dart';
 import 'dart:convert';
 
 class AppUpdateHelper {
@@ -88,10 +88,10 @@ class AppUpdateHelper {
         const SnackBar(content: Text('APK downloaded. Opening installer...')),
       );
       debugPrint('AppUpdateHelper: Opening APK');
-      final result = await OpenFile.open(apkPath);
-      debugPrint('AppUpdateHelper: OpenFile result: \\${result.type}, message: \\${result.message}');
-      if (result.type != ResultType.done) {
-        String displayMessage = 'Failed to install update. Raw Error: ${result.message} (Type: ${result.type})';
+      final success = await CustomFileOpener.openFile(apkPath);
+      debugPrint('AppUpdateHelper: OpenFile success: $success');
+      if (!success) {
+        const displayMessage = 'Failed to open installer. Please check permissions and try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(displayMessage), duration: const Duration(seconds: 10)),
         );

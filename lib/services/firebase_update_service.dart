@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
+import '../utils/custom_file_opener.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 
@@ -302,8 +302,8 @@ class FirebaseUpdateService {
   
   static Future<void> _installApk(String apkPath) async {
     try {
-      final result = await OpenFile.open(apkPath);
-      debugPrint('📱 Install result: ${result.message}');
+      final success = await CustomFileOpener.openFile(apkPath);
+      debugPrint('📱 Install open success: $success');
     } catch (e) {
       debugPrint('❌ Error installing APK: $e');
     }

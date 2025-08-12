@@ -5,10 +5,25 @@
 *.swp
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
 migrate_working_dir/
+
+# Environment variables and secrets
+.env
+
+# Firebase and service account credentials
+serviceAccountKey.json
+*service-account*.json
+*firebase*.json
+*.p8
+*.p12
+*.key
+*.cer
+GoogleService-Info.plist  # This should be configured per environment
 
 # IntelliJ related
 *.iml
@@ -47,3 +62,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 node_modules
+ios/Runner/GoogleService-Info.plist
+test_firebase_credentials.dart
+verify_credentials.dart
+ios_backup/
+ios_backup_*

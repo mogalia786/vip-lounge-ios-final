@@ -54,17 +54,16 @@ class _AppState extends State<App> {
         FCMService().completeInitialization(ctx);
       }
     });
-    // Show black screen for 2 seconds, then GIF splash for 10 seconds
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _showGif = true;
-      });
-      Future.delayed(const Duration(seconds: 8), () {
+    
+    // Simplified splash screen logic with a safe timeout
+    // Show splash for max 5 seconds, then proceed to app
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
         setState(() {
           _showGif = false;
           _ready = true;
         });
-      });
+      }
     });
   }
 

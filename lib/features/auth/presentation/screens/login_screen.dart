@@ -61,10 +61,13 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
 
       try {
-        // Sign in with Firebase Auth
+        // Sign in with Firebase Auth (trim inputs)
+        final email = _emailController.text.trim();
+        final password = _passwordController.text;
+        print('🔐 Attempting login for email: ' + email);
         final userCredential = await _authService.signInWithEmailAndPassword(
-          _emailController.text,
-          _passwordController.text,
+          email,
+          password,
         );
 
         // Get user data from users collection
@@ -72,20 +75,27 @@ class _LoginScreenState extends State<LoginScreen> {
         if (userData == null) {
           throw 'User data not found';
         }
-        final role = (userData['role'] ?? '').toString().toLowerCase();
-        // Get FCM token and update user
-        final fcmToken = await _messaging.getToken();
-        await _userService.updateFcmToken(userCredential.user!.uid, fcmToken);
+        final rawRole = (userData['role'] ?? '').toString();
+        // Normalize role: lowercase and remove spaces/underscores/hyphens for robust matching
+        final role = rawRole.toLowerCase().replaceAll(RegExp(r'[\s_\-]'), '');
+        // Get FCM token and update user (non-blocking if APNS not ready)
+        try {
+          final fcmToken = await _messaging.getToken();
+          print('🔔 FCM token (login): ' + (fcmToken ?? 'null'));
+          await _userService.updateFcmToken(userCredential.user!.uid, fcmToken);
+        } catch (e) {
+          debugPrint('⚠️ Skipping FCM token update during login: ' + e.toString());
+        }
 
         if (!mounted) return;
 
         // Navigate based on role
-        print('User role: $role'); // Debug log
+        print('User role (normalized): $role from raw: ' + rawRole); // Debug log
         if (role == 'minister') {
           Navigator.pushReplacementNamed(context, '/minister/home');
-        } else if (role == 'floormanager') {
+        } else if (role == 'floormanager' || role == 'supervisor') {
           print('Logging in as floor manager with role format: $role');
-          Navigator.pushReplacementNamed(context, '/floor-manager/home');
+          Navigator.pushReplacementNamed(context, '/floor_manager/home');
         } else if (role == 'marketingagent') {
           Navigator.pushReplacementNamed(context, '/marketing_agent/home');
         } else if (role == 'operationalmanager') {
@@ -96,19 +106,24 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacementNamed(context, '/concierge/home');
         } else if (role == 'cleaner') {
           Navigator.pushReplacementNamed(context, '/cleaner/home');
-        } else {
+        } else if (role == 'staff') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
           );
+        } else {
+          // Unknown role: let app-level router decide based on provider user
+          Navigator.pushReplacementNamed(context, '/');
         }
       } catch (e) {
+        // Show the actual error for diagnosis while we stabilize iOS
+        debugPrint('❌ Login error: ' + e.toString());
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'Incorrect username or password. Please try again.',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            content: Text(
+              'Login failed: ' + e.toString(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),

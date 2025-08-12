@@ -1,0 +1,132 @@
+# Platform setup
+platform :ios, '15.0'
+
+# Optional: Pin Firebase SDK version to match FlutterFire plugin range
+$FirebaseSDKVersion = '10.25.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+ENV['VERBOSE_LOGGING'] = '1'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+target 'Runner' do
+  use_modular_headers!
+  use_frameworks! :linkage => :static
+  
+  # Add Flutter pods
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  # Explicitly set Swift version
+  current_target_definition = self.respond_to?(:current_target_definition) ? current_target_definition : self.target_definitions['Pods']
+  current_target_definition.swift_version = '5.0'
+  
+  # Target for tests
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+def fix_build_settings(installer)
+  # Keep Podfile minimal. Only enforce deployment target and remove unsupported -G flag for BoringSSL-GRPC.
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Allow non-modular includes to avoid Firebase Messaging header import error
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      # Ensure modules are enabled for all pods
+      config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      # Do not treat non-modular include warning as error
+      config.build_settings['CLANG_WARN_NON_MODULAR_INCLUDE_IN_FRAMEWORK_MODULE'] = 'NO'
+      config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+
+      # Remove unsupported '-G' from all pods' compile flags (Xcode 15+/arm64)
+      %w[OTHER_CFLAGS OTHER_CPLUSPLUSFLAGS].each do |key|
+        flags = config.build_settings[key]
+        if flags.is_a?(Array)
+          config.build_settings[key] = flags.reject { |f| f.to_s.strip == '-G' }
+        elsif flags.is_a?(String)
+          config.build_settings[key] = flags.gsub(/\s-?G(\s|$)/, ' ')
+        end
+      end
+    end
+  end
+
+  # Also scrub any per-file compiler flags that include '-G' for native targets only
+  installer.pods_project.targets.each do |t|
+    next unless t.respond_to?(:source_build_phase) && t.source_build_phase
+    t.source_build_phase.files.each do |file|
+      next unless file.settings && file.settings['COMPILER_FLAGS']
+      flags = file.settings['COMPILER_FLAGS'].to_s.split
+      flags.reject! { |f| f == '-G' || f == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+      file.settings['COMPILER_FLAGS'] = flags.join(' ')
+    end
+  end
+end
+
+post_install do |installer|
+  # Apply Flutter build settings
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+  end
+  
+  # Minimal additional changes
+  fix_build_settings(installer)
+  
+  # Ensure modules are enabled for firebase_messaging to avoid non-modular header imports
+  installer.pods_project.targets.each do |t|
+    if t.name == 'firebase_messaging'
+      t.build_configurations.each do |config|
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      end
+    end
+  end
+
+  # Ensure gRPC pods build for Apple Silicon simulators (arm64)
+  installer.pods_project.targets.each do |t|
+    if ['gRPC-C++', 'gRPC-Core'].include?(t.name)
+      t.build_configurations.each do |config|
+        config.build_settings['ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        config.build_settings.delete('EXCLUDED_ARCHS[sdk=iphonesimulator*]')
+      end
+    end
+  end
+
+  # Workaround: Create missing module map for gRPC-Core in Private headers to satisfy simulator build
+  begin
+    modulemap_dir = File.join(installer.sandbox.root, 'Headers', 'Private', 'grpc')
+    FileUtils.mkdir_p(modulemap_dir)
+    modulemap_path = File.join(modulemap_dir, 'gRPC-Core.modulemap')
+    modulemap_contents = <<~MMAP
+      module "gRPC-Core" {
+        umbrella directory "../gRPC-Core/grpc"
+        export *
+        module * { export * }
+      }
+    MMAP
+    File.write(modulemap_path, modulemap_contents)
+  rescue => e
+    puts "[post_install] Warning: failed to write gRPC-Core.modulemap: #{e}"
+  end
+  
+  installer.pods_project.save
+end

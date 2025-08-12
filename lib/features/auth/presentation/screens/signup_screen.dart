@@ -4,7 +4,6 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/user_service.dart';
 import '../../data/services/employee_role_service.dart';
 import '../../../../core/enums/user_role.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../features/admin/data/services/client_type_service.dart';
@@ -26,7 +25,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final _authService = AuthService();
   final _userService = UserService();
   final _employeeRoleService = EmployeeRoleService();
-  PhoneNumber _phoneNumber = PhoneNumber(isoCode: 'ZA');
+  final _phoneNumberController = TextEditingController();
+  String? _phoneNumberError;
   bool _isLoading = false;
   bool _isVerified = false;
   bool _isVerifying = false;
@@ -42,6 +42,42 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isClientTypeValid = false;
   bool get _requiresEmployeeNumber {
     return _selectedRole != null && _selectedRole != UserRole.minister;
+  }
+
+  // Format and validate phone number for South Africa (ZA) using regex (no native plugins)
+  String _formatAndValidatePhoneNumber(String phoneNumber) {
+    final raw = phoneNumber.trim().replaceAll(' ', '');
+    if (raw.isEmpty) {
+      setState(() => _phoneNumberError = 'Please enter a phone number');
+      throw Exception('Empty phone number');
+    }
+
+    // Accept either +27XXXXXXXXX (9 digits after country code) or 0XXXXXXXXX (10 digits)
+    final zaIntl = RegExp(r'^\+27\d{9}$');
+    final zaLocal = RegExp(r'^0\d{9}$');
+
+    String normalized;
+    if (zaIntl.hasMatch(raw)) {
+      normalized = raw; // already international form
+    } else if (zaLocal.hasMatch(raw)) {
+      // convert local 0XXXXXXXXX to international +27XXXXXXXXX
+      normalized = '+27' + raw.substring(1);
+    } else {
+      setState(() => _phoneNumberError = 'Enter valid ZA number (+27XXXXXXXXX or 0XXXXXXXXX)');
+      throw Exception('Invalid ZA number format');
+    }
+
+    // Basic mobile prefix check (optional): SA mobiles typically start with 06, 07, or 08 locally
+    final local = normalized.replaceFirst('+27', '0');
+    final mobilePrefix = RegExp(r'^(06|07|08)');
+    if (!mobilePrefix.hasMatch(local)) {
+      setState(() => _phoneNumberError = 'Please enter a valid mobile number');
+      throw Exception('Non-mobile ZA number');
+    }
+
+    // Valid and normalized
+    setState(() => _phoneNumberError = null);
+    return normalized;
   }
 
   // Helper method to get a field value trying multiple possible field names
@@ -270,6 +306,7 @@ class _SignupScreenState extends State<SignupScreen> {
         setState(() {
           _isClientTypeValid = false;
         });
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please select a client type'),
@@ -281,6 +318,7 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     
     if (_requiresEmployeeNumber && !_isVerified) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please verify your employee number first'),
@@ -292,6 +330,25 @@ class _SignupScreenState extends State<SignupScreen> {
     
     setState(() => _isLoading = true);
     try {
+      // First validate and format the phone number
+      String formattedPhoneNumber;
+      try {
+        formattedPhoneNumber = _formatAndValidatePhoneNumber(_phoneNumberController.text);
+      } catch (e) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('Invalid phone number') 
+                ? 'Please enter a valid phone number' 
+                : 'Error validating phone number'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Proceed with user registration
       final userId = await _authService.signUpWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
@@ -302,7 +359,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'firstName': _firstNameController.text,
         'lastName': _lastNameController.text,
         'email': _emailController.text,
-        'phoneNumber': _phoneNumber.phoneNumber,
+        'phoneNumber': formattedPhoneNumber,
         'role': _selectedRole!.name,
         'employeeNumber': _requiresEmployeeNumber ? _employeeNumberController.text : null,
         'createdAt': DateTime.now(),
@@ -542,18 +599,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                InternationalPhoneNumberInput(
-                  onInputChanged: (PhoneNumber number) {
-                    _phoneNumber = number;
-                  },
-                  selectorConfig: SelectorConfig(
-                    selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                    setSelectorButtonAsPrefixIcon: true,
-                    leadingPadding: 12,
-                  ),
-                  textStyle: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
-                  inputDecoration: InputDecoration(
-                    labelText: 'Phone Number',
+                TextFormField(
+                  controller: _phoneNumberController,
+                  style: const TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number (e.g., +27 12 345 6789)',
                     labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     hintStyle: TextStyle(color: const Color(0xFFD7263D).withOpacity(0.7)),
                     enabledBorder: OutlineInputBorder(
@@ -562,10 +612,40 @@ class _SignupScreenState extends State<SignupScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey.shade400, width: 2.5),
                     ),
+                    errorText: _phoneNumberError,
+                    errorStyle: const TextStyle(color: Colors.orange),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
+                      child: Text('+27', style: TextStyle(color: Color(0xFFD7263D), fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                  initialValue: _phoneNumber,
-                  formatInput: true,
                   keyboardType: TextInputType.phone,
+                  onChanged: (value) {
+                    setState(() {
+                      _phoneNumberError = null; // Clear error when user types
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a phone number';
+                    }
+                    
+                    // Basic format validation
+                    final phoneNumber = value.trim();
+                    
+                    // Check for minimum length (10 digits for SA numbers without country code)
+                    final digitsOnly = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+                    if (digitsOnly.length < 10) {
+                      return 'Phone number is too short';
+                    }
+                    
+                    // Check for valid starting digits for South Africa
+                    if (!RegExp(r'^0?[6-8]').hasMatch(digitsOnly)) {
+                      return 'Enter a valid South African mobile number';
+                    }
+                    
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

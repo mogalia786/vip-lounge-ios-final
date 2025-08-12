@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.2.0+12
+version: 2.3.0+13
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    
+  # Platform specific dependencies
+  url_launcher: ^6.2.5
   flutter_native_splash: ^2.4.4
   flutter_dotenv: ^5.0.2
   cupertino_icons: ^1.0.2
@@ -37,29 +40,24 @@ dependencies:
   firebase_auth: ^4.20.0
   cloud_firestore: ^4.17.5
   firebase_messaging: ^14.9.4
+  firebase_storage: ^11.7.7
   shared_preferences: ^2.2.2
   package_info_plus: ^4.0.0
   http: ^1.1.0
   path_provider: ^2.1.2
-  open_file: ^3.3.2
   provider: ^6.1.2
-  intl_phone_number_input: ^0.7.4
-  firebase_admin: ^0.3.0+1
+  firebase_admin: ^0.3.0+2
   add_2_calendar: ^3.0.1
-  url_launcher: ^6.2.4
-  device_calendar: ^4.3.3
   dartz: ^0.10.1
   equatable: ^2.0.5
   get_it: ^7.6.0
   dio: ^5.3.2
   fluttertoast: ^8.2.4
   permission_handler: ^11.4.0
-  file_picker: ^6.2.1
-  firebase_storage: ^11.5.6
-  image_picker: ^1.0.7
+  image_picker: ^1.1.0
   intl: ^0.18.1
-  syncfusion_flutter_charts: ^23.1.44
-  syncfusion_flutter_datepicker: ^23.1.44
+  syncfusion_flutter_charts: ^30.2.4
+  syncfusion_flutter_datepicker: ^30.2.4
   google_fonts: ^4.0.4
   table_calendar: ^3.0.9
   google_generative_ai: ^0.2.0  # For Gemini AI integration
@@ -74,7 +72,10 @@ dependencies:
   connectivity_plus: ^5.0.2
   workmanager: ^0.5.1
   in_app_update: ^4.2.2
+  phone_numbers_parser: ^9.0.3
+  file_picker: ^8.0.0
 
+# Development dependencies
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -105,17 +106,29 @@ flutter_launcher_icons:
   macos:
     generate: false
 
+flutter_native_splash:
+  color: "#000000"
+  image: "assets/New_cc_logo.png"
+  android: true
+  ios: true
+  web: false
+  remove_after_first_frame: true
+  android_12:
+    image: "assets/New_cc_logo.png"
+    icon_background_color: "#000000"
+  ios_content_mode: scaleAspectFit
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
+  generate: true
+  uses-material-design: true
+  
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
-  
-  uses-material-design: true
 
   # Assets configuration
   assets:
