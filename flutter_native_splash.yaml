@@ -1,5 +1,7 @@
 flutter_native_splash:
-  image: assets/shop_front.jpg
+  # Use the shop front as full-screen background on native splash
+  background_image: assets/shop_front.jpg
+  # Optional centered logo overlay can be specified via image if needed
   color: "#000000"
   android: true
   ios: true
@@ -8,9 +10,7 @@ flutter_native_splash:
   android_12:
     icon_background_color: "#3d3535"
   android_gravity: center
-  ios_content_mode: center
+  # Fill the screen on iOS to avoid white borders
+  ios_content_mode: scaleAspectFill
   android_screen_orientation: portrait
-  # Set splash screen duration to 2 seconds
-  # See: https://pub.dev/packages/flutter_native_splash#customizing-the-splash-screen-duration
-  # The duration is set in milliseconds
-  splash_screen_duration: 2000
+  # Note: Duration is not controlled by this package on iOS; we handle the GIF phase separately in Dart

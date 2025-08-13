@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:intl/intl.dart';
 
 class NotificationService {
@@ -418,26 +419,34 @@ class NotificationService {
     // Send FCM to assigned user
     final token = userDoc.data()?['fcmToken'];
     if (token != null) {
-      await _fcm.sendMessage(
-        to: token,
-        data: _convertToStringMap(updatedAppointmentData),
-        messageId: 'appointment_assigned_${appointmentId}',
-        messageType: 'appointment_assigned',
-        collapseKey: 'appointment_${appointmentId}',
-      );
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await _fcm.sendMessage(
+          to: token,
+          data: _convertToStringMap(updatedAppointmentData),
+          messageId: 'appointment_assigned_${appointmentId}',
+          messageType: 'appointment_assigned',
+          collapseKey: 'appointment_${appointmentId}',
+        );
+      } else {
+        debugPrint('[FCM] sendMessage skipped on this platform (iOS/web). Token=$token');
+      }
     }
 
     // Send FCM to minister
     final ministerDoc = await _firestore.collection('users').doc(ministerId).get();
     final ministerToken = ministerDoc.data()?['fcmToken'];
     if (ministerToken != null) {
-      await _fcm.sendMessage(
-        to: ministerToken,
-        data: _convertToStringMap(updatedAppointmentData),
-        messageId: 'consultant_assigned_${appointmentId}',
-        messageType: 'consultant_assigned',
-        collapseKey: 'appointment_${appointmentId}',
-      );
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await _fcm.sendMessage(
+          to: ministerToken,
+          data: _convertToStringMap(updatedAppointmentData),
+          messageId: 'consultant_assigned_${appointmentId}',
+          messageType: 'consultant_assigned',
+          collapseKey: 'appointment_${appointmentId}',
+        );
+      } else {
+        debugPrint('[FCM] sendMessage skipped on this platform (iOS/web). Token=$ministerToken');
+      }
     }
 
     // Send FCM to concierge
@@ -449,13 +458,17 @@ class NotificationService {
     for (var doc in conciergeDocs.docs) {
       final conciergeToken = doc.data()['fcmToken'];
       if (conciergeToken != null) {
-        await _fcm.sendMessage(
-          to: conciergeToken,
-          data: _convertToStringMap(updatedAppointmentData),
-          messageId: 'appointment_concierge_${appointmentId}',
-          messageType: 'appointment_concierge',
-          collapseKey: 'appointment_${appointmentId}',
-        );
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          await _fcm.sendMessage(
+            to: conciergeToken,
+            data: _convertToStringMap(updatedAppointmentData),
+            messageId: 'appointment_concierge_${appointmentId}',
+            messageType: 'appointment_concierge',
+            collapseKey: 'appointment_${appointmentId}',
+          );
+        } else {
+          debugPrint('[FCM] sendMessage skipped on this platform (iOS/web). Token=$conciergeToken');
+        }
       }
     }
   }
@@ -501,13 +514,17 @@ class NotificationService {
       final ministerDoc = await _firestore.collection('users').doc(ministerId).get();
       final ministerToken = ministerDoc.data()?['fcmToken'];
       if (ministerToken != null) {
-        await _fcm.sendMessage(
-          to: ministerToken,
-          data: _convertToStringMap(notificationData),
-          messageId: 'rating_request_${appointmentId}',
-          messageType: 'rating_request',
-          collapseKey: 'rating_${appointmentId}',
-        );
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          await _fcm.sendMessage(
+            to: ministerToken,
+            data: _convertToStringMap(notificationData),
+            messageId: 'rating_request_${appointmentId}',
+            messageType: 'rating_request',
+            collapseKey: 'rating_${appointmentId}',
+          );
+        } else {
+          debugPrint('[FCM] sendMessage skipped on this platform (iOS/web). Token=$ministerToken');
+        }
       }
       
       // Update appointment to indicate rating was requested

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 
 class GenericNotificationWidget {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -57,22 +58,23 @@ class GenericNotificationWidget {
       print('📱 Recipient token: ${recipientToken != null ? 'Found' : 'NULL/MISSING - CANNOT SEND!'}');
       
       if (recipientToken != null) {
-        print('🚀 Sending FCM message via Firebase SDK (direct)');
         final stringData = _convertToStringMap(notificationData);
-        print('📦 Converted data to string map');
-        
-        try {
-          await _fcm.sendMessage(
-            to: recipientToken,
-            data: stringData,
-            messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
-            messageType: 'generic_notification',
-            collapseKey: 'notification_${appointmentId}',
-          );
-          print('✅ FCM message sent successfully');
-        } catch (fcmError) {
-          print('❌ FCM ERROR: $fcmError');
-          // Don't rethrow - continue execution
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          print('🚀 Sending FCM message via Firebase SDK (Android only)');
+          try {
+            await _fcm.sendMessage(
+              to: recipientToken,
+              data: stringData,
+              messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
+              messageType: 'generic_notification',
+              collapseKey: 'notification_${appointmentId}',
+            );
+            print('✅ FCM message sent successfully');
+          } catch (fcmError) {
+            print('❌ FCM ERROR: $fcmError');
+          }
+        } else {
+          print('[FCM] sendMessage skipped on this platform (iOS/web). Token=$recipientToken');
         }
       } else {
         print('⛔ NO TOKEN - Cannot send FCM notification');

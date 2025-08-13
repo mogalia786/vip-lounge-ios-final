@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -116,20 +117,24 @@ class SendMyFCM {
         return;
       }
 
-      // Try SDK send first
+      // Try SDK send first (Android only). iOS/web skip to avoid UnimplementedError.
       try {
-        final stringData = _convertToStringMap(notificationData);
-        await _fcm
-            .sendMessage(
-              to: recipientToken,
-              data: stringData,
-              messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
-              messageType: notificationType,
-              collapseKey: 'notification_${appointmentId}',
-            )
-            .timeout(const Duration(seconds: 2));
-        debugPrint('[SendMyFCM][PUSH] SDK send ok');
-        return;
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          final stringData = _convertToStringMap(notificationData);
+          await _fcm
+              .sendMessage(
+                to: recipientToken,
+                data: stringData,
+                messageId: 'notification_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
+                messageType: notificationType,
+                collapseKey: 'notification_${appointmentId}',
+              )
+              .timeout(const Duration(seconds: 2));
+          debugPrint('[SendMyFCM][PUSH] SDK send ok (Android)');
+          return;
+        } else {
+          debugPrint('[SendMyFCM][PUSH] SDK send skipped on this platform (iOS/web).');
+        }
       } catch (e) {
         debugPrint('[SendMyFCM][PUSH] SDK send failed or timed out: $e');
       }

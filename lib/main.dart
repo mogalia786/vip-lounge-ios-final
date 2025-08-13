@@ -22,9 +22,17 @@ void main() async {
   await dotenv.load(fileName: ".env");
   
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // Ignore duplicate initialization triggered by native AppDelegate
+    // ignore: avoid_print
+    print('⚠️ Firebase initialize skipped: ' + e.toString());
+  }
 
   // Debug: Log Firebase options and bundle info
   final opts = DefaultFirebaseOptions.currentPlatform;

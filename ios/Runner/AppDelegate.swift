@@ -1,7 +1,9 @@
 import Flutter
 import FirebaseCore
+import FirebaseMessaging
 import UIKit
 import UserNotifications
+import add_2_calendar
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -54,5 +56,27 @@ import UserNotifications
       NSLog("[Firebase] ERROR: FirebaseApp not configured at end of didFinishLaunching")
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Bridge APNs token to Firebase Messaging so FCM can deliver notifications on iOS
+  override func application(_ application: UIApplication,
+                            didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    Messaging.messaging().apnsToken = deviceToken
+    let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+    NSLog("[APNs] Device token: \(tokenString)")
+  }
+
+  // Foreground presentation options
+  override func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                       willPresent notification: UNNotification,
+                                       withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    completionHandler([.banner, .list, .sound, .badge])
+  }
+
+  override func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                       didReceive response: UNNotificationResponse,
+                                       withCompletionHandler completionHandler: @escaping () -> Void) {
+    completionHandler()
   }
 }

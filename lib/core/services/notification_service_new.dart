@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -83,13 +84,17 @@ class NotificationService {
   // Send push notification using Firebase Cloud Messaging
   Future<void> _sendPushNotification(String token, String title, String body, Map<String, dynamic> data) async {
     try {
-      await _fcm.sendMessage(
-        to: token,
-        data: _convertToStringMap(data),
-        messageId: 'notification_${DateTime.now().millisecondsSinceEpoch}',
-        messageType: data['notificationType'] ?? 'general',
-        collapseKey: data['appointmentId'] != null ? 'appointment_${data['appointmentId']}' : 'general',
-      );
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await _fcm.sendMessage(
+          to: token,
+          data: _convertToStringMap(data),
+          messageId: 'notification_${DateTime.now().millisecondsSinceEpoch}',
+          messageType: data['notificationType'] ?? 'general',
+          collapseKey: data['appointmentId'] != null ? 'appointment_${data['appointmentId']}' : 'general',
+        );
+      } else {
+        debugPrint('[FCM] _sendPushNotification skipped on this platform (iOS/web). Token=$token');
+      }
     } catch (e) {
       print('Error sending push notification: $e');
     }

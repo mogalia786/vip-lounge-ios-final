@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
+import 'package:vip_lounge/core/services/ios_calendar_service.dart';
 import '../models/appointment.dart';
 import '../../../../core/constants/service_options.dart';
 
@@ -111,19 +113,46 @@ class AppointmentRepository {
       // Update the appointment with its ID
       await docRef.update({'id': docRef.id});
 
+      // iOS only: add event to user's calendar via EventKit
+      try {
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+          final calendar = IOSCalendarService();
+          final added = await calendar.addBookingToCalendar(
+            title: 'VIP Lounge: ${service.name}${subService != null ? ' - ${subService.name}' : ''}',
+            start: startTime,
+            end: endTime,
+            location: venue.name,
+            description: 'Minister: $ministerName\nNotes: ${notes ?? ''}',
+          );
+          if (!added) {
+            // ignore: avoid_print
+            print('[Calendar][iOS] Event insert failed or skipped');
+          }
+        }
+      } catch (e) {
+        // ignore: avoid_print
+        print('[Calendar][iOS] Error adding to calendar: $e');
+      }
+
       // Get admin FCM tokens
       final adminTokens = await _getAdminFcmTokens();
 
-      // Send FCM notifications to admins
+      // Send FCM notifications to admins (Android only)
       for (final token in adminTokens) {
-        await _messaging.sendMessage(
-          to: token,
-          data: {
-            'type': 'new_appointment',
-            'appointmentId': docRef.id,
-          },
-          messageId: docRef.id,
-        );
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          await _messaging.sendMessage(
+            to: token,
+            data: {
+              'type': 'new_appointment',
+              'appointmentId': docRef.id,
+            },
+            messageId: docRef.id,
+          );
+        } else {
+          // iOS/web: skip SDK send; rely on server/Cloud Function
+          // ignore: avoid_print
+          print('[FCM] sendMessage skipped on this platform (iOS/web). Token=$token');
+        }
       }
     } catch (e) {
       print('Error creating appointment: $e');
@@ -154,14 +183,20 @@ class AppointmentRepository {
           final ministerToken = await _getMinisterFcmToken(ministerUid);
 
           if (ministerToken != null) {
-            await _messaging.sendMessage(
-              to: ministerToken,
-              data: {
-                'type': 'appointment_confirmed',
-                'appointmentId': appointmentId,
-              },
-              messageId: '${appointmentId}_confirmed',
-            );
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+              await _messaging.sendMessage(
+                to: ministerToken,
+                data: {
+                  'type': 'appointment_confirmed',
+                  'appointmentId': appointmentId,
+                },
+                messageId: '${appointmentId}_confirmed',
+              );
+            } else {
+              // iOS/web: skip SDK send; rely on server/Cloud Function
+              // ignore: avoid_print
+              print('[FCM] sendMessage skipped on this platform (iOS/web). Token=$ministerToken');
+            }
           }
         }
       }

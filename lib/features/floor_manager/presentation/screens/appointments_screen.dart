@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -381,13 +382,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                 };
                                 
                                 try {
-                                  await FirebaseMessaging.instance.sendMessage(
-                                    to: userToken,
-                                    data: Map<String, String>.from(
-                                        notificationData.map((key, value) => MapEntry(key, value.toString()))),
-                                    messageId: 'chat_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
-                                    collapseKey: 'chat_${appointmentId}',
-                                  );
+                                  if (!Platform.isIOS) {
+                                    await FirebaseMessaging.instance.sendMessage(
+                                      to: userToken,
+                                      data: Map<String, String>.from(
+                                          notificationData.map((key, value) => MapEntry(key, value.toString()))),
+                                      messageId: 'chat_${appointmentId}_${DateTime.now().millisecondsSinceEpoch}',
+                                      collapseKey: 'chat_${appointmentId}',
+                                    );
+                                  } else {
+                                    // iOS SDK does not support client-side sendMessage
+                                    // Rely on your Cloud Function path already implemented
+                                    // This avoids UnimplementedError spam on iOS
+                                    // print informational log only
+                                    // ignore: avoid_print
+                                    print('[SendMyFCM][PUSH] Skipping SDK send on iOS; using Cloud Function.');
+                                  }
                                 } catch (e) {
                                   print('Error sending FCM message: $e');
                                 }
