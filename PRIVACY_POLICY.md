@@ -57,7 +57,7 @@ This Privacy Policy describes how VIP Lounge ("we", "us", or "our") collects, us
 
 If you have questions or requests about this Privacy Policy, please contact:
 
-- Email: support@example.com
-- Company: VIP Lounge
+- Email: mogalia.apps@gmail.com
+- Company: Mogalia Mobile Engines
 
 Replace the contact details with your actual information before publishing.
