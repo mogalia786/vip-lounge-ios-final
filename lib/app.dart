@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/providers/app_auth_provider.dart';
@@ -67,7 +68,7 @@ class _AppState extends State<App> {
     });
   }
 
-  bool _showGif = true;
+  bool _showGif = true; // Always show GIF splash in-app
   bool _ready = false;
 
 

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.3.0+13
+version: 2.3.0+14
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -44,10 +44,9 @@ dependencies:
   shared_preferences: ^2.2.2
   package_info_plus: ^4.0.0
   http: ^1.1.0
-  path_provider: ^2.1.2
+  path_provider: ^2.1.4
   provider: ^6.1.2
   firebase_admin: ^0.3.0+2
-  add_2_calendar: ^3.0.1
   dartz: ^0.10.1
   equatable: ^2.0.5
   get_it: ^7.6.0
@@ -74,7 +73,6 @@ dependencies:
   in_app_update: ^4.2.2
   phone_numbers_parser: ^9.0.3
   file_picker: ^8.0.0
-  device_calendar: ^4.3.2
 
 # Development dependencies
 dev_dependencies:
@@ -109,10 +107,8 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#000000"
-  # Full-screen background image for splash
-  background_image: "assets/shop_front.jpg"
-  # Optional centered logo overlay (kept as before)
-  image: "assets/New_cc_logo.png"
+  # Use the shop front as the primary splash image (fills screen on iOS)
+  image: "assets/shop_front.jpg"
   android: true
   ios: true
   web: false

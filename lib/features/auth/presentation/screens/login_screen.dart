@@ -88,33 +88,17 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (!mounted) return;
-
-        // Navigate based on role
-        print('User role (normalized): $role from raw: ' + rawRole); // Debug log
-        if (role == 'minister') {
-          Navigator.pushReplacementNamed(context, '/minister/home');
-        } else if (role == 'floormanager' || role == 'supervisor') {
-          print('Logging in as floor manager with role format: $role');
-          Navigator.pushReplacementNamed(context, '/floor_manager/home');
-        } else if (role == 'marketingagent') {
-          Navigator.pushReplacementNamed(context, '/marketing_agent/home');
-        } else if (role == 'operationalmanager') {
-          Navigator.pushReplacementNamed(context, '/operational-manager/home');
-        } else if (role == 'consultant') {
-          Navigator.pushReplacementNamed(context, '/consultant/home');
-        } else if (role == 'concierge') {
-          Navigator.pushReplacementNamed(context, '/concierge/home');
-        } else if (role == 'cleaner') {
-          Navigator.pushReplacementNamed(context, '/cleaner/home');
-        } else if (role == 'staff') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
-          );
-        } else {
-          // Unknown role: let app-level router decide based on provider user
-          Navigator.pushReplacementNamed(context, '/');
+        // Defer navigation to app-level router after provider updates
+        // Wait briefly for AppAuthProvider to receive auth change and load user data
+        final appAuth = Provider.of<AppAuthProvider>(context, listen: false);
+        int tries = 0;
+        while (tries < 15 && appAuth.appUser == null) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          tries++;
         }
+        // Navigate to root; App router will send user to the correct home
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/');
       } catch (e) {
         // Show the actual error for diagnosis while we stabilize iOS
         debugPrint('❌ Login error: ' + e.toString());

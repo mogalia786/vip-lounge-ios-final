@@ -1,7 +1,10 @@
 import 'dart:math';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:add_2_calendar/add_2_calendar.dart';
+import '../../../../core/services/ios_calendar_channel.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tzdb;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:vip_lounge/core/widgets/Send_My_FCM.dart';
@@ -71,6 +74,20 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
   String? _selectedConsultantId;
   String? _selectedConsultantName;
   String? _selectedConsultantEmail;
+
+  // Timezone init for device_calendar (TZDateTime requirement)
+  static bool _tzInitialized = false;
+  void _ensureTimezoneInitialized() {
+    if (_tzInitialized) return;
+    try {
+      tzdb.initializeTimeZones();
+      // Optionally set a specific location:
+      // tz.setLocalLocation(tz.getLocation('Africa/Johannesburg'));
+    } catch (_) {
+      // Ignore; falls back to UTC
+    }
+    _tzInitialized = true;
+  }
 
   // --- CLOSED DAYS & BUSINESS HOURS STATE ---
   DateTime? _openingTime;
@@ -1321,49 +1338,47 @@ class _TimeSlotSelectionScreenState extends State<TimeSlotSelectionScreen> {
       print('📅 - Location: $venueName');
       print('📅 - Description length: ${eventDescription.length} chars');
       
-      print('📅 STEP 3: Creating Event object...');
-      
-      // Create event using add_2_calendar plugin
-      final Event event = Event(
-        title: eventTitle,
-        description: eventDescription,
-        location: venueName,
-        startDate: appointmentTime,
-        endDate: endTime,
-        iosParams: IOSParams(
-          reminder: Duration(minutes: 15), // 15 minute reminder
-        ),
-        androidParams: AndroidParams(
-          emailInvites: [], // no email invites
-        ),
-      );
-      
-      print('✅ STEP 4: Event object created successfully!');
-      print('📅📅📅 STEP 5: CALLING Add2Calendar.addEvent2Cal() 📅📅📅');
-      
-      // Add event to calendar - this opens the device's calendar app
-      final bool result = await Add2Calendar.addEvent2Cal(event);
-      
-      print('📅 STEP 6: Add2Calendar.addEvent2Cal() returned: $result');
-      
-      if (result) {
-        print('✅✅✅ CALENDAR APP OPENED SUCCESSFULLY! ✅✅✅');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('📅 Calendar opened! Save the event to add it to your calendar.'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 4),
-            ),
-          );
+      print('📅 STEP 3: Preparing platform-specific calendar flow...');
+
+      if (Platform.isIOS) {
+        // Use native EventKit bridge via MethodChannel
+        print('🍏 iOS: Using native EventKit bridge');
+        final ok = await IOSCalendarChannel.addEvent(
+          title: eventTitle,
+          description: eventDescription,
+          location: venueName,
+          start: appointmentTime,
+          end: endTime,
+          reminderMinutes: 15,
+        );
+        if (ok) {
+          print('✅ iOS: Event saved via EventKit');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('📅 Event added to your calendar'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ Could not add event to calendar'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       } else {
-        print('❌❌❌ FAILED TO OPEN CALENDAR APP - RESULT WAS FALSE ❌❌❌');
+        // Non-iOS platforms: show fallback (this Mac build targets iOS only)
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Failed to open calendar app'),
-              backgroundColor: Colors.orange,
+              content: Text('Calendar integration is available on iOS only in this build.'),
+              backgroundColor: Colors.blueGrey,
             ),
           );
         }

@@ -113,25 +113,38 @@ class AppointmentRepository {
       // Update the appointment with its ID
       await docRef.update({'id': docRef.id});
 
-      // iOS only: add event to user's calendar via EventKit
+      // iOS only: add event to user's calendar via EventKit (non-blocking)
       try {
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
           final calendar = IOSCalendarService();
-          final added = await calendar.addBookingToCalendar(
-            title: 'VIP Lounge: ${service.name}${subService != null ? ' - ${subService.name}' : ''}',
-            start: startTime,
-            end: endTime,
-            location: venue.name,
-            description: 'Minister: $ministerName\nNotes: ${notes ?? ''}',
-          );
-          if (!added) {
+          // Fire-and-forget with timeout so UI isn't blocked
+          // ignore: discarded_futures
+          calendar
+              .addBookingToCalendar(
+                title:
+                    'VIP Lounge: ${service.name}${subService != null ? ' - ${subService.name}' : ''}',
+                start: startTime,
+                end: endTime,
+                location: venue.name,
+                description: 'Minister: $ministerName\nNotes: ${notes ?? ''}',
+              )
+              .timeout(const Duration(seconds: 6))
+              .then((added) {
+            if (!added) {
+              // ignore: avoid_print
+              print('[Calendar][iOS] Event insert failed or skipped');
+            } else {
+              // ignore: avoid_print
+              print('[Calendar][iOS] Event inserted');
+            }
+          }).catchError((e) {
             // ignore: avoid_print
-            print('[Calendar][iOS] Event insert failed or skipped');
-          }
+            print('[Calendar][iOS] Event insert error/timeout: $e');
+          });
         }
       } catch (e) {
         // ignore: avoid_print
-        print('[Calendar][iOS] Error adding to calendar: $e');
+        print('[Calendar][iOS] Error scheduling calendar add: $e');
       }
 
       // Get admin FCM tokens

@@ -1,8 +1,7 @@
 flutter_native_splash:
-  # Use the shop front as full-screen background on native splash
-  background_image: assets/shop_front.jpg
-  # Optional centered logo overlay can be specified via image if needed
-  color: "#000000"
+  # Use the shop front as the splash image
+  image: assets/shop_front.jpg
+  color: "#000000"  # background color while loading
   android: true
   ios: true
   web: false
