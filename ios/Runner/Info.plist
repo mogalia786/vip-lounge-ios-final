@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Vip Lounge</string>
+		<string>Cellular citi VIP Premium Lounge bookings</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -38,7 +38,6 @@
 		<array>
 			<string>remote-notification</string>
 			<string>location</string>
-			<string>processing</string>
 			<string>fetch</string>
 		</array>
 		<key>UILaunchStoryboardName</key>
@@ -51,12 +50,11 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
+		<key>UIRequiresFullScreen</key>
+		<true/>
+		<key>UIDeviceFamily</key>
 		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
+			<integer>1</integer>
 		</array>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
