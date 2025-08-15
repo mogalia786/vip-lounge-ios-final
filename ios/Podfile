@@ -98,15 +98,65 @@ post_install do |installer|
   
   # Ensure modules are enabled for firebase_messaging to avoid non-modular header imports
   installer.pods_project.targets.each do |t|
-    if t.name == 'firebase_messaging'
-      t.build_configurations.each do |config|
-        config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        # Prevent defining a Swift module for firebase_messaging to bypass explicit module precompile
+    t.build_configurations.each do |config|
+      # Keep modules enabled for ObjC import
+      config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      # Targeted fix for firebase_storage non‑modular include inside framework module
+      if t.name == 'firebase_storage'
+        # Allow non‑modular includes and avoid defining a Swift module for the plugin target
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+        # Disable explicit module pipeline just for this pod
+        config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        config.build_settings['SWIFT_PRECOMPILE_MODULES'] = 'NO'
+        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
+        config.build_settings['SWIFT_USE_INTEGRATED_DRIVER'] = 'NO'
+        # Prefer static library product when possible
+        config.build_settings['MACH_O_TYPE'] = 'staticlib'
+        # Ensure headers are discoverable via headermap and explicit search paths
+        config.build_settings['USE_HEADERMAP'] = 'YES'
+        hdrs = config.build_settings['HEADER_SEARCH_PATHS'] || '$(inherited)'
+        extra = [
+          '$(PODS_ROOT)/Headers/Public',
+          '$(PODS_ROOT)/Headers/Public/Firebase',
+          '$(PODS_ROOT)/Headers/Private'
+        ]
+        config.build_settings['HEADER_SEARCH_PATHS'] = ([hdrs].flatten + extra).uniq
+      end
+      # Targeted fix for firebase_messaging explicit-module precompile failures
+      if t.name == 'firebase_messaging'
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         config.build_settings['DEFINES_MODULE'] = 'NO'
         config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
         config.build_settings['SWIFT_PRECOMPILE_MODULES'] = 'NO'
         config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
         config.build_settings['SWIFT_USE_INTEGRATED_DRIVER'] = 'NO'
+        config.build_settings['MACH_O_TYPE'] = 'staticlib'
+        config.build_settings['USE_HEADERMAP'] = 'YES'
+        hdrs = config.build_settings['HEADER_SEARCH_PATHS'] || '$(inherited)'
+        extra = [
+          '$(PODS_ROOT)/Headers/Public',
+          '$(PODS_ROOT)/Headers/Public/Firebase',
+          '$(PODS_ROOT)/Headers/Private'
+        ]
+        config.build_settings['HEADER_SEARCH_PATHS'] = ([hdrs].flatten + extra).uniq
+      end
+      if t.name == 'firebase_auth'
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+        config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        config.build_settings['SWIFT_PRECOMPILE_MODULES'] = 'NO'
+        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
+        config.build_settings['SWIFT_USE_INTEGRATED_DRIVER'] = 'NO'
+        config.build_settings['MACH_O_TYPE'] = 'staticlib'
+        config.build_settings['USE_HEADERMAP'] = 'YES'
+        hdrs = config.build_settings['HEADER_SEARCH_PATHS'] || '$(inherited)'
+        extra = [
+          '$(PODS_ROOT)/Headers/Public',
+          '$(PODS_ROOT)/Headers/Public/Firebase',
+          '$(PODS_ROOT)/Headers/Private'
+        ]
+        config.build_settings['HEADER_SEARCH_PATHS'] = ([hdrs].flatten + extra).uniq
       end
     end
   end

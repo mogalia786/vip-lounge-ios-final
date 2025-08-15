@@ -1,5 +1,5 @@
-#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
-#include "Generated.xcconfig"
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
+#include? "Generated.xcconfig"
 
 // Workarounds for Xcode 15 explicit modules precompile failures (.scan)
 SWIFT_ENABLE_EXPLICIT_MODULES=NO
