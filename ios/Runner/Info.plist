@@ -34,6 +34,12 @@
 		<string>Your location is used to show nearby lounges and improve booking details.</string>
         <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
         <string>Your location helps with attendance verification and location-based features.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We access your photo library so you can select images for bookings, uploads, and profile updates.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>We may save images to your library when you export or download images from the app.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We use the camera so you can capture photos for bookings, uploads, and support documentation.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIBackgroundModes</key>
@@ -62,3 +68,4 @@
 		<false/>
 	</dict>
 </plist>
+
