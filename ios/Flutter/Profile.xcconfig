@@ -1,8 +1,9 @@
-#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
 #include "Generated.xcconfig"
 
 // Workarounds for Xcode 15 explicit modules precompile failures (.scan)
 SWIFT_ENABLE_EXPLICIT_MODULES=NO
 SWIFT_PRECOMPILE_MODULES=NO
-EXPLICIT_MODULES=NO
 BUILD_LIBRARY_FOR_DISTRIBUTION=NO
+SWIFT_USE_INTEGRATED_DRIVER=NO
+EXPLICIT_MODULE_BUILD=NO

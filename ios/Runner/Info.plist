@@ -32,6 +32,8 @@
 		<string>This app may add reminders for your bookings.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Your location is used to show nearby lounges and improve booking details.</string>
+        <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+        <string>Your location helps with attendance verification and location-based features.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIBackgroundModes</key>
