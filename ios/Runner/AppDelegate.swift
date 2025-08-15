@@ -4,6 +4,7 @@ import FirebaseMessaging
 import UIKit
 import UserNotifications
 import EventKit
+import CoreLocation
 
 // Lightweight EventKit bridge exposed via Flutter MethodChannel.
 // Embedded here to ensure it's compiled without extra Xcode project edits.
@@ -75,10 +76,93 @@ final class CalendarBridge {
   }
 }
 
+// Lightweight CoreLocation bridge exposed via Flutter MethodChannel.
+final class LocationBridge: NSObject, CLLocationManagerDelegate {
+  private let manager = CLLocationManager()
+  private let channel: FlutterMethodChannel
+  private var pendingResult: FlutterResult?
+
+  init(messenger: FlutterBinaryMessenger) {
+    self.channel = FlutterMethodChannel(name: "com.yourcompany.vip/location", binaryMessenger: messenger)
+    super.init()
+    self.channel.setMethodCallHandler(handle)
+    self.manager.delegate = self
+    self.manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+  }
+
+  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "getCurrentLocation":
+      getCurrentLocation(result: result)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func getCurrentLocation(result: @escaping FlutterResult) {
+    // Avoid multiple concurrent requests
+    if pendingResult != nil {
+      result(FlutterError(code: "BUSY", message: "Location request already in progress", details: nil))
+      return
+    }
+    pendingResult = result
+
+    let status = CLLocationManager.authorizationStatus()
+    switch status {
+    case .notDetermined:
+      manager.requestWhenInUseAuthorization()
+    case .restricted, .denied:
+      finishWithError(code: "PERMISSION_DENIED", message: "Location permission denied")
+    case .authorizedWhenInUse, .authorizedAlways:
+      manager.requestLocation()
+    @unknown default:
+      finishWithError(code: "PERMISSION_UNKNOWN", message: "Unknown authorization status")
+    }
+  }
+
+  func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    guard pendingResult != nil else { return }
+    switch status {
+    case .authorizedWhenInUse, .authorizedAlways:
+      manager.requestLocation()
+    case .denied, .restricted:
+      finishWithError(code: "PERMISSION_DENIED", message: "Location permission denied")
+    case .notDetermined:
+      break
+    @unknown default:
+      finishWithError(code: "PERMISSION_UNKNOWN", message: "Unknown authorization status")
+    }
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    finishWithError(code: "LOCATION_ERROR", message: error.localizedDescription)
+  }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    guard let loc = locations.last else {
+      finishWithError(code: "NO_LOCATION", message: "No location available")
+      return
+    }
+    let payload: [String: Any] = [
+      "latitude": loc.coordinate.latitude,
+      "longitude": loc.coordinate.longitude
+    ]
+    if let res = pendingResult { res(payload) }
+    pendingResult = nil
+  }
+
+  private func finishWithError(code: String, message: String) {
+    if let res = pendingResult { res(FlutterError(code: code, message: message, details: nil)) }
+    pendingResult = nil
+  }
+}
+
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   // Retain the calendar bridge so the channel stays alive
   var calendarBridge: CalendarBridge?
+  // Retain the location bridge so the channel stays alive
+  var locationBridge: LocationBridge?
   // Keep willFinish lightweight to avoid first-boot stalls
   override func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
     NSLog("[Launch] willFinishLaunchingWithOptions: enter")
@@ -109,8 +193,9 @@ final class CalendarBridge {
     let flutterVC = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
     // Set notification center delegate to receive foreground notifications
     UNUserNotificationCenter.current().delegate = self
-    // Initialize native Calendar bridge for iOS MethodChannel usage
+    // Initialize native bridges for iOS MethodChannel usage
     self.calendarBridge = CalendarBridge(messenger: flutterVC.binaryMessenger)
+    self.locationBridge = LocationBridge(messenger: flutterVC.binaryMessenger)
     if self.window == nil {
       self.window = UIWindow(frame: UIScreen.main.bounds)
     }
