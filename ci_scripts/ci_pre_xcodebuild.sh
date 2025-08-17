@@ -14,11 +14,18 @@ fi
 # Make sure PATH includes flutter for subsequent steps
 export PATH="$HOME/flutter/bin:$PATH"
 
+# Move to repo root (Cloud runs scripts from ci_scripts by default)
+REPO_DIR="${CI_WORKSPACE:-$(pwd)/..}"
+echo "[ci_pre_xcodebuild] Using repo dir: $REPO_DIR"
+cd "$REPO_DIR"
+
 # Fetch Dart/Flutter deps
 flutter pub get
 
 # Install CocoaPods dependencies (generates Target Support Files + xcfilelist)
 pushd ios
+export COCOAPODS_DISABLE_INPUT_OUTPUT_PATHS=YES
+pod repo update
 pod install --repo-update
 popd
 
