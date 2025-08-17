@@ -8,6 +8,10 @@ $FirebaseSDKVersion = '10.25.0'
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 ENV['VERBOSE_LOGGING'] = '1'
 
+# Disable CocoaPods input/output file lists to avoid missing xcfilelist errors in CI
+# This prevents Xcode from referencing Pods-Runner-resources-*-input/output xcfilelists.
+install! 'cocoapods', :disable_input_output_paths => true
+
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
