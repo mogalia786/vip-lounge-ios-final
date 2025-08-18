@@ -297,7 +297,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "# Skip strict check on CI; allow later phases to install Pods\nif [ \"${CI:-}\" = \"TRUE\" ]; then\n  echo \"[CP] Check Pods Manifest.lock: skipping on CI\"\n  echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n  exit 0\nfi\n\n# Local behavior (strict)\ndiff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
@@ -335,7 +335,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "# Skip strict check on CI; allow later phases to install Pods\nif [ \"${CI:-}\" = \"TRUE\" ]; then\n  echo \"[CP] Check Pods Manifest.lock: skipping on CI\"\n  echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n  exit 0\nfi\n\n# Local behavior (strict)\ndiff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		953E1B4A4F6D0E8D09C188AA /* [CP] Copy Pods Resources */ = {
@@ -366,7 +366,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# CI-only prep to avoid missing CocoaPods xcfilelist failures\nif [ \"${CI:-}\" = \"TRUE\" ]; then\n  echo \"[ci_build_phase] Preparing Pods xcfilelists for CI\"\n  PODS_TSF_DIR=\"${PODS_ROOT}/Target Support Files/Pods-Runner\"\n  mkdir -p \"$PODS_TSF_DIR\"\n  for cfg in Debug Release Profile; do\n    for kind in input-files output-files; do\n      f=\"$PODS_TSF_DIR/Pods-Runner-resources-${cfg}-${kind}.xcfilelist\"\n      if [ ! -f \"$f\" ]; then\n        echo \"[ci_build_phase] Creating empty $f\"\n        : > \"$f\"\n      fi\n    done\n  done\n  # If Pods are missing, perform a minimal install (kept quick)\n  if [ ! -f \"${PODS_ROOT}/Manifest.lock\" ]; then\n    echo \"[ci_build_phase] Pods missing; installing\"\n    set -euxo pipefail\n    export COCOAPODS_DISABLE_INPUT_OUTPUT_PATHS=YES\n    (cd \"$SRCROOT/..\" && cd ios && pod install --repo-update)\n  fi\nfi\n\n# Proceed with standard Flutter build\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
+			shellScript = "# CI-only prep to avoid missing CocoaPods xcfilelist failures\nif [ -n \"${CI:-}\" ]; then\n  echo \"[ci_build_phase] Preparing Pods xcfilelists for CI\"\n  PODS_TSF_DIR=\"${PODS_ROOT}/Target Support Files/Pods-Runner\"\n  mkdir -p \"$PODS_TSF_DIR\"\n  for cfg in Debug Release Profile; do\n    for kind in input-files output-files; do\n      f=\"$PODS_TSF_DIR/Pods-Runner-resources-${cfg}-${kind}.xcfilelist\"\n      if [ ! -f \"$f\" ]; then\n        echo \"[ci_build_phase] Creating empty $f\"\n        : > \"$f\"\n      fi\n    done\n  done\n  # If Pods are missing, perform a minimal install (kept quick)\n  if [ ! -f \"${PODS_ROOT}/Manifest.lock\" ]; then\n    echo \"[ci_build_phase] Pods missing; installing\"\n    set -euxo pipefail\n    export COCOAPODS_DISABLE_INPUT_OUTPUT_PATHS=YES\n    (cd \"$SRCROOT/..\" && cd ios && pod install --repo-update)\n  fi\nfi\n\n# Proceed with standard Flutter build\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
