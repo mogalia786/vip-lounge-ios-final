@@ -51,5 +51,18 @@ FLUTTER_BUILD_DIR=build
 EOF
 fi
 
+# Defensive: Create empty xcfilelist files so Xcode doesn't fail if CocoaPods omitted them
+PODS_TSF_DIR="ios/Pods/Target Support Files/Pods-Runner"
+mkdir -p "$PODS_TSF_DIR"
+for cfg in Debug Release Profile; do
+  for kind in input-files output-files; do
+    f="$PODS_TSF_DIR/Pods-Runner-resources-${cfg}-${kind}.xcfilelist"
+    if [ ! -f "$f" ]; then
+      echo "[ci_pre_xcodebuild] Creating empty $f"
+      : > "$f"
+    fi
+  done
+done
+
 echo "[ci_pre_xcodebuild] Done. Pods installed and Flutter deps fetched."
 
