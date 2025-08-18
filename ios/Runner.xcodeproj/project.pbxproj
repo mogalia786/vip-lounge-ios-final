@@ -351,7 +351,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
+			shellScript = "set -euxo pipefail\nif command -v flutter >/dev/null 2>&1; then\n  flutter --version\n  flutter build ios --config-only --debug\nfi\n# Inject GoogleService-Info.plist from secret if provided\nif [ -n \"${GOOGLE_SERVICE_INFO_PLIST_B64:-}\" ]; then\n  mkdir -p \"$SRCROOT/Runner\"\n  echo \"$GOOGLE_SERVICE_INFO_PLIST_B64\" | base64 --decode > \"$SRCROOT/Runner/GoogleService-Info.plist\"\nfi\n# For Debug builds, if still missing, create a minimal placeholder to satisfy copy phase\nif [ ! -f \"$SRCROOT/Runner/GoogleService-Info.plist\" ] && [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  echo \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><plist version=\\\"1.0\\\"><dict><key>CLIENT_ID</key><string>placeholder</string></dict></plist>\" > \"$SRCROOT/Runner/GoogleService-Info.plist\"\nfi\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
 		};
 		A1B2C3D41E8E89220040F4C3 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
