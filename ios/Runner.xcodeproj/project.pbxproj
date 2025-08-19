@@ -194,6 +194,7 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				8628E4420BE51988EED0F7E4 /* [CP] Check Pods Manifest.lock */,
+				F0F0F0F0F0F0F0F000000001 /* Pre-Build (Flutter config + Firebase plist) */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				A1B2C3D41E8E89220040F4C3 /* [CP] Copy Pods Resources */,
 				97C146EA1CF9000F007C117D /* Sources */,
@@ -351,7 +352,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euxo pipefail\nif command -v flutter >/dev/null 2>&1; then\n  flutter --version\n  flutter build ios --config-only --debug\nfi\n# Inject GoogleService-Info.plist from secret if provided\nif [ -n \"${GOOGLE_SERVICE_INFO_PLIST_B64:-}\" ]; then\n  mkdir -p \"$SRCROOT/Runner\"\n  echo \"$GOOGLE_SERVICE_INFO_PLIST_B64\" | base64 --decode > \"$SRCROOT/Runner/GoogleService-Info.plist\"\nfi\n# For all configurations, if still missing, create a minimal placeholder to satisfy copy phase\nif [ ! -f \"$SRCROOT/Runner/GoogleService-Info.plist\" ]; then\n  echo \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><plist version=\\\"1.0\\\"><dict><key>CLIENT_ID</key><string>placeholder</string></dict></plist>\" > \"$SRCROOT/Runner/GoogleService-Info.plist\"\nfi\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
+			shellScript = "set -euxo pipefail\n# Resolve Flutter binary explicitly on Xcode Cloud, fallback to PATH\nFLUTTER_BIN=flutter\nif [ -x /Users/local/flutter/bin/flutter ]; then\n  FLUTTER_BIN=/Users/local/flutter/bin/flutter\nfi\necho \"[ci_build_phase] Using flutter at: $(command -v $FLUTTER_BIN || echo $FLUTTER_BIN)\"\n# Generate Flutter iOS configs to fix TARGET_DEVICE_OS_VERSION parse\n$FLUTTER_BIN --version || true\n$FLUTTER_BIN build ios --config-only --debug\n# Determine project dir (ios folder)\nPROJECT_DIR_FALLBACK=\"$SRCROOT\"\n[ -n \"$PROJECT_DIR\" ] && PROJECT_DIR_FALLBACK=\"$PROJECT_DIR\"\necho \"[ci_build_phase] PROJECT_DIR: $PROJECT_DIR_FALLBACK\"\n# Inject GoogleService-Info.plist from secret if provided\nif [ -n \"${GOOGLE_SERVICE_INFO_PLIST_B64:-}\" ]; then\n  echo \"[ci_build_phase] Decoding GOOGLE_SERVICE_INFO_PLIST_B64 to $PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\"\n  mkdir -p \"$PROJECT_DIR_FALLBACK/Runner\"\n  echo \"$GOOGLE_SERVICE_INFO_PLIST_B64\" | base64 --decode > \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\"\nfi\n# If still missing, create a minimal placeholder to satisfy copy phase (all configs)\nif [ ! -f \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\" ]; then\n  echo \"[ci_build_phase] Creating placeholder GoogleService-Info.plist\"\n  cat > \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\" <<'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n  <key>CLIENT_ID</key><string>placeholder</string>\n</dict>\n</plist>\nPLIST\nfi\n# Proceed with Flutter backend build\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
+		};
+		F0F0F0F0F0F0F0F000000001 /* Pre-Build (Flutter config + Firebase plist) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Pre-Build (Flutter config + Firebase plist)";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euxo pipefail\n# [prebuild] Resolve Flutter binary on Xcode Cloud\nFLUTTER_BIN=flutter\nif [ -x /Users/local/flutter/bin/flutter ]; then\n  FLUTTER_BIN=/Users/local/flutter/bin/flutter\nfi\necho \"[prebuild] Flutter: $(command -v $FLUTTER_BIN || echo $FLUTTER_BIN)\"\n# [prebuild] Generate iOS configs (fixes TARGET_DEVICE_OS_VERSION)\n$FLUTTER_BIN --version || true\n$FLUTTER_BIN build ios --config-only --debug\n# [prebuild] Determine project dir (ios folder)\nPROJECT_DIR_FALLBACK=\"$SRCROOT\"\n[ -n \"$PROJECT_DIR\" ] && PROJECT_DIR_FALLBACK=\"$PROJECT_DIR\"\necho \"[prebuild] PROJECT_DIR: $PROJECT_DIR_FALLBACK\"\n# [prebuild] Decode GoogleService-Info.plist if provided\nif [ -n \"${GOOGLE_SERVICE_INFO_PLIST_B64:-}\" ]; then\n  echo \"[prebuild] Writing GoogleService-Info.plist from secret\"\n  mkdir -p \"$PROJECT_DIR_FALLBACK/Runner\"\n  echo \"$GOOGLE_SERVICE_INFO_PLIST_B64\" | base64 --decode > \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\"\nfi\n# [prebuild] Ensure file exists (placeholder)\nif [ ! -f \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\" ]; then\n  echo \"[prebuild] Creating placeholder GoogleService-Info.plist\"\n  cat > \"$PROJECT_DIR_FALLBACK/Runner/GoogleService-Info.plist\" <<'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n  <key>CLIENT_ID</key><string>placeholder</string>\n</dict>\n</plist>\nPLIST\nfi\n";
 		};
 		A1B2C3D41E8E89220040F4C3 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
